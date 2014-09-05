@@ -4,6 +4,12 @@ name = "cayley"
 version = "0.0.1"
 authors = ["Ulric Wilfred <shaman.sir@gmail.com>"]
 
+[lib]
+
+name = "cayley"
+doc = false
+doctest = false
+
 [dependencies.http]
 
 git = "https://github.com/chris-morgan/rust-http.git"
