@@ -11,6 +11,9 @@ use std::io::println;
 use url::Url;
 
 pub fn make_and_print_request(url: &str) {
+    // echo "graph.Vertex('Humphrey Bogart').All()" |
+    // http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain
+
     let url = Url::parse(url).ok().expect("Invalid URL :-(");
     let request: RequestWriter = RequestWriter::new(Get, url).unwrap();
 
