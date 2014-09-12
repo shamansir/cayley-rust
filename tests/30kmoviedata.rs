@@ -4,38 +4,88 @@ extern crate cayley;
 fn main() {
     let graph = cayley::Graph::new("localhost", 64210);
 
-    let mut a = graph.vertex().all();
+    let mut a = graph.v().all();
     assert!(a.len() > 0);
 
-    a = graph.vertex().get_limit(5);
+    a = graph.v().get_limit(5);
     assert_eq!(a.len(), 5);
 
     a = graph.vertex("Humphrey Bogart").all();
     assert_eq!(a.len(), 1);
     assert_eq!(a[0].id, "Humphrey Bogart");
 
-    // graph.v("Humphrey Bogart").all();
+    a = graph.v("Humphrey Bogart").in("name").all();
+    assert_eq!(a.len(), 1);
+    assert_eq!(a[0].id, ":/en/humphrey_bogart");
+
+    a = graph.v("Casablanca").in("name").all();
+    assert_eq!(a.len(), 1);
+    assert_eq!(a[0].id, ":/en/casablanca_194");
+
+    a = graph.v().has("name", "Casablanca").all();
+    assert_eq!(a.len(), 1);
+    assert_eq!(a[0].id, ":/en/casablanca_194");
+
+    a = graph.v()
+             .has("name", "Casablanca")
+             .out("/film/film/starring")
+             .out("/film/performance/actor")
+             .out("name")
+             .all();
+    assert!(a.len() > 0);
+
+    let film_to_actor = graph.morphism()
+                             .out("/film/film/starring")
+                             .out("/film/performance/actor");
+
+    a = graph.v()
+             .has("name", "Casablanca")
+             .follow(film_to_actor)
+             .out("name").all();
+    assert!(a.len() > 0);
+
+    // it('test Emit', function(done) {
+    //     this.timeout(10000);
+    //     g.V("Casablanca").ForEach(function(d) { g.Emit(d); }, function(err, result) {
+    //         assert(result.length);
+    //         done(err);
+    //     });
+    // });
     //
-    // graph.v("Humphrey Bogart").in("name").all();
+    // it('test type shape', function(done) {
+    //     this.timeout(10000);
+    //     var graph = g.type('shape');
+    //     graph.V("Casablanca").All(function(err, result) {
+    //         assert(!result.links && result.nodes);
+    //         done(err);
+    //     });
+    // });
     //
-    // graph.v("Casablanca").in("name").all();
-    //
-    // graph.v().has("name", "Casablanca").all();
-    //
-    // graph.v()
-    //      .has("name", "Casablanca")
-    //      .out("/film/film/starring")
-    //      .out("/film/performance/actor")
-    //      .out("name")
-    //      .all();
-    //
-    // let film_to_actor = graph.morphism()
-    //                          .out('/film/film/starring')
-    //                          .out('/film/performance/actor');
-    //
-    // graph.v()
-    //      .has("name", "Casablanca")
-    //      .follow(film_to_actor)
-    //      .out("name").all();
+    // it('test write', function(done)  {
+    //     client.write([{
+    //         subject: "/zh/new_movie",
+    //         predicate: "name",
+    //         object: "New Movie"
+    //     }], function(err) {
+    //         if(err) return done(err);
+    //         g.V('New Movie').All(function(err, result) {
+    //             if(err) return done(err);
+    //             assert.equal(result.length, 1);
+    //             assert.equal(result[0].id, "New Movie");
+    //             client.delete([{
+    //                 subject: "/zh/new_movie",
+    //                 predicate: "name",
+    //                 object: "New Movie"
+    //             }], function(err) {
+    //                 if(err) return done(err);
+    //                 g.V('New Movie').All(function(err, result) {
+    //                     assert.equal(result.length, 1);
+    //                     assert.equal(result[0].id, "");
+    //                     done(err);
+    //                 });
+    //             });
+    //         });
+    //     });
+    // });
 
 }
