@@ -3,12 +3,85 @@
 extern crate debug;
 extern crate http;
 extern crate url;
+
 use http::client::RequestWriter;
 use http::method::Get;
 use http::headers::HeaderEnum;
 use std::str;
 use std::io::println;
-use url::Url;
+use std::io::{IoResult, IoError};
+use std::fmt::{Show, Formatter, FormatError};
+use url::{Url, ParseError};
+
+/* pub enum CayleyAPIVersion { V1 } */
+
+pub struct GraphAccess<'a> {
+    pub host: &'a str,
+    pub version: &'a str,
+    pub port: int
+}
+
+pub struct Graph {
+    url: &'static str,
+    request: Option<Box<RequestWriter>>
+}
+
+pub struct GraphNode;
+
+pub enum GraphRequestError {
+    InvalidUrl(ParseError),
+    MalformedRequest(IoError),
+    RequestFailed(IoError)
+}
+
+impl Show for GraphRequestError {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
+        match *self {
+            InvalidUrl(ref perr) => perr.fmt(fmt),
+            MalformedRequest(ref ioerr) => ioerr.fmt(fmt),
+            RequestFailed(ref ioerr) => ioerr.fmt(fmt)
+        }
+    }
+}
+
+impl Graph {
+
+    pub fn new(access: Option<GraphAccess>) -> Graph {
+        match access {
+            Some(value) => Graph::at(value.host, value.port, value.version),
+            None => Graph::at("localhost", 64210, "v1")
+        }
+    }
+
+    pub fn at<'a>(host: &'a str, port: int, version: &'a str) -> Graph {
+        Graph{ url: format!("https://{:s}:{:d}/api/{:s}/query/gremlin/",
+                            host, port, version).as_slice(),
+               request: None }
+    }
+
+    fn try_to_connect(&self) -> Result<Box<RequestWriter>, GraphRequestError> {
+        let request_url = match Url::parse(self.url) {
+            Ok(value) => value,
+            Err(e) => return Err(InvalidUrl(e))
+        };
+        match RequestWriter::new(Get, request_url) {
+            Ok(value) => Ok(box value),
+            Err(e) => Err(MalformedRequest(e))
+        }
+    }
+
+    fn make_request(&mut self, path: &str) -> Result<GraphNode, GraphRequestError> {
+        let request: Box<RequestWriter> = match self.request {
+            Some(value) => value,
+            None => match self.try_to_connect() {
+                        Ok(value) => value,
+                        Err(e) => return Err(e)
+                    }
+        };
+        self.request = Some(request);
+        Ok(GraphNode)
+    }
+}
 
 pub fn make_and_print_request(url: &str) {
     // echo "graph.Vertex('Humphrey Bogart').All()" |

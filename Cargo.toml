@@ -10,6 +10,8 @@ name = "cayley"
 doc = false
 doctest = false
 
-[dependencies.http]
+[dependencies.url]
+git = "https://github.com/servo/rust-url"
 
+[dependencies.http]
 git = "https://github.com/chris-morgan/rust-http.git"
