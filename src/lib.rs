@@ -22,8 +22,8 @@ pub struct GraphAccess<'a> {
 }
 
 pub struct Graph {
-    url: &'static str,
-    request: Option<Box<RequestWriter>>
+    url: String, // FIXME: change to "&'g str"
+    request: Box<RequestWriter>
 }
 
 pub struct GraphNode;
@@ -46,41 +46,43 @@ impl Show for GraphRequestError {
 
 impl Graph {
 
-    pub fn new(access: Option<GraphAccess>) -> Graph {
-        match access {
-            Some(value) => Graph::at(value.host, value.port, value.version),
-            None => Graph::at("localhost", 64210, "v1")
+    pub fn new(access: GraphAccess) -> Result<Graph, GraphRequestError> {
+        Graph::at(access.host, access.port, access.version)
+    }
+
+    pub fn default() -> Result<Graph, GraphRequestError> {
+        Graph::at("localhost", 64210, "v1")
+    }
+
+    pub fn at(host: &str, port: int, version: &str) -> Result<Graph, GraphRequestError> {
+        let url = format!("https://{:s}:{:d}/api/{:s}/query/gremlin/",
+                          host, port, version);
+        match Graph::make_request(url.as_slice()) {
+            Ok(request) => { Ok(Graph{ url: url,
+                                       request: request }) },
+            Err(error) => Err(error)
         }
     }
 
-    pub fn at<'a>(host: &'a str, port: int, version: &'a str) -> Graph {
-        Graph{ url: format!("https://{:s}:{:d}/api/{:s}/query/gremlin/",
-                            host, port, version).as_slice(),
-               request: None }
-    }
-
-    fn try_to_connect(&self) -> Result<Box<RequestWriter>, GraphRequestError> {
-        let request_url = match Url::parse(self.url) {
-            Ok(value) => value,
-            Err(e) => return Err(InvalidUrl(e))
-        };
-        match RequestWriter::new(Get, request_url) {
-            Ok(value) => Ok(box value),
-            Err(e) => Err(MalformedRequest(e))
+    fn make_request(url: &str) -> Result<Box<RequestWriter>, GraphRequestError> {
+        match Url::parse(url.as_slice()) {
+            Err(error) => Err(InvalidUrl(error)),
+            Ok(parsed_url) => {
+                match RequestWriter::new(Get, parsed_url) {
+                    Err(error) => Err(MalformedRequest(error)),
+                    Ok(request) => Ok(box request)
+                }
+            }
         }
     }
 
-    fn make_request(&mut self, path: &str) -> Result<GraphNode, GraphRequestError> {
-        let request: Box<RequestWriter> = match self.request {
-            Some(value) => value,
-            None => match self.try_to_connect() {
-                        Ok(value) => value,
-                        Err(e) => return Err(e)
-                    }
+    /* fn ask_cayley(&self, path: &str) -> Result<GraphNode, GraphRequestError> {
+        let request = match self.check_connection() {
+            Ok(ref value) => value,
+            Err(e) => return Err(e)
         };
-        self.request = Some(request);
         Ok(GraphNode)
-    }
+    } */
 }
 
 pub fn make_and_print_request(url: &str) {
