@@ -5,11 +5,21 @@ fn main() {
 
     // echo "graph.Vertex('Humphrey Bogart').All()" | http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain
 
-    let graph = cayley::Graph::new(cayley::GraphAccess {
+    match cayley::Graph::new(cayley::GraphAccess {
             host: "localhost",
             port: 64210,
             version: "v1"
-        });
+        }) {
+
+        Err(error) => fail!(error),
+        Ok(graph) => {
+
+            let mut a = graph.v().all();
+            assert!(a.len() > 0);
+
+        }
+
+    }
 
     //
     // let mut a = graph.v().all();

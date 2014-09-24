@@ -21,8 +21,14 @@ pub struct GraphAccess<'a> {
     pub port: int
 }
 
+/* struct Path {
+    graph: Box<Graph>,
+    value: String
+} */
+
 pub struct Graph {
     url: String, // FIXME: change to "&'g str"
+    path: Vec<&'static str>, // = "graph",
     request: Box<RequestWriter>
 }
 
@@ -58,7 +64,10 @@ impl Graph {
         let url = format!("https://{:s}:{:d}/api/{:s}/query/gremlin/",
                           host, port, version);
         match Graph::make_request(url.as_slice()) {
-            Ok(request) => { Ok(Graph{ url: url,
+            Ok(request) => { let mut path = Vec::with_capacity(30);
+                             path.push("graph");
+                             Ok(Graph{ url: url,
+                                       path: path,
                                        request: request }) },
             Err(error) => Err(error)
         }
@@ -74,6 +83,11 @@ impl Graph {
                 }
             }
         }
+    }
+
+    pub fn v(mut self) -> Graph {
+        self.path.push("Vertex()");
+        self
     }
 
     /* fn ask_cayley(&self, path: &str) -> Result<GraphNode, GraphRequestError> {
