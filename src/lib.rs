@@ -21,14 +21,28 @@ pub struct GraphAccess<'a> {
     pub port: int
 }
 
-/* struct Path {
-    graph: Box<Graph>,
-    value: String
+/* struct Path<'g> {
+    value: Vec<&'g str>
+}
+
+impl<'g> Path<'g> {
+
+    pub fn new() -> Path<'g> {
+        let mut value = Vec::with_capacity(30);
+        value.push("graph");
+        Path{ value: value }
+    }
+
+    pub fn add<'g>(mut self, segment: &'g str) -> Path<'g> {
+        self.value.push(segment);
+        self
+    }
+
 } */
 
-pub struct Graph {
+pub struct Graph<'g> {
     url: String, // FIXME: change to "&'g str"
-    path: Vec<&'static str>, // = "graph",
+    path: Vec<&'g str>,
     request: Box<RequestWriter>
 }
 
@@ -50,17 +64,17 @@ impl Show for GraphRequestError {
     }
 }
 
-impl Graph {
+impl<'g> Graph<'g> {
 
-    pub fn new(access: GraphAccess) -> Result<Graph, GraphRequestError> {
+    pub fn new(access: GraphAccess) -> Result<Graph<'g>, GraphRequestError> {
         Graph::at(access.host, access.port, access.version)
     }
 
-    pub fn default() -> Result<Graph, GraphRequestError> {
+    pub fn default() -> Result<Graph<'g>, GraphRequestError> {
         Graph::at("localhost", 64210, "v1")
     }
 
-    pub fn at(host: &str, port: int, version: &str) -> Result<Graph, GraphRequestError> {
+    pub fn at<'g>(host: &str, port: int, version: &str) -> Result<Graph<'g>, GraphRequestError> {
         let url = format!("https://{:s}:{:d}/api/{:s}/query/gremlin/",
                           host, port, version);
         match Graph::make_request(url.as_slice()) {
@@ -85,7 +99,7 @@ impl Graph {
         }
     }
 
-    pub fn v(mut self) -> Graph {
+    pub fn v(mut self) -> Graph<'g> {
         self.path.push("Vertex()");
         self
     }
