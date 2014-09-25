@@ -46,6 +46,11 @@ pub struct Graph<'g> {
     request: Box<RequestWriter>
 }
 
+pub enum NodeSpec {
+    NodeName(&'static str),
+    AnyNode
+}
+
 pub struct GraphNode;
 
 pub enum GraphRequestError {
@@ -99,8 +104,11 @@ impl<'g> Graph<'g> {
         }
     }
 
-    pub fn v(mut self) -> Graph<'g> {
-        self.path.push("Vertex()");
+    pub fn v(mut self, what: NodeSpec) -> Graph<'g> {
+        match what {
+            AnyNode => { self.path.push("Vertex()"); },
+            NodeName(name) => { self.path.push(concat!("Vertex(\"{", name, "\"}")); }
+        }
         self
     }
 

@@ -1,11 +1,14 @@
 extern crate cayley;
 
+use cayley::{Graph, GraphAccess};
+use cayley::{NodeName, AnyNode};
+
 #[test]
 fn main() {
 
     // echo "graph.Vertex('Humphrey Bogart').All()" | http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain
 
-    match cayley::Graph::new(cayley::GraphAccess {
+    match Graph::new(GraphAccess {
             host: "localhost",
             port: 64210,
             version: "v1"
@@ -14,7 +17,7 @@ fn main() {
         Err(error) => fail!(error),
         Ok(graph) => {
 
-            let mut a = graph.v().all();
+            let mut a = graph.v(AnyNode).all();
             assert!(a.len() > 0);
 
         }
