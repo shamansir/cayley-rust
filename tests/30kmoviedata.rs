@@ -1,7 +1,7 @@
 extern crate cayley;
 
 use cayley::{Graph, GraphAccess};
-use cayley::{NodeName, AnyNode};
+use cayley::{Every, Specific};
 
 #[test]
 fn main() {
@@ -17,7 +17,7 @@ fn main() {
         Err(error) => fail!(error),
         Ok(graph) => {
 
-            let mut a = graph.v(AnyNode).all();
+            let mut a = graph.v(Every).all();
             assert!(a.len() > 0);
 
         }

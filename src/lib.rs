@@ -15,9 +15,9 @@ use url::{Url, ParseError};
 
 /* pub enum CayleyAPIVersion { V1 } */
 
-pub struct GraphAccess<'a> {
-    pub host: &'a str,
-    pub version: &'a str,
+pub struct GraphAccess {
+    pub host: &'static str,
+    pub version: &'static str,
     pub port: int
 }
 
@@ -40,15 +40,15 @@ impl<'g> Path<'g> {
 
 } */
 
-pub struct Graph<'g> {
-    url: String, // FIXME: change to "&'g str"
-    path: Vec<&'g str>,
+pub struct Graph {
+    url: String,
+    path: Vec<String>, // FIXME: change to "Vec<u8>" or "Vec<&str>"?
     request: Box<RequestWriter>
 }
 
-pub enum NodeSpec {
-    NodeName(&'static str),
-    AnyNode
+pub enum Selector {
+    Specific(String),
+    Every
 }
 
 pub struct GraphNode;
@@ -69,22 +69,22 @@ impl Show for GraphRequestError {
     }
 }
 
-impl<'g> Graph<'g> {
+impl Graph {
 
-    pub fn new(access: GraphAccess) -> Result<Graph<'g>, GraphRequestError> {
+    pub fn new(access: GraphAccess) -> Result<Graph, GraphRequestError> {
         Graph::at(access.host, access.port, access.version)
     }
 
-    pub fn default() -> Result<Graph<'g>, GraphRequestError> {
+    pub fn default() -> Result<Graph, GraphRequestError> {
         Graph::at("localhost", 64210, "v1")
     }
 
-    pub fn at<'g>(host: &str, port: int, version: &str) -> Result<Graph<'g>, GraphRequestError> {
+    pub fn at(host: &str, port: int, version: &str) -> Result<Graph, GraphRequestError> {
         let url = format!("https://{:s}:{:d}/api/{:s}/query/gremlin/",
                           host, port, version);
         match Graph::make_request(url.as_slice()) {
-            Ok(request) => { let mut path = Vec::with_capacity(30);
-                             path.push("graph");
+            Ok(request) => { let mut path: Vec<String> = Vec::with_capacity(20);
+                             path.push("graph".to_string());
                              Ok(Graph{ url: url,
                                        path: path,
                                        request: request }) },
@@ -104,10 +104,10 @@ impl<'g> Graph<'g> {
         }
     }
 
-    pub fn v(mut self, what: NodeSpec) -> Graph<'g> {
+    pub fn v(mut self, what: Selector) -> Graph {
         match what {
-            AnyNode => { self.path.push("Vertex()"); },
-            NodeName(name) => { self.path.push(concat!("Vertex(\"{", name, "\"}")); }
+            Every => { self.path.push("Vertex()".to_string()); },
+            Specific(name) => { self.path.push(format!("Vertex(\"{}\"", name)); }
         }
         self
     }
