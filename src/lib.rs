@@ -21,25 +21,6 @@ pub struct GraphAccess {
     pub port: int
 }
 
-/* struct Path<'g> {
-    value: Vec<&'g str>
-}
-
-impl<'g> Path<'g> {
-
-    pub fn new() -> Path<'g> {
-        let mut value = Vec::with_capacity(30);
-        value.push("graph");
-        Path{ value: value }
-    }
-
-    pub fn add<'g>(mut self, segment: &'g str) -> Path<'g> {
-        self.value.push(segment);
-        self
-    }
-
-} */
-
 pub struct Graph {
     url: String,
     path: Vec<String>, // FIXME: change to "Vec<u8>" or "Vec<&str>"?
@@ -104,21 +85,20 @@ impl Graph {
         }
     }
 
-    pub fn v(mut self, what: Selector) -> Graph {
+    fn all(&self) -> Result<GraphNode, GraphRequestError> {
+        Ok(GraphNode)
+    }
+
+    pub fn v(&mut self, what: Selector) -> &Graph {
         match what {
-            Every => { self.path.push("Vertex()".to_string()); },
-            Specific(name) => { self.path.push(format!("Vertex(\"{}\"", name)); }
+            Every /*| Specific("")*/ => { self.path.push("Vertex()".to_string()); },
+            Specific(name) => { self.path.push(format!("Vertex(\"{:s}\"", name)); }
         }
         self
     }
 
-    /* fn ask_cayley(&self, path: &str) -> Result<GraphNode, GraphRequestError> {
-        let request = match self.check_connection() {
-            Ok(ref value) => value,
-            Err(e) => return Err(e)
-        };
-        Ok(GraphNode)
-    } */
+    pub fn vertex(&mut self, what: Selector) -> &Graph { self.v(what) }
+
 }
 
 pub fn make_and_print_request(url: &str) {
