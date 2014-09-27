@@ -32,7 +32,29 @@ pub enum Selector {
     Every
 }
 
-pub struct GraphNode;
+pub struct GraphNode {
+    value: &'static str
+}
+
+pub struct GraphNodes {
+    nodes: Vec<GraphNode>
+}
+
+impl GraphNodes {
+    pub fn new() -> GraphNodes {
+        GraphNodes {
+            nodes: Vec::new()
+        }
+    }
+}
+
+impl Collection for GraphNodes {
+
+    fn len(&self) -> uint { self.nodes.len() }
+
+    fn is_empty(&self) -> bool { self.nodes.is_empty() }
+
+}
 
 pub enum GraphRequestError {
     InvalidUrl(ParseError),
@@ -85,8 +107,8 @@ impl Graph {
         }
     }
 
-    fn all(&self) -> Result<GraphNode, GraphRequestError> {
-        Ok(GraphNode)
+    fn all(&self) -> Result<GraphNodes, GraphRequestError> {
+        Ok(GraphNodes::new())
     }
 
     pub fn v(&mut self, what: Selector) -> &Graph {
