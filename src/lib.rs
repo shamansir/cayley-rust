@@ -15,16 +15,11 @@ use url::{Url, ParseError};
 
 /* pub enum CayleyAPIVersion { V1 } */
 
-pub struct GraphAccess {
-    pub host: &'static str,
-    pub version: &'static str,
-    pub port: int
-}
-
 pub struct Graph {
     url: String,
     path: Vec<String>, // FIXME: change to "Vec<u8>" or "Vec<&str>"?
-    request: Box<RequestWriter>
+    request: Box<RequestWriter>/*,
+    use_ssl: bool*/
 }
 
 pub enum Selector {
@@ -40,20 +35,10 @@ pub struct GraphNodes {
     nodes: Vec<GraphNode>
 }
 
-impl GraphNodes {
-    pub fn new() -> GraphNodes {
-        GraphNodes {
-            nodes: Vec::new()
-        }
-    }
-}
-
-impl Collection for GraphNodes {
-
-    fn len(&self) -> uint { self.nodes.len() }
-
-    fn is_empty(&self) -> bool { self.nodes.is_empty() }
-
+pub struct GraphAccess {
+    pub host: &'static str,
+    pub version: &'static str,
+    pub port: int
 }
 
 pub enum GraphRequestError {
@@ -62,12 +47,10 @@ pub enum GraphRequestError {
     RequestFailed(IoError)
 }
 
-impl Show for GraphRequestError {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
-        match *self {
-            InvalidUrl(ref perr) => perr.fmt(fmt),
-            MalformedRequest(ref ioerr) => ioerr.fmt(fmt),
-            RequestFailed(ref ioerr) => ioerr.fmt(fmt)
+impl GraphNodes {
+    pub fn new() -> GraphNodes {
+        GraphNodes {
+            nodes: Vec::new()
         }
     }
 }
@@ -83,10 +66,11 @@ impl Graph {
     }
 
     pub fn at(host: &str, port: int, version: &str) -> Result<Graph, GraphRequestError> {
-        let url = format!("https://{:s}:{:d}/api/{:s}/query/gremlin/",
+        let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin/",
                           host, port, version);
         match Graph::make_request(url.as_slice()) {
-            Ok(request) => { let mut path: Vec<String> = Vec::with_capacity(20);
+            Ok(request) => { // TODO: match request.try_connect()
+                             let mut path: Vec<String> = Vec::with_capacity(20);
                              path.push("graph".to_string());
                              Ok(Graph{ url: url,
                                        path: path,
@@ -107,11 +91,21 @@ impl Graph {
         }
     }
 
-    fn all(&self) -> Result<GraphNodes, GraphRequestError> {
-        Ok(GraphNodes::new())
+    pub fn all(mut self) -> Result<GraphNodes, GraphRequestError> {
+        let path = self.path.connect(".");
+        self.path.clear();
+        match self.request.write_str(path.as_slice()) {
+            Err(error) => Err(RequestFailed(error)),
+            Ok(_) => {
+                match self.request.read_response() {
+                    Err((_, error)) => Err(RequestFailed(error)),
+                    Ok(_) => Ok(GraphNodes::new())
+                }
+            }
+        }
     }
 
-    pub fn v(&mut self, what: Selector) -> &Graph {
+    pub fn v(mut self, what: Selector) -> Graph {
         match what {
             Every /*| Specific("")*/ => { self.path.push("Vertex()".to_string()); },
             Specific(name) => { self.path.push(format!("Vertex(\"{:s}\"", name)); }
@@ -119,8 +113,27 @@ impl Graph {
         self
     }
 
-    pub fn vertex(&mut self, what: Selector) -> &Graph { self.v(what) }
+    pub fn vertex(mut self, what: Selector) -> Graph { self.v(what) }
 
+}
+
+impl Collection for GraphNodes {
+
+    fn len(&self) -> uint { self.nodes.len() }
+
+    fn is_empty(&self) -> bool { self.nodes.is_empty() }
+
+}
+
+
+impl Show for GraphRequestError {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
+        match *self {
+            InvalidUrl(ref perr) => perr.fmt(fmt),
+            MalformedRequest(ref ioerr) => ioerr.fmt(fmt),
+            RequestFailed(ref ioerr) => ioerr.fmt(fmt)
+        }
+    }
 }
 
 pub fn make_and_print_request(url: &str) {

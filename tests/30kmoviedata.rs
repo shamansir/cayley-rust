@@ -17,8 +17,14 @@ fn main() {
         Err(error) => fail!(error),
         Ok(graph) => {
 
-            let mut a = graph.v(Every).all();
-            assert!(a.len() > 0);
+            match graph.v(Every).all() {
+
+                Err(error) => fail!(error.to_string()),
+                Ok(nodes) => {
+                    assert!(nodes.len() > 0);
+                }
+
+            }
 
         }
 
