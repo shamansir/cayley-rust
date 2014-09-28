@@ -2,6 +2,7 @@ extern crate cayley;
 
 use cayley::{Graph, GraphAccess};
 use cayley::{Every, Specific};
+use cayley::V1;
 
 #[test]
 fn main() {
@@ -13,7 +14,7 @@ fn main() {
     match Graph::new(GraphAccess {
             host: "localhost",
             port: 64210,
-            version: "v1"
+            version: V1
         }) {
 
         Err(error) => fail!(error),

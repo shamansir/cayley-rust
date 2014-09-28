@@ -16,8 +16,6 @@ use serialize::{Decoder, Decodable};
 use serialize::json::decode as json_decode;
 use serialize::json::DecoderError;
 
-/* pub enum CayleyAPIVersion { V1 } */
-
 use graph_error::{GraphRequestError,
                   InvalidUrl, MalformedRequest, RequestFailed, DecodingFailed, ResponseParseFailed};
 
@@ -43,9 +41,11 @@ pub enum Selector {
     Every
 }
 
+pub enum CayleyAPIVersion { V1, DefaultVersion }
+
 pub struct GraphAccess {
     pub host: &'static str,
-    pub version: &'static str, // FIXME: should be auto-set
+    pub version: CayleyAPIVersion,
     pub port: int
 }
 
@@ -56,12 +56,13 @@ impl Graph {
     }
 
     pub fn default() -> Result<Graph, GraphRequestError> {
-        Graph::at("localhost", 64210, "v1")
+        Graph::at("localhost", 64210, V1)
     }
 
-    pub fn at(host: &str, port: int, version: &str) -> Result<Graph, GraphRequestError> {
+    pub fn at(host: &str, port: int, version: CayleyAPIVersion) -> Result<Graph, GraphRequestError> {
+        let version_str = match version { V1 | DefaultVersion => "v1" };
         let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
-                          host, port, version);
+                          host, port, version_str);
         match Graph::make_request(url.as_slice()) {
             Ok(request) => { // TODO: match request.try_connect()
                              let mut path: Vec<String> = Vec::with_capacity(20);
