@@ -3,6 +3,7 @@
 extern crate debug;
 extern crate http;
 extern crate url;
+extern crate serialize;
 
 use http::client::RequestWriter;
 use http::method::Get;
@@ -10,10 +11,16 @@ use http::headers::HeaderEnum;
 use std::str;
 use std::io::println;
 use std::io::{IoResult, IoError};
-use std::fmt::{Show, Formatter, FormatError};
 use url::{Url, ParseError};
+use serialize::Decoder;
+use serialize::json::DecoderError;
 
 /* pub enum CayleyAPIVersion { V1 } */
+
+use graph_error::{GraphRequestError,
+                  InvalidUrl, MalformedRequest, RequestFailed, DecodingFailed, ResponseParseFailed};
+
+mod graph_error;
 
 pub struct Graph {
     url: String,
@@ -37,14 +44,8 @@ pub struct GraphNodes {
 
 pub struct GraphAccess {
     pub host: &'static str,
-    pub version: &'static str,
+    pub version: &'static str, // FIXME: should be auto-set
     pub port: int
-}
-
-pub enum GraphRequestError {
-    InvalidUrl(ParseError),
-    MalformedRequest(IoError),
-    RequestFailed(IoError)
 }
 
 impl GraphNodes {
@@ -53,6 +54,14 @@ impl GraphNodes {
             nodes: Vec::new()
         }
     }
+}
+
+impl Collection for GraphNodes {
+
+    fn len(&self) -> uint { self.nodes.len() }
+
+    fn is_empty(&self) -> bool { self.nodes.is_empty() }
+
 }
 
 impl Graph {
@@ -91,7 +100,12 @@ impl Graph {
         }
     }
 
+    fn decode_nodes(from: &str) -> Result<GraphNodes, DecoderError> {
+        Ok(GraphNodes::new())
+    }
+
     pub fn all(mut self) -> Result<GraphNodes, GraphRequestError> {
+        // TODO: convert to try! sequence
         let path = self.path.connect(".");
         self.path.clear();
         match self.request.write_str(path.as_slice()) {
@@ -99,7 +113,23 @@ impl Graph {
             Ok(_) => {
                 match self.request.read_response() {
                     Err((_, error)) => Err(RequestFailed(error)),
-                    Ok(_) => Ok(GraphNodes::new())
+                    Ok(mut response) => {
+                        match response.read_to_end() {
+                            Err(error) => Err(RequestFailed(error)),
+                            Ok(body) => {
+                                /* match str::from_utf8(body.as_slice()) {
+                                    None => Err(ResponseParseFailed),
+                                    Some(json) => {
+                                        match Graph::decode_nodes(json) {
+                                            Err(error) => Err(DecodingFailed(error)),
+                                            Ok(nodes) => Ok(nodes)
+                                        }
+                                    }
+                                } */
+                                Ok(GraphNodes::new())
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -115,25 +145,6 @@ impl Graph {
 
     pub fn vertex(mut self, what: Selector) -> Graph { self.v(what) }
 
-}
-
-impl Collection for GraphNodes {
-
-    fn len(&self) -> uint { self.nodes.len() }
-
-    fn is_empty(&self) -> bool { self.nodes.is_empty() }
-
-}
-
-
-impl Show for GraphRequestError {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
-        match *self {
-            InvalidUrl(ref perr) => perr.fmt(fmt),
-            MalformedRequest(ref ioerr) => ioerr.fmt(fmt),
-            RequestFailed(ref ioerr) => ioerr.fmt(fmt)
-        }
-    }
 }
 
 pub fn make_and_print_request(url: &str) {
