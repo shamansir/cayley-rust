@@ -31,7 +31,7 @@ pub struct Graph {
 }
 
 pub struct GraphNode {
-    value: &'static str
+    value: String
 }
 
 pub struct GraphNodes {
@@ -146,9 +146,34 @@ impl Collection for GraphNodes {
 
 }
 
+impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
+    fn decode(decoder: &mut S) -> Result<GraphNode, E> {
+        decoder.read_struct("__unused__", 0, |decoder| {
+            Ok(GraphNode {
+                value: try!(decoder.read_struct_field("id", 0,
+                            |decoder| { decoder.read_str() }))
+            })
+        })
+    }
+}
+
 impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
     fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
-        Ok(GraphNodes::new())
+        decoder.read_struct("__unused__", 0, |decoder| {
+            decoder.read_struct_field("result", 0, |decoder| {
+                decoder.read_seq(|decoder, len| {
+                    let mut nodes: Vec<GraphNode> = Vec::with_capacity(len);
+                    for i in range(0u, len) {
+                        nodes.push(match decoder.read_seq_elt(i,
+                                        |decoder| { Decodable::decode(decoder) }) {
+                            Ok(node) => node,
+                            Err(err) => return Err(err)
+                        });
+                    };
+                    Ok(GraphNodes { nodes: nodes })
+                })
+            })
+        })
     }
 }
 
