@@ -5,13 +5,13 @@ extern crate http;
 extern crate url;
 extern crate serialize;
 
-use http::client::RequestWriter;
+use http::client::{RequestWriter, ResponseReader};
 use http::method::Get;
 use http::headers::HeaderEnum;
 use std::str;
 use std::io::println;
-use std::io::{IoResult, IoError};
-use url::{Url, ParseError};
+use std::io::Stream;
+use url::Url;
 use serialize::Decoder;
 use serialize::json::DecoderError;
 
@@ -100,8 +100,22 @@ impl Graph {
         }
     }
 
-    fn decode_nodes(from: &str) -> Result<GraphNodes, DecoderError> {
-        Ok(GraphNodes::new())
+    fn decode_nodes<S: Stream>(mut response: ResponseReader<S>) -> Result<GraphNodes, GraphRequestError> {
+        match response.read_to_end() {
+            Err(error) => Err(RequestFailed(error)),
+            Ok(body) => {
+                match str::from_utf8(body.as_slice()) {
+                    None => Err(ResponseParseFailed),
+                    Some(json) => {
+                        /*match Graph::decode_nodes(json) {
+                            Err(error) => Err(DecodingFailed(error)),
+                            Ok(nodes) => Ok(nodes)
+                        }*/
+                        Ok(GraphNodes::new())
+                    }
+                }
+            }
+        }
     }
 
     pub fn all(mut self) -> Result<GraphNodes, GraphRequestError> {
@@ -113,23 +127,7 @@ impl Graph {
             Ok(_) => {
                 match self.request.read_response() {
                     Err((_, error)) => Err(RequestFailed(error)),
-                    Ok(mut response) => {
-                        match response.read_to_end() {
-                            Err(error) => Err(RequestFailed(error)),
-                            Ok(body) => {
-                                /* match str::from_utf8(body.as_slice()) {
-                                    None => Err(ResponseParseFailed),
-                                    Some(json) => {
-                                        match Graph::decode_nodes(json) {
-                                            Err(error) => Err(DecodingFailed(error)),
-                                            Ok(nodes) => Ok(nodes)
-                                        }
-                                    }
-                                } */
-                                Ok(GraphNodes::new())
-                            }
-                        }
-                    }
+                    Ok(response) => Graph::decode_nodes(response)
                 }
             }
         }
@@ -143,7 +141,7 @@ impl Graph {
         self
     }
 
-    pub fn vertex(mut self, what: Selector) -> Graph { self.v(what) }
+    pub fn vertex(self, what: Selector) -> Graph { self.v(what) }
 
 }
 
