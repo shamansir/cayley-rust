@@ -74,11 +74,11 @@ impl Graph {
     }
 
     fn make_request(url: &str) -> Result<Box<RequestWriter>, GraphRequestError> {
-        match Url::parse(url.as_slice()) {
-            Err(error) => Err(InvalidUrl(error)),
+        match Url::parse(url) {
+            Err(error) => Err(InvalidUrl(error, url.to_string())),
             Ok(parsed_url) => {
                 match RequestWriter::new(Post, parsed_url) {
-                    Err(error) => Err(MalformedRequest(error)),
+                    Err(error) => Err(MalformedRequest(error, url.to_string())),
                     Ok(request) => Ok(box request)
                 }
             }
@@ -105,11 +105,11 @@ impl Graph {
         request.headers.content_length = Some(full_path.len());
 
         match request.write_str(full_path.as_slice()) {
-            Err(error) => Err(RequestFailed(error)),
+            Err(error) => Err(RequestFailed(error, full_path)),
             Ok(_) => match request.read_response() {
-                Err((_, error)) => Err(RequestFailed(error)),
+                Err((_, error)) => Err(RequestFailed(error, full_path)),
                 Ok(mut response) => match response.read_to_end() {
-                    Err(error) => Err(RequestFailed(error)),
+                    Err(error) => Err(RequestFailed(error, full_path)),
                     Ok(body) => {
                         self.path.clear();
                         Graph::decode_nodes(body) }

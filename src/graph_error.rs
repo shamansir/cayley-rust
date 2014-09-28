@@ -4,9 +4,9 @@ use std::fmt::{Show, Formatter, FormatError};
 use serialize::json::DecoderError;
 
 pub enum GraphRequestError {
-    InvalidUrl(ParseError),
-    MalformedRequest(IoError),
-    RequestFailed(IoError),
+    InvalidUrl(ParseError, String),
+    MalformedRequest(IoError, String),
+    RequestFailed(IoError, String),
     DecodingFailed(DecoderError, String),
     ResponseParseFailed
 }
@@ -14,10 +14,18 @@ pub enum GraphRequestError {
 impl Show for GraphRequestError {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
         match *self {
-            InvalidUrl(ref perr) => perr.fmt(fmt),
-            MalformedRequest(ref ioerr) | RequestFailed(ref ioerr) => ioerr.fmt(fmt),
-            DecodingFailed(ref derr, ref src) => { write!(fmt, "\nWith source: \"{}\", got:\n", src.as_slice());
-                                                   derr.fmt(fmt) },
+            InvalidUrl(ref perr, ref url) => {
+                write!(fmt, "Url(\"{}\");", url.as_slice());
+                perr.fmt(fmt) },
+            MalformedRequest(ref ioerr, ref url) => {
+                write!(fmt, "Url(\"{}\");", url.as_slice());
+                ioerr.fmt(fmt) },
+            RequestFailed(ref ioerr, ref path) => {
+                write!(fmt, "Path(\"{}\");", path.as_slice());
+                ioerr.fmt(fmt) },
+            DecodingFailed(ref derr, ref src) => {
+                write!(fmt, "Source(\"{}\");", src.as_slice());
+                derr.fmt(fmt) },
             ResponseParseFailed => fmt.pad("Response parsing failed")
         }
     }
