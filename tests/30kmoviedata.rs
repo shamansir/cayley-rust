@@ -8,6 +8,8 @@ fn main() {
 
     // echo "graph.Vertex('Humphrey Bogart').All()" | http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain
 
+    // cayley::make_and_print_request("http://localhost:64210/api/v1/query/gremlin", "graph.Vertex(\"Humphrey Bogart\").All()");
+
     match Graph::new(GraphAccess {
             host: "localhost",
             port: 64210,
@@ -17,7 +19,8 @@ fn main() {
         Err(error) => fail!(error),
         Ok(graph) => {
 
-            match graph.v(Every).all() {
+            //match graph.v(Every).all() {
+            match graph.v(Specific("Humphrey Bogart".to_string())).all() {
 
                 Err(error) => fail!(error.to_string()),
                 Ok(nodes) => {

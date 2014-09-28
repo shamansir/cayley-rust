@@ -6,7 +6,7 @@ extern crate url;
 extern crate serialize;
 
 use http::client::{RequestWriter, ResponseReader};
-use http::method::Get;
+use http::method::{Get, Post};
 use http::headers::HeaderEnum;
 use std::str;
 use std::io::println;
@@ -60,7 +60,7 @@ impl Graph {
     }
 
     pub fn at(host: &str, port: int, version: &str) -> Result<Graph, GraphRequestError> {
-        let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin/",
+        let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
                           host, port, version);
         match Graph::make_request(url.as_slice()) {
             Ok(request) => { // TODO: match request.try_connect()
@@ -77,7 +77,7 @@ impl Graph {
         match Url::parse(url.as_slice()) {
             Err(error) => Err(InvalidUrl(error)),
             Ok(parsed_url) => {
-                match RequestWriter::new(Get, parsed_url) {
+                match RequestWriter::new(Post, parsed_url) {
                     Err(error) => Err(MalformedRequest(error)),
                     Ok(request) => Ok(box request)
                 }
@@ -90,7 +90,7 @@ impl Graph {
             None => Err(ResponseParseFailed),
             Some(nodes_json) => {
                 match json_decode(nodes_json) {
-                    Err(error) => Err(DecodingFailed(error)),
+                    Err(error) => Err(DecodingFailed(error, nodes_json.to_string())),
                     Ok(nodes) => Ok(nodes)
                 }
             }
@@ -99,15 +99,20 @@ impl Graph {
 
     pub fn all(mut self) -> Result<GraphNodes, GraphRequestError> {
         // TODO: convert to try! sequence
-        let path = self.path.connect(".");
-        self.path.clear();
-        match self.request.write_str(path.as_slice()) {
+        self.path.push("All()".to_string());
+        let full_path = self.path.connect(".");
+        let mut request = self.request;
+        request.headers.content_length = Some(full_path.len());
+
+        match request.write_str(full_path.as_slice()) {
             Err(error) => Err(RequestFailed(error)),
-            Ok(_) => match self.request.read_response() {
+            Ok(_) => match request.read_response() {
                 Err((_, error)) => Err(RequestFailed(error)),
                 Ok(mut response) => match response.read_to_end() {
                     Err(error) => Err(RequestFailed(error)),
-                    Ok(body) => Graph::decode_nodes(body)
+                    Ok(body) => {
+                        self.path.clear();
+                        Graph::decode_nodes(body) }
                 }
             }
         }
@@ -116,7 +121,7 @@ impl Graph {
     pub fn v(mut self, what: Selector) -> Graph {
         match what {
             Every /*| Specific("")*/ => { self.path.push("Vertex()".to_string()); },
-            Specific(name) => { self.path.push(format!("Vertex(\"{:s}\"", name)); }
+            Specific(name) => { self.path.push(format!("Vertex(\"{:s}\")", name)); }
         }
         self
     }
@@ -147,12 +152,15 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
     }
 }
 
-pub fn make_and_print_request(url: &str) {
+pub fn make_and_print_request(url: &str, body: &str) {
     // echo "graph.Vertex('Humphrey Bogart').All()" |
     // http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain
 
     let url = Url::parse(url).ok().expect("Invalid URL :-(");
-    let request: RequestWriter = RequestWriter::new(Get, url).unwrap();
+    let mut request: RequestWriter = RequestWriter::new(Post, url).unwrap();
+
+    request.headers.content_length = Some(body.len());
+    request.write_str(body);
 
     println!("[33;1mRequest[0m");
     println!("[33;1m=======[0m");
@@ -164,6 +172,8 @@ pub fn make_and_print_request(url: &str) {
     for header in request.headers.iter() {
         println!(" - {}: {}", header.header_name(), header.header_value());
     }
+    println!("[1mBody:[0m");
+    println!("{}", body);
 
     println!("");
     println!("[33;1mResponse[0m");

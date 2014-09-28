@@ -7,7 +7,7 @@ pub enum GraphRequestError {
     InvalidUrl(ParseError),
     MalformedRequest(IoError),
     RequestFailed(IoError),
-    DecodingFailed(DecoderError),
+    DecodingFailed(DecoderError, String),
     ResponseParseFailed
 }
 
@@ -15,10 +15,10 @@ impl Show for GraphRequestError {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
         match *self {
             InvalidUrl(ref perr) => perr.fmt(fmt),
-            MalformedRequest(ref ioerr) => ioerr.fmt(fmt),
-            RequestFailed(ref ioerr) => ioerr.fmt(fmt),
-            DecodingFailed(ref derr) => derr.fmt(fmt),
-            ResponseParseFailed => fmt.pad("Response Failed")
+            MalformedRequest(ref ioerr) | RequestFailed(ref ioerr) => ioerr.fmt(fmt),
+            DecodingFailed(ref derr, ref src) => { write!(fmt, "\nWith source: \"{}\", got:\n", src.as_slice());
+                                                   derr.fmt(fmt) },
+            ResponseParseFailed => fmt.pad("Response parsing failed")
         }
     }
 }
