@@ -12,7 +12,8 @@ use std::str;
 use std::io::println;
 use std::io::Stream;
 use url::Url;
-use serialize::Decoder;
+use serialize::{Decoder, Decodable};
+use serialize::json::decode as json_decode;
 use serialize::json::DecoderError;
 
 /* pub enum CayleyAPIVersion { V1 } */
@@ -29,11 +30,6 @@ pub struct Graph {
     use_ssl: bool*/
 }
 
-pub enum Selector {
-    Specific(String),
-    Every
-}
-
 pub struct GraphNode {
     value: &'static str
 }
@@ -42,26 +38,15 @@ pub struct GraphNodes {
     nodes: Vec<GraphNode>
 }
 
+pub enum Selector {
+    Specific(String),
+    Every
+}
+
 pub struct GraphAccess {
     pub host: &'static str,
     pub version: &'static str, // FIXME: should be auto-set
     pub port: int
-}
-
-impl GraphNodes {
-    pub fn new() -> GraphNodes {
-        GraphNodes {
-            nodes: Vec::new()
-        }
-    }
-}
-
-impl Collection for GraphNodes {
-
-    fn len(&self) -> uint { self.nodes.len() }
-
-    fn is_empty(&self) -> bool { self.nodes.is_empty() }
-
 }
 
 impl Graph {
@@ -100,19 +85,13 @@ impl Graph {
         }
     }
 
-    fn decode_nodes<S: Stream>(mut response: ResponseReader<S>) -> Result<GraphNodes, GraphRequestError> {
-        match response.read_to_end() {
-            Err(error) => Err(RequestFailed(error)),
-            Ok(body) => {
-                match str::from_utf8(body.as_slice()) {
-                    None => Err(ResponseParseFailed),
-                    Some(json) => {
-                        /*match Graph::decode_nodes(json) {
-                            Err(error) => Err(DecodingFailed(error)),
-                            Ok(nodes) => Ok(nodes)
-                        }*/
-                        Ok(GraphNodes::new())
-                    }
+    fn decode_nodes(source: Vec<u8>) -> Result<GraphNodes, GraphRequestError> {
+        match str::from_utf8(source.as_slice()) {
+            None => Err(ResponseParseFailed),
+            Some(nodes_json) => {
+                match json_decode(nodes_json) {
+                    Err(error) => Err(DecodingFailed(error)),
+                    Ok(nodes) => Ok(nodes)
                 }
             }
         }
@@ -124,10 +103,11 @@ impl Graph {
         self.path.clear();
         match self.request.write_str(path.as_slice()) {
             Err(error) => Err(RequestFailed(error)),
-            Ok(_) => {
-                match self.request.read_response() {
-                    Err((_, error)) => Err(RequestFailed(error)),
-                    Ok(response) => Graph::decode_nodes(response)
+            Ok(_) => match self.request.read_response() {
+                Err((_, error)) => Err(RequestFailed(error)),
+                Ok(mut response) => match response.read_to_end() {
+                    Err(error) => Err(RequestFailed(error)),
+                    Ok(body) => Graph::decode_nodes(body)
                 }
             }
         }
@@ -143,6 +123,28 @@ impl Graph {
 
     pub fn vertex(self, what: Selector) -> Graph { self.v(what) }
 
+}
+
+impl GraphNodes {
+    pub fn new() -> GraphNodes {
+        GraphNodes {
+            nodes: Vec::new()
+        }
+    }
+}
+
+impl Collection for GraphNodes {
+
+    fn len(&self) -> uint { self.nodes.len() }
+
+    fn is_empty(&self) -> bool { self.nodes.is_empty() }
+
+}
+
+impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
+    fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
+        Ok(GraphNodes::new())
+    }
 }
 
 pub fn make_and_print_request(url: &str) {
