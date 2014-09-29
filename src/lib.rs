@@ -24,13 +24,17 @@ mod graph_error;
 
 pub struct Graph {
     url: String,
-    path: Vec<String>, // FIXME: change to "Vec<u8>" or "Vec<&str>"?
-    request: Box<RequestWriter>/*,
-    use_ssl: bool*/
+    request: Box<RequestWriter>
 }
 
 pub struct GraphNode {
     id: String
+}
+
+pub struct GraphNodes(Vec<GraphNode>);
+
+pub struct Vertex {
+    path: Vec<String>
 }
 
 pub enum Selector {
@@ -40,46 +44,37 @@ pub enum Selector {
 
 pub enum CayleyAPIVersion { V1, DefaultVersion }
 
-pub struct GraphAccess {
-    pub host: &'static str,
-    pub version: CayleyAPIVersion,
-    pub port: int
-}
-
-pub struct GraphNodes(Vec<GraphNode>);
-
 impl Graph {
 
-    pub fn new(access: GraphAccess) -> GraphResult<Graph> {
-        Graph::at(access.host, access.port, access.version)
-    }
-
     pub fn default() -> GraphResult<Graph> {
-        Graph::at("localhost", 64210, V1)
+        Graph::new("localhost", 64210, DefaultVersion)
     }
 
-    pub fn at(host: &str, port: int, version: CayleyAPIVersion) -> GraphResult<Graph> {
+    pub fn new(host: &str, port: int, version: CayleyAPIVersion) -> GraphResult<Graph> {
         let version_str = match version { V1 | DefaultVersion => "v1" };
         let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
                           host, port, version_str);
-        match Graph::make_request(url.as_slice()) {
+        match Graph::prepare_request(url.as_slice()) {
             Ok(request) => { // TODO: match request.try_connect()
                              let mut path: Vec<String> = Vec::with_capacity(20);
                              path.push("graph".to_string());
                              Ok(Graph{ url: url,
-                                       path: path,
                                        request: request }) },
             Err(error) => Err(error)
         }
     }
 
-    fn make_request(url: &str) -> GraphResult<Box<RequestWriter>> {
-        match Url::parse(url) {
-            Err(error) => Err(InvalidUrl(error, url.to_string())),
-            Ok(parsed_url) => {
-                match RequestWriter::new(Post, parsed_url) {
-                    Err(error) => Err(MalformedRequest(error, url.to_string())),
-                    Ok(request) => Ok(box request)
+    pub fn find(mut self, path: &Vertex) -> GraphResult<GraphNodes> {
+        let path = path.compile();
+        let mut request = self.request;
+        request.headers.content_length = Some(path.len());
+        match request.write_str(path.as_slice()) {
+            Err(error) => Err(RequestFailed(error, path)),
+            Ok(_) => match request.read_response() {
+                Err((_, error)) => Err(RequestFailed(error, path)),
+                Ok(mut response) => match response.read_to_end() {
+                    Err(error) => Err(RequestFailed(error, path)),
+                    Ok(body) => Graph::decode_nodes(body)
                 }
             }
         }
@@ -97,22 +92,67 @@ impl Graph {
         }
     }
 
-    fn exec_path(mut request: Box<RequestWriter>, path: &str) -> GraphResult<GraphNodes> {
-        request.headers.content_length = Some(path.len());
-        match request.write_str(path) {
-            Err(error) => Err(RequestFailed(error, path.to_string())),
-            Ok(_) => match request.read_response() {
-                Err((_, error)) => Err(RequestFailed(error, path.to_string())),
-                Ok(mut response) => match response.read_to_end() {
-                    Err(error) => Err(RequestFailed(error, path.to_string())),
-                    Ok(body) => Graph::decode_nodes(body)
+    fn prepare_request(url: &str) -> GraphResult<Box<RequestWriter>> {
+        match Url::parse(url) {
+            Err(error) => Err(InvalidUrl(error, url.to_string())),
+            Ok(parsed_url) => {
+                match RequestWriter::new(Post, parsed_url) {
+                    Err(error) => Err(MalformedRequest(error, url.to_string())),
+                    Ok(request) => Ok(box request)
                 }
             }
         }
     }
 
+}
+
+impl Vertex {
+
+    fn new(select: Selector) -> Vertex {
+        let mut res = Vertex{ path: Vec::with_capacity(10) };
+        res.add_str("graph");
+        res.add_string(match select {
+                Every /*| Specific("") */ => "Vertex()".to_string(),
+                Specific(name) => format!("Vertex(\"{:s}\")", name)
+            });
+        res
+    }
+
+    fn x(select: Selector) -> Vertex { Vertex::new(select) }
+
+    fn compile(&self) -> String {
+        self.path.connect(".")
+    }
+
+    fn add_str(&mut self, str: &str) -> &Vertex {
+        self.path.push(str.to_string());
+        self
+    }
+
+    fn add_string(&mut self, str: String) -> &Vertex {
+        self.path.push(str);
+        self
+    }
+
+    pub fn all(&mut self) -> &Vertex { self.add_str("all()") }
+
+    /* fn all(self) -> Vertex {
+        self.add("all".to_string());
+        self
+    } */
+
+}
+
+/* impl Vertex {
+
+    fn compile(&self) -> String {
+        let VertexPath(path) = self;
+        path.connect(".");
+    }
+
     pub fn all(&self) -> GraphResult<GraphNodes> {
-        self.path.push("All()".to_string());
+
+        path.push("All()".to_string());
         let full_path = self.path.connect(".");
         let nodes = try!(Graph::exec_path(self.request, full_path.as_slice()));
         self.path.clear();
@@ -142,7 +182,7 @@ impl Graph {
         self
     }
 
-}
+} */
 
 impl GraphNode {
 

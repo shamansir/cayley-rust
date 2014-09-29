@@ -1,6 +1,6 @@
 extern crate cayley;
 
-use cayley::{Graph, GraphAccess};
+use cayley::{Graph, Vertex};
 use cayley::{Every, Specific};
 use cayley::V1;
 
@@ -11,16 +11,12 @@ fn main() {
 
     // cayley::make_and_print_request("http://localhost:64210/api/v1/query/gremlin", "graph.Vertex(\"Humphrey Bogart\").All()");
 
-    match Graph::new(GraphAccess {
-            host: "localhost",
-            port: 64210,
-            version: V1
-        }) {
+    match Graph::new("localhost", 64210, V1) {
 
         Err(error) => fail!(error),
         Ok(graph) => {
 
-            match graph.v(Every).all() {
+            match graph.find(Vertex::x(Every).all()) {
 
                 Err(error) => fail!(error.to_string()),
                 Ok(nodes) => {
