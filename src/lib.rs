@@ -189,9 +189,9 @@ impl Index<uint, GraphNode> for GraphNodes {
     }
 }
 
-/* impl Iterator<GraphNode> for GraphNodes {
-    fn next(&mut self) -> Option<GraphNode> {
-        self.nodes.iter()
+/* impl<'a> Iterator<&'a mut GraphNode> for GraphNodes {
+    fn next(&'a mut self) -> Option<&'a mut GraphNode> {
+        self.nodes.iter().next()
     }
 } */
 
