@@ -31,7 +31,7 @@ pub struct GraphNode {
     id: String
 }
 
-pub struct GraphNodes(Vec<GraphNode>);
+pub struct GraphNodes(pub Vec<GraphNode>);
 
 pub struct Vertex {
     path: Vec<String>
@@ -118,7 +118,7 @@ impl Vertex {
         res
     }
 
-    fn x(select: Selector) -> Vertex { Vertex::new(select) }
+    pub fn x(select: Selector) -> Vertex { Vertex::new(select) }
 
     fn compile(&self) -> String {
         self.path.connect(".")
