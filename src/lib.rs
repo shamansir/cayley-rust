@@ -5,18 +5,19 @@ extern crate http;
 extern crate url;
 extern crate serialize;
 
-use http::client::{RequestWriter, ResponseReader};
-use http::method::{Get, Post};
-use http::headers::HeaderEnum;
 use std::str;
 use std::io::println;
 use std::io::Stream;
+use std::slice::Items;
 use url::Url;
+use http::client::{RequestWriter, ResponseReader};
+use http::method::{Get, Post};
+use http::headers::HeaderEnum;
 use serialize::{Decoder, Decodable};
 use serialize::json::decode as json_decode;
 use serialize::json::DecoderError;
 
-use graph_error::{GraphRequestError,
+use graph_error::{GraphRequestError, GraphResult,
                   InvalidUrl, MalformedRequest, RequestFailed, DecodingFailed, ResponseParseFailed};
 
 mod graph_error;
@@ -29,7 +30,7 @@ pub struct Graph {
 }
 
 pub struct GraphNode {
-    value: String
+    id: String
 }
 
 pub struct GraphNodes {
@@ -51,15 +52,15 @@ pub struct GraphAccess {
 
 impl Graph {
 
-    pub fn new(access: GraphAccess) -> Result<Graph, GraphRequestError> {
+    pub fn new(access: GraphAccess) -> GraphResult<Graph> {
         Graph::at(access.host, access.port, access.version)
     }
 
-    pub fn default() -> Result<Graph, GraphRequestError> {
+    pub fn default() -> GraphResult<Graph> {
         Graph::at("localhost", 64210, V1)
     }
 
-    pub fn at(host: &str, port: int, version: CayleyAPIVersion) -> Result<Graph, GraphRequestError> {
+    pub fn at(host: &str, port: int, version: CayleyAPIVersion) -> GraphResult<Graph> {
         let version_str = match version { V1 | DefaultVersion => "v1" };
         let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
                           host, port, version_str);
@@ -74,7 +75,7 @@ impl Graph {
         }
     }
 
-    fn make_request(url: &str) -> Result<Box<RequestWriter>, GraphRequestError> {
+    fn make_request(url: &str) -> GraphResult<Box<RequestWriter>> {
         match Url::parse(url) {
             Err(error) => Err(InvalidUrl(error, url.to_string())),
             Ok(parsed_url) => {
@@ -86,7 +87,7 @@ impl Graph {
         }
     }
 
-    fn decode_nodes(source: Vec<u8>) -> Result<GraphNodes, GraphRequestError> {
+    fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(nodes_json) => {
@@ -98,24 +99,34 @@ impl Graph {
         }
     }
 
-    pub fn all(mut self) -> Result<GraphNodes, GraphRequestError> {
-        self.path.push("All()".to_string());
-        let full_path = self.path.connect(".");
-        let mut request = self.request;
-        request.headers.content_length = Some(full_path.len());
-
-        match request.write_str(full_path.as_slice()) {
-            Err(error) => Err(RequestFailed(error, full_path)),
+    fn exec_path(mut request: Box<RequestWriter>, path: &str) -> GraphResult<GraphNodes> {
+        request.headers.content_length = Some(path.len());
+        match request.write_str(path) {
+            Err(error) => Err(RequestFailed(error, path.to_string())),
             Ok(_) => match request.read_response() {
-                Err((_, error)) => Err(RequestFailed(error, full_path)),
+                Err((_, error)) => Err(RequestFailed(error, path.to_string())),
                 Ok(mut response) => match response.read_to_end() {
-                    Err(error) => Err(RequestFailed(error, full_path)),
-                    Ok(body) => {
-                        self.path.clear();
-                        Graph::decode_nodes(body) }
+                    Err(error) => Err(RequestFailed(error, path.to_string())),
+                    Ok(body) => Graph::decode_nodes(body)
                 }
             }
         }
+    }
+
+    pub fn all(mut self) -> GraphResult<GraphNodes> {
+        self.path.push("All()".to_string());
+        let full_path = self.path.connect(".");
+        let nodes = try!(Graph::exec_path(self.request, full_path.as_slice()));
+        self.path.clear();
+        Ok(nodes)
+    }
+
+    pub fn get_limit(mut self, limit: int) -> GraphResult<GraphNodes> {
+        self.path.push(format!("GetLimit({:i})", limit));
+        let full_path = self.path.connect(".");
+        let nodes = try!(Graph::exec_path(self.request, full_path.as_slice()));
+        self.path.clear();
+        Ok(nodes)
     }
 
     pub fn v(mut self, what: Selector) -> Graph {
@@ -128,6 +139,28 @@ impl Graph {
 
     pub fn vertex(self, what: Selector) -> Graph { self.v(what) }
 
+    pub fn _in(mut self, _where: &str) -> Graph {
+        self.path.push(format!("in(\"{:s}\")", _where));
+        self
+    }
+
+}
+
+impl GraphNode {
+
+    pub fn id(self) -> String { self.id }
+
+}
+
+impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
+    fn decode(decoder: &mut S) -> Result<GraphNode, E> {
+        decoder.read_struct("__unused__", 0, |decoder| {
+            Ok(GraphNode {
+                id: try!(decoder.read_struct_field("id", 0,
+                        |decoder| { decoder.read_str() }))
+            })
+        })
+    }
 }
 
 impl GraphNodes {
@@ -136,6 +169,10 @@ impl GraphNodes {
             nodes: Vec::new()
         }
     }
+
+    //pub fn get(&self) -> Vec<GraphNode> { self.nodes }
+
+    pub fn iter(&self) -> Items<GraphNode> { self.iter() }
 }
 
 impl Collection for GraphNodes {
@@ -146,16 +183,17 @@ impl Collection for GraphNodes {
 
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
-    fn decode(decoder: &mut S) -> Result<GraphNode, E> {
-        decoder.read_struct("__unused__", 0, |decoder| {
-            Ok(GraphNode {
-                value: try!(decoder.read_struct_field("id", 0,
-                            |decoder| { decoder.read_str() }))
-            })
-        })
+impl Index<uint, GraphNode> for GraphNodes {
+    fn index(&self, index: &uint) -> &GraphNode {
+        self.nodes.index(index)
     }
 }
+
+/* impl Iterator<GraphNode> for GraphNodes {
+    fn next(&mut self) -> Option<GraphNode> {
+        self.nodes.iter()
+    }
+} */
 
 impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
     fn decode(decoder: &mut S) -> Result<GraphNodes, E> {

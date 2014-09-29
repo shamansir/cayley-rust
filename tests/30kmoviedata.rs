@@ -43,31 +43,31 @@ fn main() {
                 Err(error) => fail!(error.to_string()),
                 Ok(nodes) => {
                     assert_eq!(nodes.len(), 1);
-                    assert_eq!(nodes[0].id, "Humphrey Bogart");
+                    assert_eq!(nodes[0].id().as_slice(), "Humphrey Bogart");
                 }
 
             }
 
             match graph.v(Specific("Humphrey Bogart".to_string()))
-                       .in("name")
+                       ._in("name")
                        .all() {
 
                 Err(error) => fail!(error.to_string()),
                 Ok(nodes) => {
                     assert_eq!(nodes.len(), 1);
-                    assert_eq!(nodes[0].id, ":/en/humphrey_bogart");
+                    assert_eq!(nodes[0].id().as_slice(), ":/en/humphrey_bogart");
                 }
 
             }
 
             match graph.v(Specific("Casablanca".to_string()))
-                       .in("name")
+                       ._in("name")
                        .all() {
 
                 Err(error) => fail!(error.to_string()),
                 Ok(nodes) => {
                     assert_eq!(nodes.len(), 1);
-                    assert_eq!(nodes[0].id, ":/en/casablanca_194");
+                    assert_eq!(nodes[0].id().as_slice(), ":/en/casablanca_194");
                 }
 
             }

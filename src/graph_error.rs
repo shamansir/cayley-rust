@@ -31,6 +31,8 @@ impl Show for GraphRequestError {
     }
 }
 
+pub type GraphResult<T> = Result<T, GraphRequestError>;
+
 /* pub enum GraphRequestErrorKind {
     InvalidUrl(ParseError),
     MalformedRequest(IoError),
