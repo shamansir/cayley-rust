@@ -33,10 +33,6 @@ pub struct GraphNode {
     id: String
 }
 
-pub struct GraphNodes {
-    nodes: Vec<GraphNode>
-}
-
 pub enum Selector {
     Specific(String),
     Every
@@ -49,6 +45,8 @@ pub struct GraphAccess {
     pub version: CayleyAPIVersion,
     pub port: int
 }
+
+pub struct GraphNodes(Vec<GraphNode>);
 
 impl Graph {
 
@@ -113,7 +111,7 @@ impl Graph {
         }
     }
 
-    pub fn all(mut self) -> GraphResult<GraphNodes> {
+    pub fn all(&self) -> GraphResult<GraphNodes> {
         self.path.push("All()".to_string());
         let full_path = self.path.connect(".");
         let nodes = try!(Graph::exec_path(self.request, full_path.as_slice()));
@@ -121,7 +119,7 @@ impl Graph {
         Ok(nodes)
     }
 
-    pub fn get_limit(mut self, limit: int) -> GraphResult<GraphNodes> {
+    pub fn get_limit(&self, limit: int) -> GraphResult<GraphNodes> {
         self.path.push(format!("GetLimit({:i})", limit));
         let full_path = self.path.connect(".");
         let nodes = try!(Graph::exec_path(self.request, full_path.as_slice()));
@@ -129,7 +127,7 @@ impl Graph {
         Ok(nodes)
     }
 
-    pub fn v(mut self, what: Selector) -> Graph {
+    pub fn v(&self, what: Selector) -> &Graph {
         match what {
             Every /*| Specific("")*/ => { self.path.push("Vertex()".to_string()); },
             Specific(name) => { self.path.push(format!("Vertex(\"{:s}\")", name)); }
@@ -137,9 +135,9 @@ impl Graph {
         self
     }
 
-    pub fn vertex(self, what: Selector) -> Graph { self.v(what) }
+    pub fn vertex(&self, what: Selector) -> &Graph { self.v(what) }
 
-    pub fn _in(mut self, _where: &str) -> Graph {
+    pub fn _in(&self, _where: &str) -> &Graph {
         self.path.push(format!("in(\"{:s}\")", _where));
         self
     }
@@ -163,38 +161,6 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
     }
 }
 
-impl GraphNodes {
-    pub fn new() -> GraphNodes {
-        GraphNodes {
-            nodes: Vec::new()
-        }
-    }
-
-    //pub fn get(&self) -> Vec<GraphNode> { self.nodes }
-
-    pub fn iter(&self) -> Items<GraphNode> { self.iter() }
-}
-
-impl Collection for GraphNodes {
-
-    fn len(&self) -> uint { self.nodes.len() }
-
-    fn is_empty(&self) -> bool { self.nodes.is_empty() }
-
-}
-
-impl Index<uint, GraphNode> for GraphNodes {
-    fn index(&self, index: &uint) -> &GraphNode {
-        self.nodes.index(index)
-    }
-}
-
-/* impl<'a> Iterator<&'a mut GraphNode> for GraphNodes {
-    fn next(&'a mut self) -> Option<&'a mut GraphNode> {
-        self.nodes.iter().next()
-    }
-} */
-
 impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
     fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
         decoder.read_struct("__unused__", 0, |decoder| {
@@ -208,7 +174,7 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
                             Err(err) => return Err(err)
                         });
                     };
-                    Ok(GraphNodes { nodes: nodes })
+                    Ok(GraphNodes(nodes))
                 })
             })
         })
