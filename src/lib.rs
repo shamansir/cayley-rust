@@ -99,7 +99,6 @@ impl Graph {
     }
 
     pub fn all(mut self) -> Result<GraphNodes, GraphRequestError> {
-        // TODO: convert to try! sequence
         self.path.push("All()".to_string());
         let full_path = self.path.connect(".");
         let mut request = self.request;

@@ -15,16 +15,16 @@ impl Show for GraphRequestError {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
         match *self {
             InvalidUrl(ref perr, ref url) => {
-                write!(fmt, "Url(\"{}\");", url.as_slice());
+                write!(fmt, "Url(\"{}\"): ", url.as_slice());
                 perr.fmt(fmt) },
             MalformedRequest(ref ioerr, ref url) => {
-                write!(fmt, "Url(\"{}\");", url.as_slice());
+                write!(fmt, "Url(\"{}\"): ", url.as_slice());
                 ioerr.fmt(fmt) },
             RequestFailed(ref ioerr, ref path) => {
-                write!(fmt, "Path(\"{}\");", path.as_slice());
+                write!(fmt, "Path(\"{}\"): ", path.as_slice());
                 ioerr.fmt(fmt) },
             DecodingFailed(ref derr, ref src) => {
-                write!(fmt, "Source(\"{}\");", src.as_slice());
+                write!(fmt, "Source(\"{}\"): ", src.as_slice());
                 derr.fmt(fmt) },
             ResponseParseFailed => fmt.pad("Response parsing failed")
         }

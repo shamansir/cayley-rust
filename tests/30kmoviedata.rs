@@ -20,8 +20,7 @@ fn main() {
         Err(error) => fail!(error),
         Ok(graph) => {
 
-            //match graph.v(Every).all() {
-            match graph.v(Specific("Humphrey Bogart".to_string())).all() {
+            match graph.v(Every).all() {
 
                 Err(error) => fail!(error.to_string()),
                 Ok(nodes) => {
@@ -30,28 +29,53 @@ fn main() {
 
             }
 
+            match graph.v(Every).get_limit(5) {
+
+                Err(error) => fail!(error.to_string()),
+                Ok(nodes) => {
+                    assert_eq!(nodes.len(), 5);
+                }
+
+            }
+
+            match graph.vertex(Specific("Humphrey Bogart".to_string())).all() {
+
+                Err(error) => fail!(error.to_string()),
+                Ok(nodes) => {
+                    assert_eq!(nodes.len(), 1);
+                    assert_eq!(nodes[0].id, "Humphrey Bogart");
+                }
+
+            }
+
+            match graph.v(Specific("Humphrey Bogart".to_string()))
+                       .in("name")
+                       .all() {
+
+                Err(error) => fail!(error.to_string()),
+                Ok(nodes) => {
+                    assert_eq!(nodes.len(), 1);
+                    assert_eq!(nodes[0].id, ":/en/humphrey_bogart");
+                }
+
+            }
+
+            match graph.v(Specific("Casablanca".to_string()))
+                       .in("name")
+                       .all() {
+
+                Err(error) => fail!(error.to_string()),
+                Ok(nodes) => {
+                    assert_eq!(nodes.len(), 1);
+                    assert_eq!(nodes[0].id, ":/en/casablanca_194");
+                }
+
+            }
+
         }
 
     }
 
-    //
-    // let mut a = graph.v().all();
-    // assert!(a.len() > 0);
-    //
-    // a = graph.v().get_limit(5);
-    // assert_eq!(a.len(), 5);
-    //
-    // a = graph.vertex("Humphrey Bogart").all();
-    // assert_eq!(a.len(), 1);
-    // assert_eq!(a[0].id, "Humphrey Bogart");
-    //
-    // a = graph.v("Humphrey Bogart").in("name").all();
-    // assert_eq!(a.len(), 1);
-    // assert_eq!(a[0].id, ":/en/humphrey_bogart");
-    //
-    // a = graph.v("Casablanca").in("name").all();
-    // assert_eq!(a.len(), 1);
-    // assert_eq!(a[0].id, ":/en/casablanca_194");
     //
     // a = graph.v().has("name", "Casablanca").all();
     // assert_eq!(a.len(), 1);
