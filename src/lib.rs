@@ -34,12 +34,31 @@ pub struct GraphNode {
 pub struct GraphNodes(pub Vec<GraphNode>);
 
 pub struct Vertex {
+    ready: bool,
     path: Vec<String>
 }
 
-pub enum Selector {
-    Specific(String),
-    Every
+pub struct Morphism<'m> {
+    query: Box<Query+'m>
+}
+
+pub enum NodeSelector {
+    EveryNode,
+    Node(String),
+    Nodes(Vec<String>)
+}
+
+pub enum PredicateSelector<'m> {
+    EveryPredicate,
+    Predicate(String),
+    Predicates(Vec<String>),
+    FromQuery(Box<Query+'m>)
+}
+
+pub enum TagSelector {
+    EveryTag,
+    Tag(String),
+    Tags(Vec<String>)
 }
 
 pub enum CayleyAPIVersion { V1, DefaultVersion }
@@ -64,20 +83,23 @@ impl Graph {
         }
     }
 
-    pub fn find(mut self, path: &Vertex) -> GraphResult<GraphNodes> {
-        let path = path.compile();
+    pub fn find_by(mut self, query: String) -> GraphResult<GraphNodes> {
         let mut request = self.request;
-        request.headers.content_length = Some(path.len());
-        match request.write_str(path.as_slice()) {
-            Err(error) => Err(RequestFailed(error, path)),
+        request.headers.content_length = Some(query.len());
+        match request.write_str(query.as_slice()) {
+            Err(error) => Err(RequestFailed(error, query)),
             Ok(_) => match request.read_response() {
-                Err((_, error)) => Err(RequestFailed(error, path)),
+                Err((_, error)) => Err(RequestFailed(error, query)),
                 Ok(mut response) => match response.read_to_end() {
-                    Err(error) => Err(RequestFailed(error, path)),
+                    Err(error) => Err(RequestFailed(error, query)),
                     Ok(body) => Graph::decode_nodes(body)
                 }
             }
         }
+    }
+
+    pub fn find(mut self, query: &Query) -> GraphResult<GraphNodes> {
+        self.find_by(query.compile())
     }
 
     fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
@@ -106,23 +128,61 @@ impl Graph {
 
 }
 
+pub trait Query/*: ToString*/ {
+
+    fn compile(&self) -> Option<String>;
+
+    /* fn to_string(&self) -> String {
+        match self.compile() {
+            Some(compiled) => compiled,
+            None => "[-]".to_string()
+        }
+    }*/
+
+}
+
+trait AddString {
+
+    fn add_str(&mut self, str: &str) -> &Self;
+
+    fn add_string(&mut self, str: String) -> &Self;
+
+}
+
+// FIXME: may conflict with std::Path
+pub trait Path: AddString {
+
+    fn out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+        self.add_string(format!("Out({:s})", make_args_from(predicates, tags)))
+    }
+
+}
+
 impl Vertex {
 
-    fn new(select: Selector) -> Vertex {
-        let mut res = Vertex{ path: Vec::with_capacity(10) };
+    fn start(nodes: NodeSelector) -> Vertex {
+        let mut res = Vertex{ path: Vec::with_capacity(10), ready: false };
         res.add_str("graph");
-        res.add_string(match select {
-                Every /*| Specific("") */ => "Vertex()".to_string(),
-                Specific(name) => format!("Vertex(\"{:s}\")", name)
+        res.add_string(match nodes {
+                EveryNode/*| Node("") */ => "Vertex()".to_string(),
+                Node(name) => format!("Vertex(\"{:s}\")", name),
+                Nodes(names) => format!("Vertex(\"{:s}\")", names.connect(","))
             });
         res
     }
 
-    pub fn x(select: Selector) -> Vertex { Vertex::new(select) }
+    pub fn all(&mut self) -> &Vertex { self.ready = true; self.add_str("All()") }
 
-    fn compile(&self) -> String {
-        self.path.connect(".")
-    }
+    /* fn all(self) -> Vertex {
+        self.add("all".to_string());
+        self
+    } */
+
+}
+
+impl Path for Vertex { }
+
+impl AddString for Vertex {
 
     fn add_str(&mut self, str: &str) -> &Vertex {
         self.path.push(str.to_string());
@@ -134,12 +194,18 @@ impl Vertex {
         self
     }
 
-    pub fn all(&mut self) -> &Vertex { self.add_str("all()") }
+}
 
-    /* fn all(self) -> Vertex {
-        self.add("all".to_string());
-        self
-    } */
+impl Query for Vertex {
+
+    fn compile(&self) -> Option<String> {
+        match self.ready {
+            true => Some(self.path.connect(".")),
+            false => None
+        }
+    }
+
+    // pub fn all(&mut self) -> &Vertex;
 
 }
 
@@ -218,6 +284,45 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
                 })
             })
         })
+    }
+}
+
+
+fn make_args_from(predicates: PredicateSelector, tags: TagSelector) -> String {
+    match (predicates, tags) {
+        (EveryPredicate, EveryTag) => "",
+        (EveryPredicate, Tag(tag)) => format!("null, \"{:s}\"", tag),
+        (EveryPredicate, Tag(tags)) => format!("null, \"{:s}\"", tags.connect("\",\"")),
+        (Predicate(predicate), EveryTag) => format!("\"{:s}\"", predicate),
+        (Predicate(predicate), Tag(tag)) =>
+            format!("\"{:s}\", \"{:s}\"", predicate, tag),
+        (Predicate(predicate), Tags(tags)) =>
+            format!("\"{:s}\", \"{:s}\"", predicate, tags.connect("\",\"")),
+        (Predicates(predicates), EveryTag) =>
+            format!("\"{:s}\"", predicates.connect("\",\"")),
+        (Predicates(predicates), Tag(tag)) =>
+            format!("\"{:s}\", \"{:s}\"", predicates.connect("\",\""), tag),
+        (Predicates(predicates), Tags(tags)) =>
+            format!("\"{:s}\", \"{:s}\"", predicates.connect("\",\""), tags.connect("\",\"")),
+        (FromQuery(query), EveryTag) =>
+            match query.compile() {
+                Some(compiled) => compiled,
+                None => "undefined"
+            },
+        (FromQuery(query), Tag(tag)) =>
+            format!("{:s}, \"{:s}\"",
+                    match query.compile() {
+                        Some(compiled) => compiled,
+                        None => "undefined"
+                    },
+                    tag),
+        (FromQuery(query), Tags(tags)) =>
+            format!("{:s}, \"{:s}\"",
+                    match query.compile() {
+                        Some(compiled) => compiled,
+                        None => "undefined"
+                    },
+                    tags.connect("\",\"")),
     }
 }
 

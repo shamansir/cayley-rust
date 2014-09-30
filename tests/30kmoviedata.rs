@@ -1,7 +1,7 @@
 extern crate cayley;
 
-use cayley::{Graph, GraphNodes, Vertex};
-use cayley::{Every, Specific};
+use cayley::{Graph, GraphNodes, Vertex, Path};
+use cayley::{EveryNode, Specific};
 use cayley::V1;
 
 #[test]
@@ -16,14 +16,14 @@ fn main() {
         Err(error) => fail!(error),
         Ok(graph) => {
 
-            match graph.find(Vertex::x(Every).all()) {
+            /* match graph.find(Vertex::start(EveryNode).all()) {
 
                 Err(error) => fail!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert!(nodes.len() > 0);
                 }
 
-            }
+            } */
 
             /* match graph.v(Every).get_limit(5) {
 
