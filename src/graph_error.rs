@@ -8,7 +8,8 @@ pub enum GraphRequestError {
     MalformedRequest(IoError, String),
     RequestFailed(IoError, String),
     DecodingFailed(DecoderError, String),
-    ResponseParseFailed
+    ResponseParseFailed,
+    QueryCompilationFailed
 }
 
 impl Show for GraphRequestError {
@@ -26,7 +27,8 @@ impl Show for GraphRequestError {
             DecodingFailed(ref derr, ref src) => {
                 write!(fmt, "Source(\"{}\"): ", src.as_slice());
                 derr.fmt(fmt) },
-            ResponseParseFailed => fmt.pad("Response parsing failed")
+            ResponseParseFailed => fmt.pad("Response parsing failed"),
+            QueryCompilationFailed => fmt.pad("Query can not be compiled")
         }
     }
 }

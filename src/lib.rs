@@ -18,7 +18,9 @@ use serialize::json::decode as json_decode;
 use serialize::json::DecoderError;
 
 use graph_error::{GraphRequestError, GraphResult,
-                  InvalidUrl, MalformedRequest, RequestFailed, DecodingFailed, ResponseParseFailed};
+                  InvalidUrl, MalformedRequest, RequestFailed,
+                  DecodingFailed, ResponseParseFailed,
+                  QueryCompilationFailed};
 
 mod graph_error;
 
@@ -42,23 +44,23 @@ pub struct Morphism<'m> {
     query: Box<Query+'m>
 }
 
-pub enum NodeSelector {
+pub enum NodeSelector<'ns> {
     EveryNode,
-    Node(String),
-    Nodes(Vec<String>)
+    Node(&'ns str),
+    Nodes(Vec<&'ns str>)
 }
 
 pub enum PredicateSelector<'m> {
     EveryPredicate,
-    Predicate(String),
-    Predicates(Vec<String>),
+    Predicate(&'m str),
+    Predicates(Vec<&'m str>),
     FromQuery(Box<Query+'m>)
 }
 
-pub enum TagSelector {
+pub enum TagSelector<'ts> {
     EveryTag,
-    Tag(String),
-    Tags(Vec<String>)
+    Tag(&'ts str),
+    Tags(Vec<&'ts str>)
 }
 
 pub enum CayleyAPIVersion { V1, DefaultVersion }
@@ -99,7 +101,10 @@ impl Graph {
     }
 
     pub fn find(mut self, query: &Query) -> GraphResult<GraphNodes> {
-        self.find_by(query.compile())
+        match query.compile() {
+            Some(compiled) => self.find_by(compiled),
+            None => Err(QueryCompilationFailed)
+        }
     }
 
     fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
@@ -128,7 +133,16 @@ impl Graph {
 
 }
 
-pub trait Query/*: ToString*/ {
+pub trait AddString {
+
+    fn add_str(&mut self, str: &str) -> &Self;
+
+    fn add_string(&mut self, str: String) -> &Self;
+
+}
+
+// FIXME: may conflict with std::Path
+pub trait Path: AddString/*+ToString*/ {
 
     fn compile(&self) -> Option<String>;
 
@@ -139,22 +153,19 @@ pub trait Query/*: ToString*/ {
         }
     }*/
 
-}
-
-trait AddString {
-
-    fn add_str(&mut self, str: &str) -> &Self;
-
-    fn add_string(&mut self, str: String) -> &Self;
-
-}
-
-// FIXME: may conflict with std::Path
-pub trait Path: AddString {
-
     fn out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
         self.add_string(format!("Out({:s})", make_args_from(predicates, tags)))
     }
+
+    // TODO: in, both...
+
+}
+
+pub trait Query: Path {
+
+    pub fn all(&mut self) -> &Vertex { self.ready = true; self.add_str("All()") }
+
+    // TODO: get_limit....
 
 }
 
@@ -171,16 +182,12 @@ impl Vertex {
         res
     }
 
-    pub fn all(&mut self) -> &Vertex { self.ready = true; self.add_str("All()") }
-
     /* fn all(self) -> Vertex {
         self.add("all".to_string());
         self
     } */
 
 }
-
-impl Path for Vertex { }
 
 impl AddString for Vertex {
 
@@ -196,6 +203,8 @@ impl AddString for Vertex {
 
 }
 
+impl Path for Vertex { }
+
 impl Query for Vertex {
 
     fn compile(&self) -> Option<String> {
@@ -208,6 +217,8 @@ impl Query for Vertex {
     // pub fn all(&mut self) -> &Vertex;
 
 }
+
+// TODO: impl Path for Morphism
 
 /* impl Vertex {
 
@@ -290,9 +301,9 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
 
 fn make_args_from(predicates: PredicateSelector, tags: TagSelector) -> String {
     match (predicates, tags) {
-        (EveryPredicate, EveryTag) => "",
+        (EveryPredicate, EveryTag) => "".to_string(),
         (EveryPredicate, Tag(tag)) => format!("null, \"{:s}\"", tag),
-        (EveryPredicate, Tag(tags)) => format!("null, \"{:s}\"", tags.connect("\",\"")),
+        (EveryPredicate, Tags(tags)) => format!("null, \"{:s}\"", tags.connect("\",\"")),
         (Predicate(predicate), EveryTag) => format!("\"{:s}\"", predicate),
         (Predicate(predicate), Tag(tag)) =>
             format!("\"{:s}\", \"{:s}\"", predicate, tag),
@@ -307,20 +318,20 @@ fn make_args_from(predicates: PredicateSelector, tags: TagSelector) -> String {
         (FromQuery(query), EveryTag) =>
             match query.compile() {
                 Some(compiled) => compiled,
-                None => "undefined"
+                None => "undefined".to_string()
             },
         (FromQuery(query), Tag(tag)) =>
             format!("{:s}, \"{:s}\"",
                     match query.compile() {
                         Some(compiled) => compiled,
-                        None => "undefined"
+                        None => "undefined".to_string()
                     },
                     tag),
         (FromQuery(query), Tags(tags)) =>
             format!("{:s}, \"{:s}\"",
                     match query.compile() {
                         Some(compiled) => compiled,
-                        None => "undefined"
+                        None => "undefined".to_string()
                     },
                     tags.connect("\",\"")),
     }
