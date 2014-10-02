@@ -233,47 +233,6 @@ impl Query for Vertex {
 
 // TODO: impl Path for Morphism
 
-/* impl Vertex {
-
-    fn compile(&self) -> String {
-        let VertexPath(path) = self;
-        path.connect(".");
-    }
-
-    pub fn all(&self) -> GraphResult<GraphNodes> {
-
-        path.push("All()".to_string());
-        let full_path = self.path.connect(".");
-        let nodes = try!(Graph::exec_path(self.request, full_path.as_slice()));
-        self.path.clear();
-        Ok(nodes)
-    }
-
-    pub fn get_limit(&self, limit: int) -> GraphResult<GraphNodes> {
-        self.path.push(format!("GetLimit({:i})", limit));
-        let full_path = self.path.connect(".");
-        let nodes = try!(Graph::exec_path(self.request, full_path.as_slice()));
-        self.path.clear();
-        Ok(nodes)
-    }
-
-    pub fn v(&self, what: Selector) -> &Graph {
-        match what {
-            Every /*| Specific("")*/ => { self.path.push("Vertex()".to_string()); },
-            Specific(name) => { self.path.push(format!("Vertex(\"{:s}\")", name)); }
-        }
-        self
-    }
-
-    pub fn vertex(&self, what: Selector) -> &Graph { self.v(what) }
-
-    pub fn _in(&self, _where: &str) -> &Graph {
-        self.path.push(format!("in(\"{:s}\")", _where));
-        self
-    }
-
-} */
-
 impl GraphNode {
 
     pub fn id(self) -> String { self.id }
@@ -354,46 +313,6 @@ fn make_args_from(predicates: PredicateSelector, tags: TagSelector) -> String {
     }
 }
 
-pub fn make_and_print_request(url: &str, body: &str) {
-    // echo "graph.Vertex('Humphrey Bogart').All()" |
-    // http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain
 
-    let url = Url::parse(url).ok().expect("Invalid URL :-(");
-    let mut request: RequestWriter = RequestWriter::new(Post, url).unwrap();
-
-    request.headers.content_length = Some(body.len());
-    request.write_str(body);
-
-    println!("[33;1mRequest[0m");
-    println!("[33;1m=======[0m");
-    println!("");
-    println!("[1mURL:[0m {}", request.url);
-    println!("[1mRemote address:[0m {}", request.remote_addr);
-    println!("[1mMethod:[0m {}", request.method);
-    println!("[1mHeaders:[0m");
-    for header in request.headers.iter() {
-        println!(" - {}: {}", header.header_name(), header.header_value());
-    }
-    println!("[1mBody:[0m");
-    println!("{}", body);
-
-    println!("");
-    println!("[33;1mResponse[0m");
-    println!("[33;1m========[0m");
-    println!("");
-    let mut response = match request.read_response() {
-        Ok(response) => response,
-        Err(_request) => fail!("This example can progress no further with no response :-("),
-    };
-    println!("[1mStatus:[0m {}", response.status);
-    println!("[1mHeaders:[0m");
-    for header in response.headers.iter() {
-        println!(" - {}: {}", header.header_name(), header.header_value());
-    }
-    println!("[1mBody:[0m");
-    let body = match response.read_to_end() {
-        Ok(body) => body,
-        Err(err) => fail!("Reading response failed: {}", err),
-    };
-    println(str::from_utf8(body.as_slice()).expect("Uh oh, response wasn't UTF-8"));
-}
+// echo "graph.Vertex('Humphrey Bogart').All()" |
+// http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain
