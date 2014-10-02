@@ -8,14 +8,15 @@ use cayley::{AnyNode, Node, Nodes};
 use cayley::{AnyTag, Tag, Tags};
 use cayley::{AnyPredicate, Predicate, Predicates};
 use cayley::FromQuery as Query;
-use cayley::Path as CayleyPath; // required to use .compile() method
+use cayley::Path as _foo; // required to use .compile() method and other Path methods
+use cayley::Query as _bar; // required to use Query methods
 
 #[test]
 fn main() {
 
     macro_rules! path_eq(
         ($src:expr, $res:expr) => (
-            assert_eq!($src.compile(), Some($res));
+            assert_eq!($src.compile(), Some($res.to_string()));
         );
     )
 

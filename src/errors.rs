@@ -29,8 +29,8 @@ impl Show for GraphRequestError {
                 write!(fmt, "Source(\"{}\"): ", src.as_slice());
                 derr.fmt(fmt) },
             ResponseParseFailed => fmt.pad("Response parsing failed"),
-            QueryCompilationFailed => fmt.pad("Query can not be compiled"),
-            QueryNotFinalized => fmt.pad("Query is not finalized")
+            QueryNotFinalized => fmt.pad("Query is not finalized"),
+            QueryCompilationFailed => fmt.pad("Query can not be compiled")
         }
     }
 }

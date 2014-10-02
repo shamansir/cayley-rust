@@ -1,6 +1,6 @@
 extern crate cayley;
 
-use cayley::{Graph, V1};
+use cayley::graph::{Graph, V1};
 
 #[test]
 fn main() {
