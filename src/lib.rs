@@ -38,8 +38,9 @@ pub struct Vertex {
     path: Vec<String>
 }
 
-pub struct Morphism<'m> {
-    query: Box<Query+'m>
+pub struct Morphism {
+    name: String,
+    path: Vec<String>
 }
 
 pub enum NodeSelector<'ns> {
@@ -182,7 +183,7 @@ pub trait Query: Path {
 
 impl Vertex {
 
-    fn start(nodes: NodeSelector) -> Vertex {
+    pub fn start(nodes: NodeSelector) -> Vertex {
         let mut res = Vertex{ path: Vec::with_capacity(10), finalized: false };
         res.add_str("graph");
         res.add_string(match nodes {
@@ -192,11 +193,6 @@ impl Vertex {
             });
         res
     }
-
-    /* fn all(self) -> Vertex {
-        self.add("all".to_string());
-        self
-    } */
 
 }
 
@@ -231,7 +227,38 @@ impl Query for Vertex {
 
 }
 
-// TODO: impl Path for Morphism
+impl Morphism {
+
+    pub fn start(name: &str) -> Morphism {
+        let mut res = Morphism { name: name.to_string(), path: Vec::with_capacity(10) };
+        res.add_string(name.to_string() + " = graph.Morphism()".to_string());
+        res
+    }
+
+}
+
+impl AddString for Morphism {
+
+    fn add_str(&mut self, str: &str) -> &Morphism {
+        self.path.push(str.to_string());
+        self
+    }
+
+    fn add_string(&mut self, str: String) -> &Morphism {
+        self.path.push(str);
+        self
+    }
+
+}
+
+impl Path for Morphism {
+
+    fn compile(&self) -> Option<String> {
+        // a bolt-hole to return None, if path was incorrectly constructed
+        Some(self.path.connect("."))
+    }
+
+}
 
 impl GraphNode {
 

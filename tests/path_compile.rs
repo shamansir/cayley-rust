@@ -8,11 +8,10 @@ use cayley::{AnyNode, Node, Nodes};
 use cayley::{AnyTag, Tag, Tags};
 use cayley::{AnyPredicate, Predicate, Predicates};
 use cayley::FromQuery as Query;
+use cayley::Path as CayleyPath; // required to use .compile() method
 
 #[test]
 fn main() {
-
-    // Examples from: https://github.com/google/cayley/blob/master/docs/GremlinAPI.md
 
     macro_rules! path_eq(
         ($src:expr, $res:expr) => (
@@ -28,6 +27,8 @@ fn main() {
             };
         );
     )
+
+    // Examples from: https://github.com/google/cayley/blob/master/docs/GremlinAPI.md
 
     // == Vertex ==
 
@@ -207,4 +208,5 @@ fn main() {
              "g.V(\"foo\").Out(\"follows\").TagValue()");
 
     /* TODO: query.ForEach(callback), query.ForEach(limit, callback) */
+
 }
