@@ -1,8 +1,6 @@
 extern crate cayley;
 
-use cayley::{Graph, GraphNodes, Vertex, Path};
-use cayley::{EveryNode, Specific};
-use cayley::V1;
+use cayley::{Graph, V1};
 
 #[test]
 fn main() {

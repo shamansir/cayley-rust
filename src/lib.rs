@@ -7,20 +7,18 @@ extern crate serialize;
 
 use std::str;
 use std::io::println;
-use std::io::Stream;
-use std::slice::Items;
 use url::Url;
-use http::client::{RequestWriter, ResponseReader};
-use http::method::{Get, Post};
+use http::client::RequestWriter;
+use http::method::Post;
 use http::headers::HeaderEnum;
 use serialize::{Decoder, Decodable};
 use serialize::json::decode as json_decode;
-use serialize::json::DecoderError;
+//use serialize::json::DecoderError;
 
 use graph_error::{GraphRequestError, GraphResult,
                   InvalidUrl, MalformedRequest, RequestFailed,
                   DecodingFailed, ResponseParseFailed,
-                  QueryCompilationFailed};
+                  QueryCompilationFailed, QueryNotFinalized};
 
 mod graph_error;
 
@@ -36,7 +34,7 @@ pub struct GraphNode {
 pub struct GraphNodes(pub Vec<GraphNode>);
 
 pub struct Vertex {
-    ready: bool,
+    finalized: bool,
     path: Vec<String>
 }
 
@@ -45,20 +43,20 @@ pub struct Morphism<'m> {
 }
 
 pub enum NodeSelector<'ns> {
-    EveryNode,
+    AnyNode,
     Node(&'ns str),
     Nodes(Vec<&'ns str>)
 }
 
 pub enum PredicateSelector<'m> {
-    EveryPredicate,
+    AnyPredicate,
     Predicate(&'m str),
     Predicates(Vec<&'m str>),
     FromQuery(Box<Query+'m>)
 }
 
 pub enum TagSelector<'ts> {
-    EveryTag,
+    AnyTag,
     Tag(&'ts str),
     Tags(Vec<&'ts str>)
 }
@@ -85,7 +83,19 @@ impl Graph {
         }
     }
 
-    pub fn find_by(mut self, query: String) -> GraphResult<GraphNodes> {
+    // find nodes by query implementation
+    pub fn find(self, query: &Query) -> GraphResult<GraphNodes> {
+        match query.is_finalized() {
+            true => match query.compile() {
+                Some(compiled) => self.find_by(compiled),
+                None => Err(QueryCompilationFailed)
+            },
+            false => Err(QueryNotFinalized)
+        }
+    }
+
+    // find nodes using raw pre-compiled string
+    pub fn find_by(self, query: String) -> GraphResult<GraphNodes> {
         let mut request = self.request;
         request.headers.content_length = Some(query.len());
         match request.write_str(query.as_slice()) {
@@ -100,25 +110,7 @@ impl Graph {
         }
     }
 
-    pub fn find(mut self, query: &Query) -> GraphResult<GraphNodes> {
-        match query.compile() {
-            Some(compiled) => self.find_by(compiled),
-            None => Err(QueryCompilationFailed)
-        }
-    }
-
-    fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
-        match str::from_utf8(source.as_slice()) {
-            None => Err(ResponseParseFailed),
-            Some(nodes_json) => {
-                match json_decode(nodes_json) {
-                    Err(error) => Err(DecodingFailed(error, nodes_json.to_string())),
-                    Ok(nodes) => Ok(nodes)
-                }
-            }
-        }
-    }
-
+    // prepares the RequestWriter object from URL to save it inside the Graph for future re-use
     fn prepare_request(url: &str) -> GraphResult<Box<RequestWriter>> {
         match Url::parse(url) {
             Err(error) => Err(InvalidUrl(error, url.to_string())),
@@ -126,6 +118,19 @@ impl Graph {
                 match RequestWriter::new(Post, parsed_url) {
                     Err(error) => Err(MalformedRequest(error, url.to_string())),
                     Ok(request) => Ok(box request)
+                }
+            }
+        }
+    }
+
+    // extract JSON nodes from response
+    fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
+        match str::from_utf8(source.as_slice()) {
+            None => Err(ResponseParseFailed),
+            Some(nodes_json) => {
+                match json_decode(nodes_json) {
+                    Err(error) => Err(DecodingFailed(error, nodes_json.to_string())),
+                    Ok(nodes) => Ok(nodes)
                 }
             }
         }
@@ -142,6 +147,7 @@ pub trait AddString {
 }
 
 // FIXME: may conflict with std::Path
+#[allow(non_snake_case)]
 pub trait Path: AddString/*+ToString*/ {
 
     fn compile(&self) -> Option<String>;
@@ -153,7 +159,7 @@ pub trait Path: AddString/*+ToString*/ {
         }
     }*/
 
-    fn out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+    fn Out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
         self.add_string(format!("Out({:s})", make_args_from(predicates, tags)))
     }
 
@@ -161,13 +167,14 @@ pub trait Path: AddString/*+ToString*/ {
 
 }
 
+#[allow(non_snake_case)]
 pub trait Query: Path {
 
-    fn set_ready(&mut self);
+    fn set_finalized(&mut self);
 
-    fn is_ready(&self) -> bool;
+    fn is_finalized(&self) -> bool;
 
-    fn all(&mut self) -> &Self { self.set_ready(); self.add_str("All()") }
+    fn All(&mut self) -> &Self { self.set_finalized(); self.add_str("All()") }
 
     // TODO: get_limit....
 
@@ -176,12 +183,12 @@ pub trait Query: Path {
 impl Vertex {
 
     fn start(nodes: NodeSelector) -> Vertex {
-        let mut res = Vertex{ path: Vec::with_capacity(10), ready: false };
+        let mut res = Vertex{ path: Vec::with_capacity(10), finalized: false };
         res.add_str("graph");
         res.add_string(match nodes {
-                EveryNode/*| Node("") */ => "Vertex()".to_string(),
+                Nodes(names) => format!("Vertex(\"{:s}\")", names.connect(",")),
                 Node(name) => format!("Vertex(\"{:s}\")", name),
-                Nodes(names) => format!("Vertex(\"{:s}\")", names.connect(","))
+                AnyNode/*| Node("") */ => "Vertex()".to_string()
             });
         res
     }
@@ -210,19 +217,17 @@ impl AddString for Vertex {
 impl Path for Vertex {
 
     fn compile(&self) -> Option<String> {
-        match self.ready {
-            true => Some(self.path.connect(".")),
-            false => None
-        }
+        // a bolt-hole to return None, if path was incorrectly constructed
+        Some(self.path.connect("."))
     }
 
 }
 
 impl Query for Vertex {
 
-    fn set_ready(&mut self) { self.ready = true; }
+    fn set_finalized(&mut self) { self.finalized = true; }
 
-    fn is_ready(&self) -> bool { self.ready }
+    fn is_finalized(&self) -> bool { self.finalized }
 
 }
 
@@ -306,24 +311,27 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
     }
 }
 
-
 fn make_args_from(predicates: PredicateSelector, tags: TagSelector) -> String {
     match (predicates, tags) {
-        (EveryPredicate, EveryTag) => "".to_string(),
-        (EveryPredicate, Tag(tag)) => format!("null, \"{:s}\"", tag),
-        (EveryPredicate, Tags(tags)) => format!("null, \"{:s}\"", tags.connect("\",\"")),
-        (Predicate(predicate), EveryTag) => format!("\"{:s}\"", predicate),
+
+        (AnyPredicate, AnyTag) => "".to_string(),
+        (AnyPredicate, Tag(tag)) => format!("null, \"{:s}\"", tag),
+        (AnyPredicate, Tags(tags)) => format!("null, \"{:s}\"", tags.connect("\",\"")),
+
+        (Predicate(predicate), AnyTag) => format!("\"{:s}\"", predicate),
         (Predicate(predicate), Tag(tag)) =>
             format!("\"{:s}\", \"{:s}\"", predicate, tag),
         (Predicate(predicate), Tags(tags)) =>
             format!("\"{:s}\", \"{:s}\"", predicate, tags.connect("\",\"")),
-        (Predicates(predicates), EveryTag) =>
+
+        (Predicates(predicates), AnyTag) =>
             format!("\"{:s}\"", predicates.connect("\",\"")),
         (Predicates(predicates), Tag(tag)) =>
             format!("\"{:s}\", \"{:s}\"", predicates.connect("\",\""), tag),
         (Predicates(predicates), Tags(tags)) =>
             format!("\"{:s}\", \"{:s}\"", predicates.connect("\",\""), tags.connect("\",\"")),
-        (FromQuery(query), EveryTag) =>
+
+        (FromQuery(query), AnyTag) =>
             match query.compile() {
                 Some(compiled) => compiled,
                 None => "undefined".to_string()
@@ -341,7 +349,8 @@ fn make_args_from(predicates: PredicateSelector, tags: TagSelector) -> String {
                         Some(compiled) => compiled,
                         None => "undefined".to_string()
                     },
-                    tags.connect("\",\"")),
+                    tags.connect("\",\""))
+
     }
 }
 

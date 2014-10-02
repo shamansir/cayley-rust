@@ -4,7 +4,10 @@ extern crate cayley;
 
 use cayley::Vertex as V;
 use cayley::Morphism as M;
-use cayley::{EveryNode, Node, Nodes};
+use cayley::{AnyNode, Node, Nodes};
+use cayley::{AnyTag, Tag, Tags};
+use cayley::{AnyPredicate, Predicate, Predicates};
+use cayley::FromQuery as Query;
 
 #[test]
 fn main() {
@@ -176,7 +179,7 @@ fn main() {
 
     let friendOfFriend = M::start("friendOfFriend").Out(Predicate("follows"), AnyTag)
                                                    .Out(Predicate("follows"), AnyTag);
-    path_eq(friendOfFriend, "friendOfFriend = g.M().Out(\"follows\").Out(\"follows\")");
+    path_eq!(friendOfFriend, "friendOfFriend = g.M().Out(\"follows\").Out(\"follows\")");
 
     path_eq!(V::start(Node("C")).Follow(friendOfFriend).Has(Predicate("status"), Tag("cool_person")),
              "g.V(\"C\").Follow(friendOfFriend).Has(\"status\", \"cool_person\")");
@@ -200,7 +203,7 @@ fn main() {
     path_eq!(V::start(AnyNode).Out(Predicate("follows"), AnyTag).ToValue(),
              "g.V().Out(\"follows\").ToValue()");
 
-    path_eq!(V::start(Node("foo")).Out(Predicate("follows"), AnyTag).TagValue(5),
+    path_eq!(V::start(Node("foo")).Out(Predicate("follows"), AnyTag).TagValue(),
              "g.V(\"foo\").Out(\"follows\").TagValue()");
 
     /* TODO: query.ForEach(callback), query.ForEach(limit, callback) */
