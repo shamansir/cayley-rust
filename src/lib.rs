@@ -163,7 +163,11 @@ pub trait Path: AddString/*+ToString*/ {
 
 pub trait Query: Path {
 
-    pub fn all(&mut self) -> &Vertex { self.ready = true; self.add_str("All()") }
+    fn set_ready(&mut self);
+
+    fn is_ready(&self) -> bool;
+
+    fn all(&mut self) -> &Self { self.set_ready(); self.add_str("All()") }
 
     // TODO: get_limit....
 
@@ -203,9 +207,7 @@ impl AddString for Vertex {
 
 }
 
-impl Path for Vertex { }
-
-impl Query for Vertex {
+impl Path for Vertex {
 
     fn compile(&self) -> Option<String> {
         match self.ready {
@@ -214,7 +216,13 @@ impl Query for Vertex {
         }
     }
 
-    // pub fn all(&mut self) -> &Vertex;
+}
+
+impl Query for Vertex {
+
+    fn set_ready(&mut self) { self.ready = true; }
+
+    fn is_ready(&self) -> bool { self.ready }
 
 }
 
