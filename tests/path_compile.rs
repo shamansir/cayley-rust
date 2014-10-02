@@ -2,14 +2,14 @@
 
 extern crate cayley;
 
-use cayley::Vertex as V;
-use cayley::Morphism as M;
-use cayley::{AnyNode, Node, Nodes};
-use cayley::{AnyTag, Tag, Tags};
-use cayley::{AnyPredicate, Predicate, Predicates};
-use cayley::FromQuery as Query;
-use cayley::Path as _foo; // required to use .compile() method and other Path methods
-use cayley::Query as _bar; // required to use Query methods
+use cayley::path::Vertex as V;
+use cayley::path::Morphism as M;
+use cayley::selector::{AnyNode, Node, Nodes};
+use cayley::selector::{AnyTag, Tag, Tags};
+use cayley::selector::{AnyPredicate, Predicate, Predicates};
+use cayley::selector::FromQuery as Query;
+use cayley::path::Path as _foo; // required to use .compile() method and other Path methods
+use cayley::path::Query as _bar; // required to use Query methods
 
 #[test]
 fn main() {
