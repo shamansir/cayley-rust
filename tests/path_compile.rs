@@ -59,11 +59,11 @@ fn main() {
 
     path_eq!(M::start("morph").Out(Predicate("foo"), AnyTag)
                               .Out(Predicate("bar"), AnyTag),
-             "morph = g.M().Out(\"foo\").Out(\"bar\")");
+             "var morph = g.M().Out(\"foo\").Out(\"bar\")");
 
     path_eq!(M::start("morph").Out(Predicate("foo"), Tags(vec!("tag1", "tag2")))
                               .Out(Predicate("bar"), Tag("tag0")),
-             "morph = g.M().Out(\"foo\", [\"tag1\", \"tag2\"]).Out(\"bar\", \"tag0\")");
+             "var morph = g.M().Out(\"foo\", [\"tag1\", \"tag2\"]).Out(\"bar\", \"tag0\")");
 
     // == Emit ==
 
@@ -184,7 +184,7 @@ fn main() {
 
     let friendOfFriend = M::start("friendOfFriend").Out(Predicate("follows"), AnyTag)
                                                    .Out(Predicate("follows"), AnyTag);
-    path_eq!(friendOfFriend, "friendOfFriend = g.M().Out(\"follows\").Out(\"follows\")");
+    path_eq!(friendOfFriend, "var friendOfFriend = g.M().Out(\"follows\").Out(\"follows\")");
 
     path_eq!(V::start(Node("C")).Follow(box friendOfFriend).Has(Predicate("status"), Tag("cool_person")),
              "g.V(\"C\").Follow(friendOfFriend).Has(\"status\", \"cool_person\")");
@@ -212,5 +212,18 @@ fn main() {
              "g.V(\"foo\").Out(\"follows\").TagValue()");
 
     /* TODO: query.ForEach(callback), query.ForEach(limit, callback) */
+
+    /* TODO:
+
+    // Let's get the list of actors in the film
+    g.V().Has("name","Casablanca")
+      .Out("/film/film/starring").Out("/film/performance/actor")
+      .Out("name").All()
+
+    // But this is starting to get long. Let's use a morphism -- a pre-defined path stored in a variable -- as our linkage
+
+    var filmToActor = g.Morphism().Out("/film/film/starring").Out("/film/performance/actor")
+
+    g.V().Has("name", "Casablanca").Follow(filmToActor).Out("name").All() */
 
 }

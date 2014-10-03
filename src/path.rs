@@ -53,13 +53,16 @@ pub trait Path: Compile {
         self.add_string(format!("In({:s})", make_args_from(predicates, tags)))
     }
 
-    /* FIXME: should fail if AnyNode used? */
     fn Is(&mut self, nodes: NodeSelector) -> &Self {
         self.add_string(match nodes {
             Nodes(names) => format!("Is(\"{:s}\")", names.connect(",")),
             Node(name) => format!("Is(\"{:s}\")", name),
             AnyNode/*| Node("") */ => "Is()".to_string()
         })
+    }
+
+    fn Has(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &Self {
+
     }
 
 }
