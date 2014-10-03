@@ -2,7 +2,10 @@ use selector::{NodeSelector, TagSelector, PredicateSelector};
 
 use selector::{AnyNode, Node, Nodes};
 use selector::{AnyTag, Tag, Tags};
-use selector::{AnyPredicate, Predicate, Predicates, FromQuery};
+use selector::{AnyPredicate, Predicate, Predicates};
+use selector::Query as FromQuery;
+
+use std::fmt::{Show, Formatter, FormatError};
 
 pub struct Vertex {
     finalized: bool,
@@ -14,17 +17,11 @@ pub struct Morphism {
     path: Vec<String>
 }
 
-pub trait AddString {
+pub trait Compile/*: ToString*/ {
 
     fn add_str(&mut self, str: &str) -> &Self;
 
     fn add_string(&mut self, str: String) -> &Self;
-
-}
-
-// FIXME: may conflict with std::Path
-#[allow(non_snake_case)]
-pub trait Path: AddString/*+ToString*/ {
 
     fn compile(&self) -> Option<String>;
 
@@ -33,13 +30,37 @@ pub trait Path: AddString/*+ToString*/ {
             Some(compiled) => compiled,
             None => "[-]".to_string()
         }
-    }*/
+    }
+
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
+        write!(fmt, "{}", self.to_string())
+    } */
+
+}
+
+#[allow(non_snake_case)]
+pub trait Path: Compile {
 
     fn Out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
         self.add_string(format!("Out({:s})", make_args_from(predicates, tags)))
     }
 
-    // TODO: in, both...
+    fn In(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+        self.add_string(format!("In({:s})", make_args_from(predicates, tags)))
+    }
+
+    fn Both(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+        self.add_string(format!("In({:s})", make_args_from(predicates, tags)))
+    }
+
+    /* FIXME: should fail if AnyNode used? */
+    fn Is(&mut self, nodes: NodeSelector) -> &Self {
+        self.add_string(match nodes {
+            Nodes(names) => format!("Is(\"{:s}\")", names.connect(",")),
+            Node(name) => format!("Is(\"{:s}\")", name),
+            AnyNode/*| Node("") */ => "Is()".to_string()
+        })
+    }
 
 }
 
@@ -51,6 +72,10 @@ pub trait Query: Path {
     fn is_finalized(&self) -> bool;
 
     fn All(&mut self) -> &Self { self.set_finalized(); self.add_str("All()") }
+
+    fn GetLimit(&mut self, limit: int) -> &Self {
+        self.set_finalized(); self.add_string(format!("GetLimit({:i})", limit))
+    }
 
     // TODO: get_limit....
 
@@ -71,7 +96,7 @@ impl Vertex {
 
 }
 
-impl AddString for Vertex {
+impl Compile for Vertex {
 
     fn add_str(&mut self, str: &str) -> &Vertex {
         self.path.push(str.to_string());
@@ -83,14 +108,14 @@ impl AddString for Vertex {
         self
     }
 
-}
-
-impl Path for Vertex {
-
     fn compile(&self) -> Option<String> {
         // a bolt-hole to return None, if path was incorrectly constructed
         Some(self.path.connect("."))
     }
+
+}
+
+impl Path for Vertex {
 
 }
 
@@ -112,7 +137,7 @@ impl Morphism {
 
 }
 
-impl AddString for Morphism {
+impl Compile for Morphism {
 
     fn add_str(&mut self, str: &str) -> &Morphism {
         self.path.push(str.to_string());
@@ -124,14 +149,14 @@ impl AddString for Morphism {
         self
     }
 
-}
-
-impl Path for Morphism {
-
     fn compile(&self) -> Option<String> {
         // a bolt-hole to return None, if path was incorrectly constructed
         Some(self.path.connect("."))
     }
+
+}
+
+impl Path for Morphism {
 
 }
 

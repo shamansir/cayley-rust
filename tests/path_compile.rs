@@ -4,12 +4,15 @@ extern crate cayley;
 
 use cayley::path::Vertex as V;
 use cayley::path::Morphism as M;
-use cayley::selector::{AnyNode, Node, Nodes};
-use cayley::selector::{AnyTag, Tag, Tags};
-use cayley::selector::{AnyPredicate, Predicate, Predicates};
-use cayley::selector::FromQuery as Query;
+
+// vote or discuss here:
+// http://discuss.rust-lang.org/t/no-requirement-to-import-a-trait-for-using-an-implemented-public-method-from-it/579
 use cayley::path::Path as _foo; // required to use .compile() method and other Path methods
 use cayley::path::Query as _bar; // required to use Query methods
+
+use cayley::selector::{AnyNode, Node, Nodes};
+use cayley::selector::{AnyTag, Tag, Tags};
+use cayley::selector::{AnyPredicate, Predicate, Predicates, Query};
 
 #[test]
 fn main() {
@@ -54,13 +57,13 @@ fn main() {
 
     // == Morphism ==
 
-    path_eq!(M::start().Out(Predicate("foo"), AnyTag)
-                       .Out(Predicate("bar"), AnyTag),
-             "g.M().Out(\"foo\").Out(\"bar\")");
+    path_eq!(M::start("morph").Out(Predicate("foo"), AnyTag)
+                              .Out(Predicate("bar"), AnyTag),
+             "morph = g.M().Out(\"foo\").Out(\"bar\")");
 
-    path_eq!(M::start().Out(Predicate("foo"), Tags(vec!("tag1", "tag2")))
-                       .Out(Predicate("bar"), Tag("tag0")),
-             "g.M().Out(\"foo\", [\"tag1\", \"tag2\"]).Out(\"bar\", \"tag0\")");
+    path_eq!(M::start("morph").Out(Predicate("foo"), Tags(vec!("tag1", "tag2")))
+                              .Out(Predicate("bar"), Tag("tag0")),
+             "morph = g.M().Out(\"foo\", [\"tag1\", \"tag2\"]).Out(\"bar\", \"tag0\")");
 
     // == Emit ==
 
@@ -74,7 +77,7 @@ fn main() {
              "g.V(\"C\").Out(\"follows\")");
 
     path_eq!(V::start(Node("A")).Out(Predicate("follows"), AnyTag)
-                                     .Out(Predicate("follows"), AnyTag),
+                                .Out(Predicate("follows"), AnyTag),
              "g.V(\"A\").Out(\"follows\").Out(\"follows\")");
 
     path_eq!(V::start(Node("D")).Out(AnyPredicate, AnyTag),
@@ -83,7 +86,7 @@ fn main() {
     path_eq!(V::start(Node("D")).Out(Predicates(vec!("follows", "status")), AnyTag),
              "g.V(\"D\").Out([\"follows\", \"status\")]");
 
-    path_eq!(V::start(Node("D")).Out(Query(V::start(Node("status"))), Tag("pred")),
+    path_eq!(V::start(Node("D")).Out(Query(box V::start(Node("status"))), Tag("pred")),
              "g.V(\"D\").Out(g.V(\"status\"), \"pred\")");
 
     // path.In
@@ -160,9 +163,9 @@ fn main() {
     let cFollows = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
     let dFollows = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
 
-    path_eq!(cFollows.clone().Intersect(Query(dFollows)),
+    path_eq!(cFollows.clone().Intersect(Query(box dFollows)),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows.clone().And(Query(dFollows)),
+    path_eq!(cFollows.clone().And(Query(box dFollows)),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
 
     // path.Union / path.Or
@@ -170,9 +173,9 @@ fn main() {
     let cFollows = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
     let dFollows = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
 
-    path_eq!(cFollows.clone().Union(Query(dFollows)),
+    path_eq!(cFollows.clone().Union(Query(box dFollows)),
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows.clone().Or(Query(dFollows)),
+    path_eq!(cFollows.clone().Or(Query(box dFollows)),
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
 
     // == Morphisms ==
@@ -183,12 +186,12 @@ fn main() {
                                                    .Out(Predicate("follows"), AnyTag);
     path_eq!(friendOfFriend, "friendOfFriend = g.M().Out(\"follows\").Out(\"follows\")");
 
-    path_eq!(V::start(Node("C")).Follow(friendOfFriend).Has(Predicate("status"), Tag("cool_person")),
+    path_eq!(V::start(Node("C")).Follow(box friendOfFriend).Has(Predicate("status"), Tag("cool_person")),
              "g.V(\"C\").Follow(friendOfFriend).Has(\"status\", \"cool_person\")");
 
     // path.FollowR
 
-    path_eq!(V::start(AnyNode).Has(Predicate("status"), Tag("cool_person")).FollowR(friendOfFriend),
+    path_eq!(V::start(AnyNode).Has(Predicate("status"), Tag("cool_person")).FollowR(box friendOfFriend),
              "g.V(\"C\").Has(\"status\", \"cool_person\").FollowR(friendOfFriend)");
 
     // == Query finals ==

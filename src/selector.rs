@@ -1,4 +1,4 @@
-use path::Query;
+use path;
 
 pub enum NodeSelector<'ns> {
     AnyNode,
@@ -10,7 +10,7 @@ pub enum PredicateSelector<'ps> {
     AnyPredicate,
     Predicate(&'ps str),
     Predicates(Vec<&'ps str>),
-    FromQuery(Box<Query+'ps>)
+    Query(Box<path::Query+'ps>)
 }
 
 pub enum TagSelector<'ts> {
