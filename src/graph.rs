@@ -49,7 +49,7 @@ impl Graph {
         }
     }
 
-    // find nodes by query implementation
+    // find nodes by query implementation and return them parsed
     pub fn find(self, query: &Query) -> GraphResult<GraphNodes> {
         match query.is_finalized() {
             true => match query.compile() {
@@ -60,7 +60,7 @@ impl Graph {
         }
     }
 
-    // find nodes using raw pre-compiled string
+    // find nodes using raw pre-compiled string query and return them parsed
     pub fn find_by(self, query: String) -> GraphResult<GraphNodes> {
         let mut request = self.request;
         request.headers.content_length = Some(query.len());

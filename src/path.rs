@@ -102,17 +102,23 @@ pub trait Path: Compile {
         self.add_string(format!("Save({:s})", predicates_and_nodes(predicates, tags)))
     }
 
-    fn Intersect(&mut self, query: Box<Query>) -> &Self {
+    fn Intersect(&mut self, query: Box<Query>) -> &Self { self.And(query) }
 
+    fn And(&mut self, query: Box<Query>) -> &Self {
+        match query.compile() {
+            Some(compiled) => self.add_string(format!("And({:s})", compiled))
+            None => self /* FIXME: save error */
+        }
     }
 
-    fn And(&mut self, query: Box<Query>) -> &Self { self.Intersect(query) }
+    fn Union(&mut self, query: Box<Query>) -> &Self { self.Or(query) }
 
-    fn Union(&mut self, query: Box<Query>) -> &Self {
-
+    fn Or(&mut self, query: Box<Query>) -> &Self {
+        match query.compile() {
+            Some(compiled) => self.add_string(format!("Or({:s})", compiled))
+            None => self /* FIXME: save error */
+        }
     }
-
-    fn Or(&mut self, query: Box<Query>) -> &Self { self.Union(query) }
 
 }
 

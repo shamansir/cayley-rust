@@ -14,6 +14,8 @@ fn main() {
         Err(error) => fail!(error),
         Ok(graph) => {
 
+            /* TODO: test saving Morphism */
+
             /* match graph.find(Vertex::start(EveryNode).all()) {
 
                 Err(error) => fail!(error.to_string()),
