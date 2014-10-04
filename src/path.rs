@@ -17,11 +17,13 @@ pub struct Morphism {
     path: Vec<String>
 }
 
+// ================================ Compile ================================= //
+
 pub trait Compile/*: ToString*/ {
 
-    fn add_str(&mut self, str: &str) -> &Self;
+    fn add_str(&mut self, what: &str) -> &Self;
 
-    fn add_string(&mut self, str: String) -> &Self;
+    fn add_string(&mut self, what: String) -> &Self;
 
     fn compile(&self) -> Option<String>;
 
@@ -37,6 +39,21 @@ pub trait Compile/*: ToString*/ {
     } */
 
 }
+
+// ================================ Reuse =================================== //
+
+pub trait Reuse: Compile {
+
+    fn save(&self, name: &str) -> Option<String> {
+        match self.compile() {
+            Some(compiled) => name.to_string() + " = " + compiled,
+            None => None
+        }
+    }
+
+}
+
+// ================================ Path ==================================== //
 
 #[allow(non_snake_case)]
 pub trait Path: Compile {
@@ -85,7 +102,21 @@ pub trait Path: Compile {
         self.add_string(format!("Save({:s})", predicates_and_nodes(predicates, tags)))
     }
 
+    fn Intersect(&mut self, query: Box<Query>) -> &Self {
+
+    }
+
+    fn And(&mut self, query: Box<Query>) -> &Self { self.Intersect(query) }
+
+    fn Union(&mut self, query: Box<Query>) -> &Self {
+
+    }
+
+    fn Or(&mut self, query: Box<Query>) -> &Self { self.Union(query) }
+
 }
+
+// ================================ Query =================================== //
 
 #[allow(non_snake_case)]
 pub trait Query: Path {
@@ -103,6 +134,8 @@ pub trait Query: Path {
     // TODO: get_limit....
 
 }
+
+// ================================ Vertex ================================== //
 
 impl Vertex {
 
@@ -138,9 +171,7 @@ impl Compile for Vertex {
 
 }
 
-impl Path for Vertex {
-
-}
+impl Path for Vertex { }
 
 impl Query for Vertex {
 
@@ -149,6 +180,8 @@ impl Query for Vertex {
     fn is_finalized(&self) -> bool { self.finalized }
 
 }
+
+// ================================ Morphism ================================ //
 
 impl Morphism {
 
@@ -179,10 +212,11 @@ impl Compile for Morphism {
 
 }
 
-impl Path for Morphism {
+impl Reuse for Morphism { }
 
-}
+impl Path for Morphism { }
 
+// ================================ utils =================================== //
 
 fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> String {
     match (predicates, tags) {
