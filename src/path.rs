@@ -42,27 +42,47 @@ pub trait Compile/*: ToString*/ {
 pub trait Path: Compile {
 
     fn Out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
-        self.add_string(format!("Out({:s})", make_args_from(predicates, tags)))
+        self.add_string(format!("Out({:s})", predicates_and_tags(predicates, tags)))
     }
 
     fn In(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
-        self.add_string(format!("In({:s})", make_args_from(predicates, tags)))
+        self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
     }
 
     fn Both(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
-        self.add_string(format!("In({:s})", make_args_from(predicates, tags)))
+        self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
     }
 
     fn Is(&mut self, nodes: NodeSelector) -> &Self {
         self.add_string(match nodes {
-            Nodes(names) => format!("Is(\"{:s}\")", names.connect(",")),
+            AnyNode/*| Node("") */ => "Is()".to_string(),
             Node(name) => format!("Is(\"{:s}\")", name),
-            AnyNode/*| Node("") */ => "Is()".to_string()
+            Nodes(names) => format!("Is(\"{:s}\")", names.connect(","))
         })
     }
 
     fn Has(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &Self {
+        self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, tags)))
+    }
 
+    fn Tag(&mut self, tags: TagSelector) {
+        self.add_string(match tags {
+            AnyTag/*| Node("") */ => "Tag()".to_string(),
+            Tag(name) => format!("Tag(\"{:s}\")", name),
+            Tags(names) => format!("Tag(\"{:s}\")", names.connect(","))
+        })
+    }
+
+    fn Back(&mut self, tags: TagSelector) {
+        self.add_string(match tags {
+            AnyTag/*| Node("") */ => "Tag()".to_string(),
+            Tag(name) => format!("Tag(\"{:s}\")", name),
+            Tags(names) => format!("Tag(\"{:s}\")", names.connect(","))
+        })
+    }
+
+    fn Save(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &Self {
+        self.add_string(format!("Save({:s})", predicates_and_nodes(predicates, tags)))
     }
 
 }
@@ -164,7 +184,7 @@ impl Path for Morphism {
 }
 
 
-fn make_args_from(predicates: PredicateSelector, tags: TagSelector) -> String {
+fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> String {
     match (predicates, tags) {
 
         (AnyPredicate, AnyTag) => "".to_string(),
@@ -203,6 +223,49 @@ fn make_args_from(predicates: PredicateSelector, tags: TagSelector) -> String {
                         None => "undefined".to_string()
                     },
                     tags.connect("\",\""))
+
+    }
+}
+
+fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> String {
+    match (predicates, nodes) {
+
+        (AnyPredicate, AnyNone) => "".to_string(),
+        (AnyPredicate, Node(node)) => format!("null, \"{:s}\"", node),
+        (AnyPredicate, Nodes(nodes)) => format!("null, \"{:s}\"", nodes.connect("\",\"")),
+
+        (Predicate(predicate), AnyNone) => format!("\"{:s}\"", predicate),
+        (Predicate(predicate), Node(tag)) =>
+            format!("\"{:s}\", \"{:s}\"", predicate, tag),
+        (Predicate(predicate), Nodes(nodes)) =>
+            format!("\"{:s}\", \"{:s}\"", predicate, nodes.connect("\",\"")),
+
+        (Predicates(predicates), AnyNone) =>
+            format!("\"{:s}\"", predicates.connect("\",\"")),
+        (Predicates(predicates), Node(node)) =>
+            format!("\"{:s}\", \"{:s}\"", predicates.connect("\",\""), node),
+        (Predicates(predicates), Nodes(nodes)) =>
+            format!("\"{:s}\", \"{:s}\"", predicates.connect("\",\""), nodes.connect("\",\"")),
+
+        (FromQuery(query), AnyNone) =>
+            match query.compile() {
+                Some(compiled) => compiled,
+                None => "undefined".to_string()
+            },
+        (FromQuery(query), Node(node)) =>
+            format!("{:s}, \"{:s}\"",
+                    match query.compile() {
+                        Some(compiled) => compiled,
+                        None => "undefined".to_string()
+                    },
+                    node),
+        (FromQuery(query), Nodes(nodes)) =>
+            format!("{:s}, \"{:s}\"",
+                    match query.compile() {
+                        Some(compiled) => compiled,
+                        None => "undefined".to_string()
+                    },
+                    nodes.connect("\",\""))
 
     }
 }
