@@ -274,24 +274,24 @@ fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> Stri
 fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> String {
     match (predicates, nodes) {
 
-        (AnyPredicate, AnyNone) => "".to_string(),
+        (AnyPredicate, AnyNode) => "".to_string(),
         (AnyPredicate, Node(node)) => format!("null, \"{:s}\"", node),
         (AnyPredicate, Nodes(nodes)) => format!("null, \"{:s}\"", nodes.connect("\",\"")),
 
-        (Predicate(predicate), AnyNone) => format!("\"{:s}\"", predicate),
+        (Predicate(predicate), AnyNode) => format!("\"{:s}\"", predicate),
         (Predicate(predicate), Node(tag)) =>
             format!("\"{:s}\", \"{:s}\"", predicate, tag),
         (Predicate(predicate), Nodes(nodes)) =>
             format!("\"{:s}\", \"{:s}\"", predicate, nodes.connect("\",\"")),
 
-        (Predicates(predicates), AnyNone) =>
+        (Predicates(predicates), AnyNode) =>
             format!("\"{:s}\"", predicates.connect("\",\"")),
         (Predicates(predicates), Node(node)) =>
             format!("\"{:s}\", \"{:s}\"", predicates.connect("\",\""), node),
         (Predicates(predicates), Nodes(nodes)) =>
             format!("\"{:s}\", \"{:s}\"", predicates.connect("\",\""), nodes.connect("\",\"")),
 
-        (FromQuery(query), AnyNone) =>
+        (FromQuery(query), AnyNode) =>
             match query.compile() {
                 Some(compiled) => compiled,
                 None => "undefined".to_string()
