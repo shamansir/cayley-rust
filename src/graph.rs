@@ -10,6 +10,7 @@ use serialize::json::decode as json_decode;
 use serialize::json::DecoderError;
 
 use path::Query;
+use path::Reuse;
 
 use errors::{GraphRequestError, GraphResult,
              InvalidUrl, MalformedRequest, RequestFailed,
@@ -62,17 +63,21 @@ impl Graph {
 
     // find nodes using raw pre-compiled string query and return them parsed
     pub fn find_by(self, query: String) -> GraphResult<GraphNodes> {
-        let mut request = self.request;
-        request.headers.content_length = Some(query.len());
-        match request.write_str(query.as_slice()) {
-            Err(error) => Err(RequestFailed(error, query)),
-            Ok(_) => match request.read_response() {
-                Err((_, error)) => Err(RequestFailed(error, query)),
-                Ok(mut response) => match response.read_to_end() {
-                    Err(error) => Err(RequestFailed(error, query)),
-                    Ok(body) => Graph::decode_nodes(body)
+        match Graph::perform_request(self.request, query) {
+            Ok(body) => Graph::decode_nodes(body),
+            Err(error) => Err(error)
+        }
+    }
+
+    pub fn save(self, reusable: Reuse) -> GraphResult<()> {
+        match reusable.save() {
+            Some(query) => {
+                match Graph::perform_request(self.request, query) {
+                    Ok(body) => (),
+                    Err(error) => Err(error)
                 }
-            }
+            },
+            None => Err(ReusableCannotBeSaved)
         }
     }
 
@@ -84,6 +89,21 @@ impl Graph {
                 match RequestWriter::new(Post, parsed_url) {
                     Err(error) => Err(MalformedRequest(error, url.to_string())),
                     Ok(request) => Ok(box request)
+                }
+            }
+        }
+    }
+
+    // uses RequestWriter to perform a request with given request body and returns the response body
+    fn perform_request(mut request: RequestWriter, body: String) -> GraphResult<String> {
+        request.headers.content_length = Some(body.len());
+        match request.write_str(body.as_slice()) {
+            Err(error) => Err(RequestFailed(error, body)),
+            Ok(_) => match request.read_response() {
+                Err((_, error)) => Err(RequestFailed(error, body)),
+                Ok(mut response) => match response.read_to_end() {
+                    Err(error) => Err(RequestFailed(error, body)),
+                    Ok(response_body) => Ok(response_body)
                 }
             }
         }
