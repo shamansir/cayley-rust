@@ -31,8 +31,6 @@ pub struct GraphNodes(pub Vec<GraphNode>);
 
 pub enum CayleyAPIVersion { V1, DefaultVersion }
 
-/* FIXME: stop returning boxes: http://doc.rust-lang.org/guide-pointers.html#returning-pointers */
-
 impl Graph {
 
     pub fn default() -> GraphResult<Graph> {
@@ -48,7 +46,7 @@ impl Graph {
                              let mut path: Vec<String> = Vec::with_capacity(20);
                              path.push("graph".to_string());
                              Ok(Graph{ url: url,
-                                       request: request }) },
+                                       request: box request }) },
             Err(error) => Err(error)
         }
     }
@@ -85,13 +83,13 @@ impl Graph {
     }
 
     // prepares the RequestWriter object from URL to save it inside the Graph for future re-use
-    fn prepare_request(url: &str) -> GraphResult<Box<RequestWriter>> {
+    fn prepare_request(url: &str) -> GraphResult<RequestWriter> {
         match Url::parse(url) {
             Err(error) => Err(InvalidUrl(error, url.to_string())),
             Ok(parsed_url) => {
                 match RequestWriter::new(Post, parsed_url) {
                     Err(error) => Err(MalformedRequest(error, url.to_string())),
-                    Ok(request) => Ok(box request)
+                    Ok(request) => Ok(request)
                 }
             }
         }
