@@ -46,7 +46,7 @@ pub trait Reuse: Compile {
 
     fn save(&self, name: &str) -> Option<String> {
         match self.compile() {
-            Some(compiled) => name.to_string() + " = " + compiled,
+            Some(compiled) => Some(name.to_string() + " = " + compiled),
             None => None
         }
     }
@@ -79,10 +79,10 @@ pub trait Path: Compile {
     }
 
     fn Has(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &Self {
-        self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, tags)))
+        self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, nodes)))
     }
 
-    fn Tag(&mut self, tags: TagSelector) {
+    fn Tag(&mut self, tags: TagSelector) -> &Self {
         self.add_string(match tags {
             AnyTag/*| Node("") */ => "Tag()".to_string(),
             Tag(name) => format!("Tag(\"{:s}\")", name),
@@ -90,7 +90,7 @@ pub trait Path: Compile {
         })
     }
 
-    fn Back(&mut self, tags: TagSelector) {
+    fn Back(&mut self, tags: TagSelector) -> &Self {
         self.add_string(match tags {
             AnyTag/*| Node("") */ => "Tag()".to_string(),
             Tag(name) => format!("Tag(\"{:s}\")", name),
@@ -99,25 +99,29 @@ pub trait Path: Compile {
     }
 
     fn Save(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &Self {
-        self.add_string(format!("Save({:s})", predicates_and_nodes(predicates, tags)))
+        self.add_string(format!("Save({:s})", predicates_and_nodes(predicates, nodes)))
     }
 
     fn Intersect(&mut self, query: Box<Query>) -> &Self { self.And(query) }
 
     fn And(&mut self, query: Box<Query>) -> &Self {
+        /* FIXME: implicit return looking not so good here? */
         match query.compile() {
-            Some(compiled) => self.add_string(format!("And({:s})", compiled))
-            None => self /* FIXME: save error */
+            Some(compiled) => { return self.add_string(format!("And({:s})", compiled)); },
+            None => { } /* FIXME: save error */
         }
+        self
     }
 
     fn Union(&mut self, query: Box<Query>) -> &Self { self.Or(query) }
 
     fn Or(&mut self, query: Box<Query>) -> &Self {
+        /* FIXME: implicit return looking not so good here? */
         match query.compile() {
-            Some(compiled) => self.add_string(format!("Or({:s})", compiled))
-            None => self /* FIXME: save error */
+            Some(compiled) => { return self.add_string(format!("And({:s})", compiled)); },
+            None => { } /* FIXME: save error */
         }
+        self
     }
 
 }

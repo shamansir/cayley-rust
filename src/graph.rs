@@ -15,7 +15,8 @@ use path::Reuse;
 use errors::{GraphRequestError, GraphResult,
              InvalidUrl, MalformedRequest, RequestFailed,
              DecodingFailed, ResponseParseFailed,
-             QueryNotFinalized, QueryCompilationFailed };
+             QueryNotFinalized, QueryCompilationFailed,
+             ReusableCannotBeSaved };
 
 pub struct Graph {
     url: String,
@@ -30,6 +31,8 @@ pub struct GraphNodes(pub Vec<GraphNode>);
 
 pub enum CayleyAPIVersion { V1, DefaultVersion }
 
+/* FIXME: stop returning boxes: http://doc.rust-lang.org/guide-pointers.html#returning-pointers */
+
 impl Graph {
 
     pub fn default() -> GraphResult<Graph> {
@@ -41,7 +44,7 @@ impl Graph {
         let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
                           host, port, version_str);
         match Graph::prepare_request(url.as_slice()) {
-            Ok(request) => { // TODO: match request.try_connect()
+            Ok(request) => { /* TODO: match request.try_connect() */
                              let mut path: Vec<String> = Vec::with_capacity(20);
                              path.push("graph".to_string());
                              Ok(Graph{ url: url,
@@ -69,11 +72,11 @@ impl Graph {
         }
     }
 
-    pub fn save(self, reusable: Reuse) -> GraphResult<()> {
-        match reusable.save() {
+    pub fn save(self, name: &str, reusable: &Reuse) -> GraphResult<()> {
+        match reusable.save(name) {
             Some(query) => {
                 match Graph::perform_request(self.request, query) {
-                    Ok(body) => (),
+                    Ok(body) => Ok(()),
                     Err(error) => Err(error)
                 }
             },
@@ -95,7 +98,7 @@ impl Graph {
     }
 
     // uses RequestWriter to perform a request with given request body and returns the response body
-    fn perform_request(mut request: RequestWriter, body: String) -> GraphResult<String> {
+    fn perform_request(mut request: Box<RequestWriter>, body: String) -> GraphResult<Vec<u8>> {
         request.headers.content_length = Some(body.len());
         match request.write_str(body.as_slice()) {
             Err(error) => Err(RequestFailed(error, body)),
