@@ -102,9 +102,9 @@ pub trait Path: Compile {
         self.add_string(format!("Save({:s})", predicates_and_nodes(predicates, nodes)))
     }
 
-    fn Intersect(&mut self, query: Box<Query>) -> &Self { self.And(query) }
+    fn Intersect(&mut self, query: &Query) -> &Self { self.And(query) }
 
-    fn And(&mut self, query: Box<Query>) -> &Self {
+    fn And(&mut self, query: &Query) -> &Self {
         /* FIXME: implicit return looking not so good here? */
         match query.compile() {
             Some(compiled) => { return self.add_string(format!("And({:s})", compiled)); },
@@ -113,9 +113,9 @@ pub trait Path: Compile {
         self
     }
 
-    fn Union(&mut self, query: Box<Query>) -> &Self { self.Or(query) }
+    fn Union(&mut self, query: &Query) -> &Self { self.Or(query) }
 
-    fn Or(&mut self, query: Box<Query>) -> &Self {
+    fn Or(&mut self, query: &Query) -> &Self {
         /* FIXME: implicit return looking not so good here? */
         match query.compile() {
             Some(compiled) => { return self.add_string(format!("And({:s})", compiled)); },

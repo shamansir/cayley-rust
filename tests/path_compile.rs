@@ -7,8 +7,9 @@ use cayley::path::Morphism as M;
 
 // vote or discuss here:
 // http://discuss.rust-lang.org/t/no-requirement-to-import-a-trait-for-using-an-implemented-public-method-from-it/579
-use cayley::path::Path as _foo; // required to use .compile() method and other Path methods
-use cayley::path::Query as _bar; // required to use Query methods
+use cayley::path::Compile; // required to use .compile() method
+use cayley::path::Path; // required to be able to use Path methods such as .In, .Out, ...
+use cayley::path::Query; // required to be able to use Query methods such as .All, .GetLimit, ...
 
 use cayley::selector::{AnyNode, Node, Nodes};
 use cayley::selector::{AnyTag, Tag, Tags};
@@ -86,7 +87,7 @@ fn main() {
     path_eq!(V::start(Node("D")).Out(Predicates(vec!("follows", "status")), AnyTag),
              "g.V(\"D\").Out([\"follows\", \"status\")]");
 
-    path_eq!(V::start(Node("D")).Out(Query(box V::start(Node("status"))), Tag("pred")),
+    path_eq!(V::start(Node("D")).Out(Query(&V::start(Node("status"))), Tag("pred")),
              "g.V(\"D\").Out(g.V(\"status\"), \"pred\")");
 
     // path.In
@@ -163,9 +164,9 @@ fn main() {
     let cFollows = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
     let dFollows = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
 
-    path_eq!(cFollows.clone().Intersect(Query(box dFollows)),
+    path_eq!(cFollows.clone().Intersect(dFollows),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows.clone().And(Query(box dFollows)),
+    path_eq!(cFollows.clone().And(dFollows),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
 
     // path.Union / path.Or
@@ -173,9 +174,9 @@ fn main() {
     let cFollows = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
     let dFollows = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
 
-    path_eq!(cFollows.clone().Union(Query(box dFollows)),
+    path_eq!(cFollows.clone().Union(dFollows),
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows.clone().Or(Query(box dFollows)),
+    path_eq!(cFollows.clone().Or(dFollows),
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
 
     // == Morphisms ==
@@ -186,12 +187,12 @@ fn main() {
                                                    .Out(Predicate("follows"), AnyTag);
     path_eq!(friendOfFriend, "var friendOfFriend = g.M().Out(\"follows\").Out(\"follows\")");
 
-    path_eq!(V::start(Node("C")).Follow(box friendOfFriend).Has(Predicate("status"), Tag("cool_person")),
+    path_eq!(V::start(Node("C")).Follow(friendOfFriend).Has(Predicate("status"), Tag("cool_person")),
              "g.V(\"C\").Follow(friendOfFriend).Has(\"status\", \"cool_person\")");
 
     // path.FollowR
 
-    path_eq!(V::start(AnyNode).Has(Predicate("status"), Tag("cool_person")).FollowR(box friendOfFriend),
+    path_eq!(V::start(AnyNode).Has(Predicate("status"), Tag("cool_person")).FollowR(friendOfFriend),
              "g.V(\"C\").Has(\"status\", \"cool_person\").FollowR(friendOfFriend)");
 
     // == Query finals ==
@@ -213,7 +214,7 @@ fn main() {
 
     /* TODO: query.ForEach(callback), query.ForEach(limit, callback) */
 
-    /* TODO:
+    /*
 
     // Let's get the list of actors in the film
     g.V().Has("name","Casablanca")
