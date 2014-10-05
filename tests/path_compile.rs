@@ -139,7 +139,7 @@ fn main() {
     // path.Back
 
     path_eq!(V::start(AnyNode).As(Tag("start")).Out(Predicate("status"), AnyTag)
-                              .Back(Tag("start").In(Predicate("follows"), AnyTag)),
+                              .Back(Tag("start")).In(Predicate("follows"), AnyTag),
              "g.V().As(\"start\").Out(\"status\").Back(\"start\").In(\"follows\")");
 
     // path.Save
@@ -185,14 +185,14 @@ fn main() {
 
     let friendOfFriend = M::start("friendOfFriend").Out(Predicate("follows"), AnyTag)
                                                    .Out(Predicate("follows"), AnyTag);
-    path_eq!(friendOfFriend, "var friendOfFriend = g.M().Out(\"follows\").Out(\"follows\")");
+    path_eq!(friendOfFriend, "g.M().Out(\"follows\").Out(\"follows\")");
 
     path_eq!(V::start(Node("C")).Follow(friendOfFriend).Has(Predicate("status"), Tag("cool_person")),
              "g.V(\"C\").Follow(friendOfFriend).Has(\"status\", \"cool_person\")");
 
     // path.FollowR
 
-    path_eq!(V::start(AnyNode).Has(Predicate("status"), Tag("cool_person")).FollowR(friendOfFriend),
+    path_eq!(V::start(AnyNode).Has(Predicate("status"), Node("cool_person")).FollowR(friendOfFriend),
              "g.V(\"C\").Has(\"status\", \"cool_person\").FollowR(friendOfFriend)");
 
     // == Query finals ==

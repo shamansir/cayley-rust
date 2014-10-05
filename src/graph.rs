@@ -70,8 +70,20 @@ impl Graph {
         }
     }
 
-    pub fn save(self, name: &str, reusable: &Reuse) -> GraphResult<()> {
-        match reusable.save(name) {
+    pub fn save(self, reusable: &Reuse) -> GraphResult<()> {
+        match reusable.save() {
+            Some(query) => {
+                match Graph::perform_request(self.request, query) {
+                    Ok(body) => Ok(()),
+                    Err(error) => Err(error)
+                }
+            },
+            None => Err(ReusableCannotBeSaved)
+        }
+    }
+
+    pub fn save_as(self, name: &str, reusable: &Reuse) -> GraphResult<()> {
+        match reusable.save_as(name) {
             Some(query) => {
                 match Graph::perform_request(self.request, query) {
                     Ok(body) => Ok(()),

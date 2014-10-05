@@ -44,7 +44,16 @@ pub trait Compile/*: ToString*/ {
 
 pub trait Reuse: Compile {
 
-    fn save(&self, name: &str) -> Option<String> {
+    fn get_name(&self) -> &str;
+
+    fn save(&self) -> Option<String> {
+        match self.compile() {
+            Some(compiled) => Some(self.get_name().to_string() + " = " + compiled),
+            None => None
+        }
+    }
+
+    fn save_as(&self, name: &str) -> Option<String> {
         match self.compile() {
             Some(compiled) => Some(name.to_string() + " = " + compiled),
             None => None
@@ -82,11 +91,13 @@ pub trait Path: Compile {
         self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, nodes)))
     }
 
-    fn Tag(&mut self, tags: TagSelector) -> &Self {
+    fn Tag(&mut self, tags: TagSelector) -> &Self { self.As(tags) }
+
+    fn As(&mut self, tags: TagSelector) -> &Self {
         self.add_string(match tags {
-            AnyTag/*| Node("") */ => "Tag()".to_string(),
-            Tag(name) => format!("Tag(\"{:s}\")", name),
-            Tags(names) => format!("Tag(\"{:s}\")", names.connect(","))
+            AnyTag/*| Node("") */ => "As()".to_string(),
+            Tag(name) => format!("As(\"{:s}\")", name),
+            Tags(names) => format!("As(\"{:s}\")", names.connect(","))
         })
     }
 
@@ -98,8 +109,8 @@ pub trait Path: Compile {
         })
     }
 
-    fn Save(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &Self {
-        self.add_string(format!("Save({:s})", predicates_and_nodes(predicates, nodes)))
+    fn Save(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+        self.add_string(format!("Save({:s})", predicates_and_tags(predicates, tags)))
     }
 
     fn Intersect(&mut self, query: &Query) -> &Self { self.And(query) }
@@ -197,7 +208,7 @@ impl Morphism {
 
     pub fn start(name: &str) -> Morphism {
         let mut res = Morphism { name: name.to_string(), path: Vec::with_capacity(10) };
-        res.add_string(name.to_string() + " = graph.Morphism()".to_string());
+        res.add_string("g.M()".to_string());
         res
     }
 
@@ -222,7 +233,11 @@ impl Compile for Morphism {
 
 }
 
-impl Reuse for Morphism { }
+impl Reuse for Morphism {
+
+    fn get_name(&self) -> &str { self.name.as_slice() }
+
+}
 
 impl Path for Morphism { }
 
