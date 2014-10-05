@@ -187,7 +187,7 @@ fn main() {
                                                    .Out(Predicate("follows"), AnyTag);
     path_eq!(friendOfFriend, "g.M().Out(\"follows\").Out(\"follows\")");
 
-    path_eq!(V::start(Node("C")).Follow(friendOfFriend).Has(Predicate("status"), Tag("cool_person")),
+    path_eq!(V::start(Node("C")).Follow(friendOfFriend).Has(Predicate("status"), Node("cool_person")),
              "g.V(\"C\").Follow(friendOfFriend).Has(\"status\", \"cool_person\")");
 
     // path.FollowR
@@ -203,6 +203,8 @@ fn main() {
     path_eq!(V::start(Node("foo")).Out(Predicate("follows"), AnyTag).GetLimit(5),
              "g.V(\"foo\").Out(\"follows\").GetLimit(5)");
 
+    /* TODO:
+
     path_eq!(V::start(Node("bar")).In(Predicate("follows"), AnyTag).ToArray(),
              "g.V(\"bar\").In(\"follows\").toArray()");
 
@@ -212,9 +214,9 @@ fn main() {
     path_eq!(V::start(Node("foo")).Out(Predicate("follows"), AnyTag).TagValue(),
              "g.V(\"foo\").Out(\"follows\").TagValue()");
 
-    /* TODO: query.ForEach(callback), query.ForEach(limit, callback) */
+    query.ForEach(callback), query.ForEach(limit, callback); */
 
-    /*
+    /* TODO
 
     // Let's get the list of actors in the film
     g.V().Has("name","Casablanca")

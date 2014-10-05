@@ -70,11 +70,11 @@ impl Graph {
         }
     }
 
-    pub fn save(self, reusable: &Reuse) -> GraphResult<()> {
+    pub fn save(self, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save() {
             Some(query) => {
                 match Graph::perform_request(self.request, query) {
-                    Ok(body) => Ok(()),
+                    Ok(body) => { reusable.set_saved(); Ok(()) },
                     Err(error) => Err(error)
                 }
             },
@@ -82,11 +82,11 @@ impl Graph {
         }
     }
 
-    pub fn save_as(self, name: &str, reusable: &Reuse) -> GraphResult<()> {
+    pub fn save_as(self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save_as(name) {
             Some(query) => {
                 match Graph::perform_request(self.request, query) {
-                    Ok(body) => Ok(()),
+                    Ok(body) => { reusable.set_saved(); Ok(()) },
                     Err(error) => Err(error)
                 }
             },

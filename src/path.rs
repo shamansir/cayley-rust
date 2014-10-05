@@ -13,6 +13,7 @@ pub struct Vertex {
 }
 
 pub struct Morphism {
+    saved: bool,
     name: String,
     path: Vec<String>
 }
@@ -37,28 +38,6 @@ pub trait Compile/*: ToString*/ {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
         write!(fmt, "{}", self.to_string())
     } */
-
-}
-
-// ================================ Reuse =================================== //
-
-pub trait Reuse: Compile {
-
-    fn get_name(&self) -> &str;
-
-    fn save(&self) -> Option<String> {
-        match self.compile() {
-            Some(compiled) => Some(self.get_name().to_string() + " = " + compiled),
-            None => None
-        }
-    }
-
-    fn save_as(&self, name: &str) -> Option<String> {
-        match self.compile() {
-            Some(compiled) => Some(name.to_string() + " = " + compiled),
-            None => None
-        }
-    }
 
 }
 
@@ -135,6 +114,20 @@ pub trait Path: Compile {
         self
     }
 
+    fn Follow(&mut self, reusable: &Reuse) -> &Self {
+        /* TODO: match reusable.is_saved() {
+            notify that reusable may not be saved
+        } */
+        self.add_string(format!("Follow({:s})", reusable.get_name()))
+    }
+
+    fn FollowR(&mut self, reusable: &Reuse) -> &Self {
+        /* TODO: match reusable.is_saved() {
+            notify that reusable may not be saved
+        } */
+        self.add_string(format!("FollowR({:s})", reusable.get_name()))
+    }
+
 }
 
 // ================================ Query =================================== //
@@ -152,7 +145,11 @@ pub trait Query: Path {
         self.set_finalized(); self.add_string(format!("GetLimit({:i})", limit))
     }
 
-    // TODO: get_limit....
+    /* TODO: ToArray() */
+    /* TODO: ToValue() */
+    /* TODO: TagArray() */
+    /* TODO: TagValue() */
+    /* TODO: query.ForEach(callback), query.ForEach(limit, callback) */
 
 }
 
@@ -202,12 +199,40 @@ impl Query for Vertex {
 
 }
 
+// ================================ Reuse =================================== //
+
+pub trait Reuse: Compile {
+
+    fn get_name(&self) -> &str;
+
+    fn set_saved(&mut self);
+
+    fn is_saved(&self) -> bool;
+
+    fn save(&self) -> Option<String> {
+        match self.compile() {
+            Some(compiled) => Some(self.get_name().to_string() + " = " + compiled),
+            None => None
+        }
+    }
+
+    fn save_as(&self, name: &str) -> Option<String> {
+        match self.compile() {
+            Some(compiled) => Some(name.to_string() + " = " + compiled),
+            None => None
+        }
+    }
+
+}
+
 // ================================ Morphism ================================ //
 
 impl Morphism {
 
     pub fn start(name: &str) -> Morphism {
-        let mut res = Morphism { name: name.to_string(), path: Vec::with_capacity(10) };
+        let mut res = Morphism { name: name.to_string(),
+                                 path: Vec::with_capacity(10),
+                                 saved: false };
         res.add_string("g.M()".to_string());
         res
     }
@@ -233,13 +258,17 @@ impl Compile for Morphism {
 
 }
 
+impl Path for Morphism { }
+
 impl Reuse for Morphism {
 
     fn get_name(&self) -> &str { self.name.as_slice() }
 
-}
+    fn set_saved(&mut self) { self.saved = true; }
 
-impl Path for Morphism { }
+    fn is_saved(&self) -> bool { self.saved }
+
+}
 
 // ================================ utils =================================== //
 
