@@ -203,7 +203,7 @@ impl Clone for Vertex {
 
     fn clone(&self) -> Vertex {
         Vertex { finalized: self.finalized,
-                 path: self.path }
+                 path: self.path.clone() }
     }
 
 }
@@ -283,8 +283,8 @@ impl Clone for Morphism {
 
     fn clone(&self) -> Morphism {
         Morphism { saved: self.saved,
-                   name: self.name,
-                   path: self.path }
+                   name: self.name.clone(),
+                   path: self.path.clone() }
     }
 
 }
