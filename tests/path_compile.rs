@@ -169,18 +169,18 @@ fn main() {
 
     // path.Intersect / path.And
 
-    let cFollows = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
-    let dFollows = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
+    let cFollows: &V = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
+    let dFollows: &V = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
 
-    path_eq!(cFollows.clone().Intersect(dFollows),
+    path_eq!(cFollows.clone().Intersect(cFollows),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
     path_eq!(cFollows.clone().And(dFollows),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
 
     // path.Union / path.Or
 
-    let cFollows = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
-    let dFollows = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
+    let cFollows: &V = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
+    let dFollows: &V = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
 
     path_eq!(cFollows.clone().Union(dFollows),
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");

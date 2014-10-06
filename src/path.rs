@@ -20,7 +20,7 @@ pub struct Morphism {
 
 // ================================ Compile ================================= //
 
-pub trait Compile/*: ToString*/ {
+pub trait Compile: Clone/*+ToString*/ {
 
     fn add_str(&mut self, what: &str) -> &mut Self;
 
