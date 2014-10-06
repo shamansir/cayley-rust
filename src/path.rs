@@ -22,9 +22,9 @@ pub struct Morphism {
 
 pub trait Compile/*: ToString*/ {
 
-    fn add_str(&mut self, what: &str) -> &Self;
+    fn add_str(&mut self, what: &str) -> &mut Self;
 
-    fn add_string(&mut self, what: String) -> &Self;
+    fn add_string(&mut self, what: String) -> &mut Self;
 
     fn compile(&self) -> Option<String>;
 
@@ -46,19 +46,19 @@ pub trait Compile/*: ToString*/ {
 #[allow(non_snake_case)]
 pub trait Path: Compile {
 
-    fn Out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+    fn Out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("Out({:s})", predicates_and_tags(predicates, tags)))
     }
 
-    fn In(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+    fn In(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
     }
 
-    fn Both(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+    fn Both(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
     }
 
-    fn Is(&mut self, nodes: NodeSelector) -> &Self {
+    fn Is(&mut self, nodes: NodeSelector) -> &mut Self {
         self.add_string(match nodes {
             AnyNode/*| Node("") */ => "Is()".to_string(),
             Node(name) => format!("Is(\"{:s}\")", name),
@@ -66,13 +66,13 @@ pub trait Path: Compile {
         })
     }
 
-    fn Has(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &Self {
+    fn Has(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &mut Self {
         self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, nodes)))
     }
 
-    fn Tag(&mut self, tags: TagSelector) -> &Self { self.As(tags) }
+    fn Tag(&mut self, tags: TagSelector) -> &mut Self { self.As(tags) }
 
-    fn As(&mut self, tags: TagSelector) -> &Self {
+    fn As(&mut self, tags: TagSelector) -> &mut Self {
         self.add_string(match tags {
             AnyTag/*| Node("") */ => "As()".to_string(),
             Tag(name) => format!("As(\"{:s}\")", name),
@@ -80,7 +80,7 @@ pub trait Path: Compile {
         })
     }
 
-    fn Back(&mut self, tags: TagSelector) -> &Self {
+    fn Back(&mut self, tags: TagSelector) -> &mut Self {
         self.add_string(match tags {
             AnyTag/*| Node("") */ => "Tag()".to_string(),
             Tag(name) => format!("Tag(\"{:s}\")", name),
@@ -88,13 +88,13 @@ pub trait Path: Compile {
         })
     }
 
-    fn Save(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &Self {
+    fn Save(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("Save({:s})", predicates_and_tags(predicates, tags)))
     }
 
-    fn Intersect(&mut self, query: &Query) -> &Self { self.And(query) }
+    fn Intersect(&mut self, query: &Query) -> &mut Self { self.And(query) }
 
-    fn And(&mut self, query: &Query) -> &Self {
+    fn And(&mut self, query: &Query) -> &mut Self {
         /* FIXME: implicit return looking not so good here? */
         match query.compile() {
             Some(compiled) => { return self.add_string(format!("And({:s})", compiled)); },
@@ -103,9 +103,9 @@ pub trait Path: Compile {
         self
     }
 
-    fn Union(&mut self, query: &Query) -> &Self { self.Or(query) }
+    fn Union(&mut self, query: &Query) -> &mut Self { self.Or(query) }
 
-    fn Or(&mut self, query: &Query) -> &Self {
+    fn Or(&mut self, query: &Query) -> &mut Self {
         /* FIXME: implicit return looking not so good here? */
         match query.compile() {
             Some(compiled) => { return self.add_string(format!("And({:s})", compiled)); },
@@ -114,14 +114,14 @@ pub trait Path: Compile {
         self
     }
 
-    fn Follow(&mut self, reusable: &Reuse) -> &Self {
+    fn Follow(&mut self, reusable: &Reuse) -> &mut Self {
         /* TODO: match reusable.is_saved() {
             notify that reusable may not be saved
         } */
         self.add_string(format!("Follow({:s})", reusable.get_name()))
     }
 
-    fn FollowR(&mut self, reusable: &Reuse) -> &Self {
+    fn FollowR(&mut self, reusable: &Reuse) -> &mut Self {
         /* TODO: match reusable.is_saved() {
             notify that reusable may not be saved
         } */
@@ -139,9 +139,9 @@ pub trait Query: Path {
 
     fn is_finalized(&self) -> bool;
 
-    fn All(&mut self) -> &Self { self.set_finalized(); self.add_str("All()") }
+    fn All(&mut self) -> &mut Self { self.set_finalized(); self.add_str("All()") }
 
-    fn GetLimit(&mut self, limit: int) -> &Self {
+    fn GetLimit(&mut self, limit: int) -> &mut Self {
         self.set_finalized(); self.add_string(format!("GetLimit({:i})", limit))
     }
 
@@ -172,12 +172,12 @@ impl Vertex {
 
 impl Compile for Vertex {
 
-    fn add_str(&mut self, str: &str) -> &Vertex {
+    fn add_str(&mut self, str: &str) -> &mut Vertex {
         self.path.push(str.to_string());
         self
     }
 
-    fn add_string(&mut self, str: String) -> &Vertex {
+    fn add_string(&mut self, str: String) -> &mut Vertex {
         self.path.push(str);
         self
     }
@@ -196,6 +196,15 @@ impl Query for Vertex {
     fn set_finalized(&mut self) { self.finalized = true; }
 
     fn is_finalized(&self) -> bool { self.finalized }
+
+}
+
+impl Clone for Vertex {
+
+    fn clone(&self) -> Vertex {
+        Vertex { finalized: self.finalized,
+                 path: self.path }
+    }
 
 }
 
@@ -241,12 +250,12 @@ impl Morphism {
 
 impl Compile for Morphism {
 
-    fn add_str(&mut self, str: &str) -> &Morphism {
+    fn add_str(&mut self, str: &str) -> &mut Morphism {
         self.path.push(str.to_string());
         self
     }
 
-    fn add_string(&mut self, str: String) -> &Morphism {
+    fn add_string(&mut self, str: String) -> &mut Morphism {
         self.path.push(str);
         self
     }
@@ -267,6 +276,16 @@ impl Reuse for Morphism {
     fn set_saved(&mut self) { self.saved = true; }
 
     fn is_saved(&self) -> bool { self.saved }
+
+}
+
+impl Clone for Morphism {
+
+    fn clone(&self) -> Morphism {
+        Morphism { saved: self.saved,
+                   name: self.name,
+                   path: self.path }
+    }
 
 }
 

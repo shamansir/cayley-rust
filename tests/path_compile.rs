@@ -58,6 +58,14 @@ fn main() {
 
     // == Morphism ==
 
+    match M::start("morph").Out(Predicate("foo"), AnyTag)
+                           .Out(Predicate("bar"), AnyTag).compile() {
+        Some(result) => {
+            assert_eq!(result, "g.M().Out(\"foo\").Out(\"bar\")".to_string())
+        }
+        None => fail!()
+    }
+
     path_eq!(M::start("morph").Out(Predicate("foo"), AnyTag)
                               .Out(Predicate("bar"), AnyTag),
              "var morph = g.M().Out(\"foo\").Out(\"bar\")");
