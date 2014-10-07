@@ -169,38 +169,39 @@ fn main() {
 
     // path.Intersect / path.And
 
-    let cFollows: &V = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
-    let dFollows: &V = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
+    let mut cFollows = V::start(Node("C")); cFollows.Out(Predicate("follows"), AnyTag);
+    let mut dFollows = V::start(Node("D")); dFollows.Out(Predicate("follows"), AnyTag);
 
-    path_eq!(cFollows.clone().Intersect(cFollows),
+    path_eq!(cFollows.clone().Intersect(&dFollows),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows.clone().And(dFollows),
+    path_eq!(cFollows.clone().And(&dFollows),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
 
     // path.Union / path.Or
 
-    let cFollows: &V = V::start(Node("C")).Out(Predicate("follows"), AnyTag);
-    let dFollows: &V = V::start(Node("D")).Out(Predicate("follows"), AnyTag);
+    let mut cFollows = V::start(Node("C")); cFollows.Out(Predicate("follows"), AnyTag);
+    let mut dFollows = V::start(Node("D")); dFollows.Out(Predicate("follows"), AnyTag);
 
-    path_eq!(cFollows.clone().Union(dFollows),
+    path_eq!(cFollows.clone().Union(&dFollows),
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows.clone().Or(dFollows),
+    path_eq!(cFollows.clone().Or(&dFollows),
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
 
     // == Morphisms ==
 
     // path.Follow
 
-    let friendOfFriend = M::start("friendOfFriend").Out(Predicate("follows"), AnyTag)
-                                                   .Out(Predicate("follows"), AnyTag);
+    let mut friendOfFriend = M::start("friendOfFriend");
+            friendOfFriend.Out(Predicate("follows"), AnyTag)
+                          .Out(Predicate("follows"), AnyTag);
     path_eq!(friendOfFriend, "g.M().Out(\"follows\").Out(\"follows\")");
 
-    path_eq!(V::start(Node("C")).Follow(friendOfFriend).Has(Predicate("status"), Node("cool_person")),
+    path_eq!(V::start(Node("C")).Follow(&friendOfFriend).Has(Predicate("status"), Node("cool_person")),
              "g.V(\"C\").Follow(friendOfFriend).Has(\"status\", \"cool_person\")");
 
     // path.FollowR
 
-    path_eq!(V::start(AnyNode).Has(Predicate("status"), Node("cool_person")).FollowR(friendOfFriend),
+    path_eq!(V::start(AnyNode).Has(Predicate("status"), Node("cool_person")).FollowR(&friendOfFriend),
              "g.V(\"C\").Has(\"status\", \"cool_person\").FollowR(friendOfFriend)");
 
     // == Query finals ==
