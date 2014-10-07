@@ -158,14 +158,27 @@ pub trait Query: Path {
 impl Vertex {
 
     pub fn start(nodes: NodeSelector) -> Vertex {
-        let mut res = Vertex{ path: Vec::with_capacity(10), finalized: false };
-        res.add_str("graph");
-        res.add_string(match nodes {
+        let mut res = Vertex::prepare();
+        res.From(nodes);
+        res
+    }
+
+    pub fn prepare() -> Vertex {
+        Vertex{ path: Vec::with_capacity(10), finalized: false }
+    }
+
+    pub fn From(&mut self, nodes: NodeSelector) -> &mut Vertex {
+        match self.path.is_empty() {
+            true => (),
+            false => fail!("Vertex.From should be the first method to be called after Vertex::prepare()
+                           or Vertex::start(nodes) should be used instead")
+        }
+        self.add_str("graph");
+        self.add_string(match nodes {
                 Nodes(names) => format!("Vertex(\"{:s}\")", names.connect(",")),
                 Node(name) => format!("Vertex(\"{:s}\")", name),
                 AnyNode/*| Node("") */ => "Vertex()".to_string()
-            });
-        res
+            })
     }
 
 }

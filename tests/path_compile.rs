@@ -169,8 +169,8 @@ fn main() {
 
     // path.Intersect / path.And
 
-    let mut cFollows = V::start(Node("C")); cFollows.Out(Predicate("follows"), AnyTag);
-    let mut dFollows = V::start(Node("D")); dFollows.Out(Predicate("follows"), AnyTag);
+    let mut cFollows = V::prepare(); cFollows.From(Node("C")).Out(Predicate("follows"), AnyTag);
+    let mut dFollows = V::prepare(); dFollows.From(Node("D")).Out(Predicate("follows"), AnyTag);
 
     path_eq!(cFollows.clone().Intersect(&dFollows),
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
