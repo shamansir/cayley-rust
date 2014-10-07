@@ -62,7 +62,7 @@ pub trait Path: Compile {
         self.add_string(match nodes {
             AnyNode/*| Node("") */ => "Is()".to_string(),
             Node(name) => format!("Is(\"{:s}\")", name),
-            Nodes(names) => format!("Is(\"{:s}\")", names.connect(","))
+            Nodes(names) => format!("Is(\"{:s}\")", names.connect("\",\""))
         })
     }
 
@@ -76,7 +76,7 @@ pub trait Path: Compile {
         self.add_string(match tags {
             AnyTag/*| Node("") */ => "As()".to_string(),
             Tag(name) => format!("As(\"{:s}\")", name),
-            Tags(names) => format!("As(\"{:s}\")", names.connect(","))
+            Tags(names) => format!("As(\"{:s}\")", names.connect("\",\""))
         })
     }
 
@@ -84,7 +84,7 @@ pub trait Path: Compile {
         self.add_string(match tags {
             AnyTag/*| Node("") */ => "Tag()".to_string(),
             Tag(name) => format!("Tag(\"{:s}\")", name),
-            Tags(names) => format!("Tag(\"{:s}\")", names.connect(","))
+            Tags(names) => format!("Tag(\"{:s}\")", names.connect("\",\""))
         })
     }
 
@@ -163,6 +163,7 @@ impl Vertex {
         res
     }
 
+    /* FIXME: calling this with no From call afterwars should fail the construction */
     pub fn prepare() -> Vertex {
         Vertex{ path: Vec::with_capacity(10), finalized: false }
     }
@@ -173,11 +174,11 @@ impl Vertex {
             false => fail!("Vertex.From should be the first method to be called after Vertex::prepare()
                            or Vertex::start(nodes) should be used instead")
         }
-        self.add_str("graph");
+        self.add_str("g");
         self.add_string(match nodes {
-                Nodes(names) => format!("Vertex(\"{:s}\")", names.connect(",")),
-                Node(name) => format!("Vertex(\"{:s}\")", name),
-                AnyNode/*| Node("") */ => "Vertex()".to_string()
+                Nodes(names) => format!("V(\"{:s}\")", names.connect("\",\"")),
+                Node(name) => format!("V(\"{:s}\")", name),
+                AnyNode/*| Node("") */ => "V()".to_string()
             })
     }
 

@@ -44,17 +44,17 @@ fn main() {
     path_eq!(V::start(Node("foo")), "g.V(\"foo\")");
 
     // can be compiled, but not executed
-    path_eq!(V::start(Nodes(vec!("foo", "bar"))), "g.V(\"foo\", \"bar\")");
+    path_eq!(V::start(Nodes(vec!("foo", "bar"))), "g.V(\"foo\",\"bar\")");
 
     path_eq!(V::start(AnyNode).All(), "g.V().all()");
 
     path_eq!(V::start(Node("foo")).All(), "g.V(\"foo\").all()");
 
     path_eq!(V::start(Nodes(vec!("foo", "bar"))).All(),
-             "g.V(\"foo\", \"bar\").all()");
+             "g.V(\"foo\",\"bar\").all()");
 
     path_eq!(V::start(Nodes(vec!("foo", "bar"))).All(),
-             "g.V(\"foo\", \"bar\").all()");
+             "g.V(\"foo\",\"bar\").all()");
 
     // == Morphism ==
 
@@ -72,7 +72,7 @@ fn main() {
 
     path_eq!(M::start("morph").Out(Predicate("foo"), Tags(vec!("tag1", "tag2")))
                               .Out(Predicate("bar"), Tag("tag0")),
-             "var morph = g.M().Out(\"foo\", [\"tag1\", \"tag2\"]).Out(\"bar\", \"tag0\")");
+             "var morph = g.M().Out(\"foo\",[\"tag1\",\"tag2\"]).Out(\"bar\",\"tag0\")");
 
     // == Emit ==
 
@@ -93,7 +93,7 @@ fn main() {
              "g.V(\"D\").Out()");
 
     path_eq!(V::start(Node("D")).Out(Predicates(vec!("follows", "status")), AnyTag),
-             "g.V(\"D\").Out([\"follows\", \"status\")]");
+             "g.V(\"D\").Out([\"follows\",\"status\")]");
 
     path_eq!(V::start(Node("D")).Out(Query(&V::start(Node("status"))), Tag("pred")),
              "g.V(\"D\").Out(g.V(\"status\"), \"pred\")");
@@ -127,12 +127,12 @@ fn main() {
              "g.V().Out(\"follows\").Is(\"B\")");
 
     path_eq!(V::start(AnyNode).Out(Predicate("follows"), AnyTag).Is(Nodes(vec!("B", "C"))),
-             "g.V().Out(\"follows\").Is(\"B\", \"C\")");
+             "g.V().Out(\"follows\").Is(\"B\",\"C\")");
 
     // path.Has
 
     path_eq!(V::start(AnyNode).Has(Predicate("follows"), Node("B")),
-             "g.V().Has(\"follows\", \"B\")");
+             "g.V().Has(\"follows\",\"B\")");
 
     // == Tagging ==
 
@@ -142,7 +142,7 @@ fn main() {
              "g.V().As(\"start\").Out(\"status\")");
 
     path_eq!(V::start(AnyNode).Tag(Tags(vec!("foo", "bar"))).Out(Predicate("status"), AnyTag),
-             "g.V().Tag(\"foo\", \"bar\").Out(\"status\")");
+             "g.V().Tag(\"foo\",\"bar\").Out(\"status\")");
 
     // path.Back
 
@@ -153,7 +153,7 @@ fn main() {
     // path.Save
 
     path_eq!(V::start(Nodes(vec!("D", "B"))).Save(Predicate("follows"), Tag("target")),
-             "g.V(\"D\", \"B\").Save(\"follows\", \"target\")");
+             "g.V(\"D\",\"B\").Save(\"follows\",\"target\")");
 
     /* TODO:
     path_fail!(V::start(Nodes(vec!("D", "B"))).Save(AnyPredicate, Tag("target")),
@@ -197,12 +197,12 @@ fn main() {
     path_eq!(friendOfFriend, "g.M().Out(\"follows\").Out(\"follows\")");
 
     path_eq!(V::start(Node("C")).Follow(&friendOfFriend).Has(Predicate("status"), Node("cool_person")),
-             "g.V(\"C\").Follow(friendOfFriend).Has(\"status\", \"cool_person\")");
+             "g.V(\"C\").Follow(friendOfFriend).Has(\"status\",\"cool_person\")");
 
     // path.FollowR
 
     path_eq!(V::start(AnyNode).Has(Predicate("status"), Node("cool_person")).FollowR(&friendOfFriend),
-             "g.V(\"C\").Has(\"status\", \"cool_person\").FollowR(friendOfFriend)");
+             "g.V(\"C\").Has(\"status\",\"cool_person\").FollowR(friendOfFriend)");
 
     // == Query finals ==
 
