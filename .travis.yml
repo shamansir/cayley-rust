@@ -1,7 +1,7 @@
 language: rust
 env:
   global:
-    - secure: ntZnSFsAl3cqQ3vVoFOQRV9UsQBCwkWcIFRtpObepzNbTRS5omRmmq88EmUASV0MPEnbozsu26U10RfDpGDlxircByHSx3+CRQ12pKISSHMCggNf8Yetj0e1LMcD+XlowySoiaJcVQgnhL0IH18AxJ0b0cpE1BiMR1cjwrGdnJk=
+    - secure: oFqpv/0T9yVxT89o0iUZ+FZ4BGEzrixSsdM3HcpMfXClqfnXU5RynuHaWJCkM2OlYWX2iLmQWiLsSfUTdea1fYUWrWbxXU/CUg04VqHXOHbDdm9WH+wEF2mgEdahJ6A3RYkTROy7fNHZ5xxCy3ycwuABdd173UhhaBmo2uxnv/E=
 before_install:
   - wget https://github.com/google/cayley/releases/download/v0.4.0/cayley_0.4.0_linux_amd64.tar.gz
   - tar -xvzf cayley_0.4.0_linux_amd64.tar.gz
