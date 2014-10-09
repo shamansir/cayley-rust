@@ -1,6 +1,11 @@
 language: rust
+env:
+  global:
+    - secure: ntZnSFsAl3cqQ3vVoFOQRV9UsQBCwkWcIFRtpObepzNbTRS5omRmmq88EmUASV0MPEnbozsu26U10RfDpGDlxircByHSx3+CRQ12pKISSHMCggNf8Yetj0e1LMcD+XlowySoiaJcVQgnhL0IH18AxJ0b0cpE1BiMR1cjwrGdnJk=
 before_install:
   - wget https://github.com/google/cayley/releases/download/v0.4.0/cayley_0.4.0_linux_amd64.tar.gz
   - tar -xvzf cayley_0.4.0_linux_amd64.tar.gz
 before_script:
   - ./cayley_0.4.0_linux_amd64/cayley http --dbpath=./cayley_0.4.0_linux_amd64/30kmoviedata.nq.gz &
+after_script:
+  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
