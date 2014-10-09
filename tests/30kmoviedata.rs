@@ -1,6 +1,9 @@
 extern crate cayley;
 
 use cayley::graph::{Graph, V1};
+use cayley::graph::{GraphNodes, GraphNode};
+use cayley::path::{Vertex, Query, Path};
+use cayley::selector::AnyNode;
 
 #[test]
 fn main() {
@@ -16,14 +19,14 @@ fn main() {
 
             /* TODO: test saving Morphism */
 
-            /* match graph.find(Vertex::start(EveryNode).all()) {
+            match graph.find(Vertex::start(AnyNode).All()) {
 
                 Err(error) => fail!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert!(nodes.len() > 0);
                 }
 
-            } */
+            }
 
             /* match graph.v(Every).get_limit(5) {
 

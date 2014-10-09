@@ -149,11 +149,32 @@ impl Graph {
 
 impl<'gn, S: Decoder<E>, E> Decodable<S, E> for GraphNode<'gn> {
     fn decode(decoder: &mut S) -> Result<GraphNode<'gn>, E> {
+        /* match decoder.read_map(|decoder, len| { decoder.read_str() }) {
+            Ok(map_str) => { Ok(GraphNode(
+                match json_decode(map_str.as_slice()) {
+                    Ok(map) => map,
+                    Err(err) => Err(err)
+                }
+            )) },
+            Err(err) => Err(err)
+        } */
+        decoder.read_map(|decoder, len| {
+            let data_map: HashMap<&'gn str, &'gn str> = HashMap::new();
+            for i in range(0u, len) {
+                data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
+                                    Ok(key) => key.as_slice(), Err(err) => return Err(err)
+                                },
+                                match decoder.read_map_elt_val(i, |decoder| { decoder.read_str() }) {
+                                    Ok(val) => val.as_slice(), Err(err) => return Err(err)
+                                });
+            }
+            Ok(GraphNode(data_map))
+        })
         /* match Decodable::decode(decoder) {
-            Ok(map) => GraphNode(map),
+            Ok(map) => Ok(GraphNode(map)),
             Err(err) => return Err(err)
         } */
-        Decodable::decode(decoder)
+        //Decodable::decode(decoder)
     }
 }
 
