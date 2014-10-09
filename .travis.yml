@@ -5,7 +5,7 @@ os:
 env:
   global:
     - LD_LIBRARY_PATH: /usr/local/lib
-    - secure: sUAJLHh4K5wb2Q6edJuiDzgHZybUljRX1CnWA4RJ69HPIiCZa00X2xWz+2RKBagXT+IMQuJb/wpuvgwDv0xeoKDMbSXUBhh+046ct1JiucJKorRZbJYT6N4kUgFUkSilH2Qe62YRGxSefKKebuHn08trBs4cLWv0F8A894JRgpI=
+    - secure: XRR3hMjyXw5Yoh+wuef9FtePjtytF0lpajPgfs9kILQH6F920SJDAM555SBmZFjXxTBxoqNEwY1c74zNqaVyOTKuVc/YgD0sFBi3240ETGMySI4rOJiT9D2nN6M6VUcQ3RyUmTJdwFn9ZIrhz7f2MEwxKSsqA/3o/c0in/vhNIA=
 before_install:
   - wget https://github.com/google/cayley/releases/download/v0.4.0/cayley_0.4.0_linux_amd64.tar.gz
   - tar -xvzf cayley_0.4.0_linux_amd64.tar.gz
@@ -18,4 +18,5 @@ script:
   - cargo test -v
   - cargo doc
 after_script:
-  - cd target && curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
+  - ln -s ./target/doc ./doc
+  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
