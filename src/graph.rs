@@ -1,13 +1,17 @@
 use std::str;
 use std::io::println;
 use std::io::Stream;
+
 use url::Url;
 use http::client::RequestWriter;
 use http::method::Post;
 use http::headers::HeaderEnum;
+
 use serialize::{Decoder, Decodable};
 use serialize::json::decode as json_decode;
 use serialize::json::DecoderError;
+
+use std::collections::HashMap;
 
 use path::Query;
 use path::Reuse;
@@ -23,11 +27,9 @@ pub struct Graph {
     request: Box<RequestWriter>
 }
 
-pub struct GraphNode {
-    id: String
-}
+pub struct GraphNode<'gn>(pub HashMap<&'gn str, &'gn str>);
 
-pub struct GraphNodes(pub Vec<GraphNode>);
+pub struct GraphNodes<'gns>(pub Vec<GraphNode<'gns>>);
 
 pub enum CayleyAPIVersion { V1, DefaultVersion }
 
@@ -52,7 +54,7 @@ impl Graph {
     }
 
     // find nodes by query implementation and return them parsed
-    pub fn find(self, query: &Query) -> GraphResult<GraphNodes> {
+    pub fn find<'gns>(self, query: &Query) -> GraphResult<GraphNodes<'gns>> {
         match query.is_finalized() {
             true => match query.compile() {
                 Some(compiled) => self.find_by(compiled),
@@ -63,7 +65,7 @@ impl Graph {
     }
 
     // find nodes using raw pre-compiled string query and return them parsed
-    pub fn find_by(self, query: String) -> GraphResult<GraphNodes> {
+    pub fn find_by<'gns>(self, query: String) -> GraphResult<GraphNodes<'gns>> {
         match Graph::perform_request(self.request, query) {
             Ok(body) => Graph::decode_nodes(body),
             Err(error) => Err(error)
@@ -123,7 +125,7 @@ impl Graph {
     }
 
     // extract JSON nodes from response
-    fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
+    fn decode_nodes<'gns>(source: Vec<u8>) -> GraphResult<GraphNodes<'gns>> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(nodes_json) => {
@@ -137,25 +139,26 @@ impl Graph {
 
 }
 
-impl GraphNode {
+/* impl<'gn> GraphNode<'gn> {
 
-    pub fn id(self) -> String { self.id }
+    fn new<'gn>(init: HashMap<&'gn str, &'gn str>) -> GraphNode<'gn> {
+        GraphNode{ data: init }
+    }
 
-}
+} */
 
-impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
-    fn decode(decoder: &mut S) -> Result<GraphNode, E> {
-        decoder.read_struct("__unused__", 0, |decoder| {
-            Ok(GraphNode {
-                id: try!(decoder.read_struct_field("id", 0,
-                        |decoder| { decoder.read_str() }))
-            })
-        })
+impl<'gn, S: Decoder<E>, E> Decodable<S, E> for GraphNode<'gn> {
+    fn decode(decoder: &mut S) -> Result<GraphNode<'gn>, E> {
+        /* match Decodable::decode(decoder) {
+            Ok(map) => GraphNode(map),
+            Err(err) => return Err(err)
+        } */
+        Decodable::decode(decoder)
     }
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
-    fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
+impl<'gns, S: Decoder<E>, E> Decodable<S, E> for GraphNodes<'gns> {
+    fn decode(decoder: &mut S) -> Result<GraphNodes<'gns>, E> {
         decoder.read_struct("__unused__", 0, |decoder| {
             decoder.read_struct_field("result", 0, |decoder| {
                 decoder.read_seq(|decoder, len| {
