@@ -27,9 +27,9 @@ pub struct Graph {
     request: Box<RequestWriter>
 }
 
-pub struct GraphNode<'gn>(pub HashMap<&'gn str, &'gn str>);
+pub struct GraphNode(pub HashMap<String, String>);
 
-pub struct GraphNodes<'gns>(pub Vec<GraphNode<'gns>>);
+pub struct GraphNodes(pub Vec<GraphNode>);
 
 pub enum CayleyAPIVersion { V1, DefaultVersion }
 
@@ -54,7 +54,7 @@ impl Graph {
     }
 
     // find nodes by query implementation and return them parsed
-    pub fn find<'gns>(self, query: &Query) -> GraphResult<GraphNodes<'gns>> {
+    pub fn find(self, query: &Query) -> GraphResult<GraphNodes> {
         match query.is_finalized() {
             true => match query.compile() {
                 Some(compiled) => self.find_by(compiled),
@@ -65,7 +65,7 @@ impl Graph {
     }
 
     // find nodes using raw pre-compiled string query and return them parsed
-    pub fn find_by<'gns>(self, query: String) -> GraphResult<GraphNodes<'gns>> {
+    pub fn find_by(self, query: String) -> GraphResult<GraphNodes> {
         match Graph::perform_request(self.request, query) {
             Ok(body) => Graph::decode_nodes(body),
             Err(error) => Err(error)
@@ -125,7 +125,7 @@ impl Graph {
     }
 
     // extract JSON nodes from response
-    fn decode_nodes<'gns>(source: Vec<u8>) -> GraphResult<GraphNodes<'gns>> {
+    fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(nodes_json) => {
@@ -147,8 +147,8 @@ impl Graph {
 
 } */
 
-impl<'gn, S: Decoder<E>, E> Decodable<S, E> for GraphNode<'gn> {
-    fn decode(decoder: &mut S) -> Result<GraphNode<'gn>, E> {
+impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
+    fn decode(decoder: &mut S) -> Result<GraphNode, E> {
         /* match decoder.read_map(|decoder, len| { decoder.read_str() }) {
             Ok(map_str) => { Ok(GraphNode(
                 match json_decode(map_str.as_slice()) {
@@ -159,13 +159,13 @@ impl<'gn, S: Decoder<E>, E> Decodable<S, E> for GraphNode<'gn> {
             Err(err) => Err(err)
         } */
         decoder.read_map(|decoder, len| {
-            let data_map: HashMap<&'gn str, &'gn str> = HashMap::new();
+            let mut data_map: HashMap<String, String> = HashMap::new();
             for i in range(0u, len) {
                 data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
-                                    Ok(key) => key.as_slice(), Err(err) => return Err(err)
+                                    Ok(key) => key, Err(err) => return Err(err)
                                 },
                                 match decoder.read_map_elt_val(i, |decoder| { decoder.read_str() }) {
-                                    Ok(val) => val.as_slice(), Err(err) => return Err(err)
+                                    Ok(val) => val, Err(err) => return Err(err)
                                 });
             }
             Ok(GraphNode(data_map))
@@ -178,8 +178,8 @@ impl<'gn, S: Decoder<E>, E> Decodable<S, E> for GraphNode<'gn> {
     }
 }
 
-impl<'gns, S: Decoder<E>, E> Decodable<S, E> for GraphNodes<'gns> {
-    fn decode(decoder: &mut S) -> Result<GraphNodes<'gns>, E> {
+impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
+    fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
         decoder.read_struct("__unused__", 0, |decoder| {
             decoder.read_struct_field("result", 0, |decoder| {
                 decoder.read_seq(|decoder, len| {
