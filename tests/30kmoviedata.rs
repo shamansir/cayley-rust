@@ -26,18 +26,18 @@ fn main() {
                     assert!(nodes.len() > 0);
                 }
 
-            }
+            };
 
-            /* match graph.v(Every).get_limit(5) {
+            match graph.find(Vertex::start(AnyNode).GetLimit(5)) {
 
                 Err(error) => fail!(error.to_string()),
-                Ok(nodes) => {
+                Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 5);
                 }
 
-            }
+            };
 
-            match graph.vertex(Specific("Humphrey Bogart".to_string())).all() {
+            /* match graph.vertex(Specific("Humphrey Bogart".to_string())).all() {
 
                 Err(error) => fail!(error.to_string()),
                 Ok(nodes) => {
