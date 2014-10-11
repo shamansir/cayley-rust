@@ -15,7 +15,7 @@ fn main() {
     match Graph::new("localhost", 64210, V1) {
 
         Err(error) => fail!(error),
-        Ok(graph) => {
+        Ok(ref mut graph) => {
 
             /* TODO: test saving Morphism */
 

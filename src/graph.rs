@@ -54,7 +54,7 @@ impl Graph {
     }
 
     // find nodes by query implementation and return them parsed
-    pub fn find(self, query: &Query) -> GraphResult<GraphNodes> {
+    pub fn find(&mut self, query: &Query) -> GraphResult<GraphNodes> {
         match query.is_finalized() {
             true => match query.compile() {
                 Some(compiled) => self.find_by(compiled),
@@ -65,17 +65,17 @@ impl Graph {
     }
 
     // find nodes using raw pre-compiled string query and return them parsed
-    pub fn find_by(self, query: String) -> GraphResult<GraphNodes> {
-        match Graph::perform_request(self.request, query) {
+    pub fn find_by(&mut self, query: String) -> GraphResult<GraphNodes> {
+        match self.perform_request(query) {
             Ok(body) => Graph::decode_nodes(body),
             Err(error) => Err(error)
         }
     }
 
-    pub fn save(self, reusable: &mut Reuse) -> GraphResult<()> {
+    pub fn save(&mut self, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save() {
             Some(query) => {
-                match Graph::perform_request(self.request, query) {
+                match self.perform_request(query) {
                     Ok(body) => { reusable.set_saved(); Ok(()) },
                     Err(error) => Err(error)
                 }
@@ -84,15 +84,31 @@ impl Graph {
         }
     }
 
-    pub fn save_as(self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
+    pub fn save_as(&mut self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save_as(name) {
             Some(query) => {
-                match Graph::perform_request(self.request, query) {
+                match self.perform_request(query) {
                     Ok(body) => { reusable.set_saved(); Ok(()) },
                     Err(error) => Err(error)
                 }
             },
             None => Err(ReusableCannotBeSaved)
+        }
+    }
+
+    // uses RequestWriter to perform a request with given request body and returns the response body
+    fn perform_request(&mut self, body: String) -> GraphResult<Vec<u8>> {
+        let ref mut request = self.request;
+        request.headers.content_length = Some(body.len());
+        match request.write_str(body.as_slice()) {
+            Err(error) => Err(RequestFailed(error, body)),
+            Ok(_) => match request.read_response() {
+                Err((_, error)) => Err(RequestFailed(error, body)),
+                Ok(mut response) => match response.read_to_end() {
+                    Err(error) => Err(RequestFailed(error, body)),
+                    Ok(response_body) => Ok(response_body)
+                }
+            }
         }
     }
 
@@ -104,21 +120,6 @@ impl Graph {
                 match RequestWriter::new(Post, parsed_url) {
                     Err(error) => Err(MalformedRequest(error, url.to_string())),
                     Ok(request) => Ok(request)
-                }
-            }
-        }
-    }
-
-    // uses RequestWriter to perform a request with given request body and returns the response body
-    fn perform_request(mut request: Box<RequestWriter>, body: String) -> GraphResult<Vec<u8>> {
-        request.headers.content_length = Some(body.len());
-        match request.write_str(body.as_slice()) {
-            Err(error) => Err(RequestFailed(error, body)),
-            Ok(_) => match request.read_response() {
-                Err((_, error)) => Err(RequestFailed(error, body)),
-                Ok(mut response) => match response.read_to_end() {
-                    Err(error) => Err(RequestFailed(error, body)),
-                    Ok(response_body) => Ok(response_body)
                 }
             }
         }
