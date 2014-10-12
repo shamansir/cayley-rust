@@ -52,13 +52,12 @@ impl Graph {
 
     // find nodes by query implementation and return them parsed
     pub fn find(&mut self, query: &Query) -> GraphResult<GraphNodes> {
-        match query.is_finalized() {
-            true => match query.compile() {
+        if query.is_finalized() {
+            match query.compile() {
                 Some(compiled) => self.find_by(compiled),
                 None => Err(QueryCompilationFailed)
-            },
-            false => Err(QueryNotFinalized)
-        }
+            }
+        } else { Err(QueryNotFinalized) }
     }
 
     // find nodes using raw pre-compiled string query and return them parsed
