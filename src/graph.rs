@@ -44,11 +44,8 @@ impl Graph {
         let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
                           host, port, version_str);
         match Graph::prepare_request(url.as_slice()) {
-            Ok(request) => { /* TODO: match request.try_connect() */
-                             let mut path: Vec<String> = Vec::with_capacity(20);
-                             path.push("graph".to_string());
-                             Ok(Graph{ url: url,
-                                       request: box request }) },
+            Ok(request) => Ok(Graph{ url: url,
+                                     request: request }),
             Err(error) => Err(error)
         }
     }
@@ -113,13 +110,13 @@ impl Graph {
     }
 
     // prepares the RequestWriter object from URL to save it inside the Graph for future re-use
-    fn prepare_request(url: &str) -> GraphResult<RequestWriter> {
+    fn prepare_request(url: &str) -> GraphResult<Box<RequestWriter>> {
         match Url::parse(url) {
             Err(error) => Err(InvalidUrl(error, url.to_string())),
             Ok(parsed_url) => {
                 match RequestWriter::new(Post, parsed_url) {
                     Err(error) => Err(MalformedRequest(error, url.to_string())),
-                    Ok(request) => Ok(request)
+                    Ok(request) => Ok(box request)
                 }
             }
         }
