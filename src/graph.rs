@@ -51,7 +51,7 @@ impl Graph {
     }
 
     // find nodes by query implementation and return them parsed
-    pub fn find(&mut self, query: &Query) -> GraphResult<GraphNodes> {
+    pub fn find(mut self, query: &Query) -> GraphResult<GraphNodes> {
         if query.is_finalized() {
             match query.compile() {
                 Some(compiled) => self.find_by(compiled),
@@ -61,14 +61,14 @@ impl Graph {
     }
 
     // find nodes using raw pre-compiled string query and return them parsed
-    pub fn find_by(&mut self, query: String) -> GraphResult<GraphNodes> {
+    pub fn find_by(mut self, query: String) -> GraphResult<GraphNodes> {
         match self.perform_request(query) {
-            Ok(body) => Graph::decode_nodes(body),
+            Ok((_, body)) => Graph::decode_nodes(body),
             Err(error) => Err(error)
         }
     }
 
-    pub fn save(&mut self, reusable: &mut Reuse) -> GraphResult<()> {
+    pub fn save(mut self, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save() {
             Some(query) => {
                 match self.perform_request(query) {
@@ -80,7 +80,7 @@ impl Graph {
         }
     }
 
-    pub fn save_as(&mut self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
+    pub fn save_as(mut self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save_as(name) {
             Some(query) => {
                 match self.perform_request(query) {
@@ -93,8 +93,8 @@ impl Graph {
     }
 
     // uses RequestWriter to perform a request with given request body and returns the response body
-    fn perform_request(&mut self, body: String) -> GraphResult<Vec<u8>> {
-        let mut request = self.request;
+    fn perform_request(mut self, body: String) -> GraphResult<(Graph, Vec<u8>)> {
+        let ref mut request = self.request;
         request.headers.content_length = Some(body.len());
         match (&mut request).write_str(body.as_slice()) {
             Err(error) => return Err(RequestFailed(error, body)),
@@ -108,7 +108,7 @@ impl Graph {
             Err(error) => return Err(RequestFailed(error, "".to_string())),
             Ok(response_body) => response_body
         };
-        Ok(response_body)
+        Ok((self, response_body))
 
 
         /* let ref request = self.request;
