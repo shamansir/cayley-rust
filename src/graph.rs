@@ -94,7 +94,24 @@ impl Graph {
 
     // uses RequestWriter to perform a request with given request body and returns the response body
     fn perform_request(&mut self, body: String) -> GraphResult<Vec<u8>> {
-        let ref mut request = self.request;
+        let mut request = self.request;
+        request.headers.content_length = Some(body.len());
+        match (&mut request).write_str(body.as_slice()) {
+            Err(error) => return Err(RequestFailed(error, body)),
+            Ok(_) => ()
+        };
+        let mut response = match request.read_response() {
+            Err((_, error)) => return Err(RequestFailed(error, body)),
+            Ok(mut response) => response
+        };
+        let response_body = match response.read_to_end() {
+            Err(error) => return Err(RequestFailed(error, "".to_string())),
+            Ok(response_body) => response_body
+        };
+        Ok(response_body)
+
+
+        /* let ref request = self.request;
         request.headers.content_length = Some(body.len());
         match request.write_str(body.as_slice()) {
             Err(error) => Err(RequestFailed(error, body)),
@@ -105,7 +122,7 @@ impl Graph {
                     Ok(response_body) => Ok(response_body)
                 }
             }
-        }
+        } */
     }
 
     // prepares the RequestWriter object from URL to save it inside the Graph for future re-use
