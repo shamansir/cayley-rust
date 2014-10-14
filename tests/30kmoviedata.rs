@@ -2,8 +2,8 @@ extern crate cayley;
 
 use cayley::graph::{Graph, V1};
 use cayley::graph::{GraphNodes, GraphNode};
-use cayley::path::{Vertex, Query, Path};
-use cayley::selector::AnyNode;
+use cayley::path::{Vertex, Query};
+use cayley::selector::{AnyNode, Node};
 
 #[test]
 fn main() {
@@ -37,17 +37,22 @@ fn main() {
 
             };
 
-            /* match graph.vertex(Specific("Humphrey Bogart".to_string())).all() {
+            match graph.find(Vertex::start(Node("Humphrey Bogart")).All()) {
 
                 Err(error) => fail!(error.to_string()),
-                Ok(nodes) => {
+                Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
-                    //assert_eq!(nodes.iter().next().unwrap().id().as_slice(), "Humphrey Bogart");
+                    match nodes.iter().next() {
+                        Some(&GraphNode(ref humphrey)) => {
+                            assert_eq!(humphrey["id".to_string()].as_slice(), "Humphrey Bogart");
+                        },
+                        None => fail!("first node was not found")
+                    }
                 }
 
             }
 
-            match graph.v(Specific("Humphrey Bogart".to_string()))
+            /* match graph.v(Specific("Humphrey Bogart".to_string()))
                        ._in("name")
                        .all() {
 
