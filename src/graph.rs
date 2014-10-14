@@ -23,8 +23,7 @@ use errors::{GraphRequestError, GraphResult,
              ReusableCannotBeSaved };
 
 pub struct Graph {
-    url: String,
-    request: Box<RequestWriter>
+    url: String
 }
 
 pub struct GraphNode(pub HashMap<String, String>);
@@ -43,15 +42,11 @@ impl Graph {
         let version_str = match version { V1 | DefaultVersion => "v1" };
         let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
                           host, port, version_str);
-        match Graph::prepare_request(url.as_slice()) {
-            Ok(request) => Ok(Graph{ url: url,
-                                     request: request }),
-            Err(error) => Err(error)
-        }
+        Ok(Graph{ url: url })
     }
 
     // find nodes by query implementation and return them parsed
-    pub fn find(mut self, query: &Query) -> GraphResult<GraphNodes> {
+    pub fn find(&self, query: &Query) -> GraphResult<GraphNodes> {
         if query.is_finalized() {
             match query.compile() {
                 Some(compiled) => self.find_by(compiled),
@@ -61,14 +56,14 @@ impl Graph {
     }
 
     // find nodes using raw pre-compiled string query and return them parsed
-    pub fn find_by(mut self, query: String) -> GraphResult<GraphNodes> {
+    pub fn find_by(&self, query: String) -> GraphResult<GraphNodes> {
         match self.perform_request(query) {
-            Ok((_, body)) => Graph::decode_nodes(body),
+            Ok(body) => Graph::decode_nodes(body),
             Err(error) => Err(error)
         }
     }
 
-    pub fn save(mut self, reusable: &mut Reuse) -> GraphResult<()> {
+    pub fn save(&self, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save() {
             Some(query) => {
                 match self.perform_request(query) {
@@ -80,7 +75,7 @@ impl Graph {
         }
     }
 
-    pub fn save_as(mut self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
+    pub fn save_as(&self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save_as(name) {
             Some(query) => {
                 match self.perform_request(query) {
@@ -93,36 +88,23 @@ impl Graph {
     }
 
     // uses RequestWriter to perform a request with given request body and returns the response body
-    fn perform_request(mut self, body: String) -> GraphResult<(Graph, Vec<u8>)> {
-        let ref mut request = self.request;
-        request.headers.content_length = Some(body.len());
-        match (&mut request).write_str(body.as_slice()) {
-            Err(error) => return Err(RequestFailed(error, body)),
-            Ok(_) => ()
-        };
-        let mut response = match request.read_response() {
-            Err((_, error)) => return Err(RequestFailed(error, body)),
-            Ok(mut response) => response
-        };
-        let response_body = match response.read_to_end() {
-            Err(error) => return Err(RequestFailed(error, "".to_string())),
-            Ok(response_body) => response_body
-        };
-        Ok((self, response_body))
-
-
-        /* let ref request = self.request;
-        request.headers.content_length = Some(body.len());
-        match request.write_str(body.as_slice()) {
-            Err(error) => Err(RequestFailed(error, body)),
-            Ok(_) => match request.read_response() {
-                Err((_, error)) => Err(RequestFailed(error, body)),
-                Ok(mut response) => match response.read_to_end() {
+    fn perform_request(&self, body: String) -> GraphResult<Vec<u8>> {
+        match Graph::prepare_request(self.url.as_slice()) {
+            Err(error) => Err(error),
+            Ok(mut request) => {
+                request.headers.content_length = Some(body.len());
+                match request.write_str(body.as_slice()) {
                     Err(error) => Err(RequestFailed(error, body)),
-                    Ok(response_body) => Ok(response_body)
+                    Ok(_) => match request.read_response() {
+                        Err((_, error)) => Err(RequestFailed(error, body)),
+                        Ok(mut response) => match response.read_to_end() {
+                            Err(error) => Err(RequestFailed(error, body)),
+                            Ok(response_body) => Ok(response_body)
+                        }
+                    }
                 }
             }
-        } */
+        }
     }
 
     // prepares the RequestWriter object from URL to save it inside the Graph for future re-use
