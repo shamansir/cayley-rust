@@ -26,9 +26,9 @@ pub struct Graph {
     url: String
 }
 
-pub struct GraphNode<'gn>(pub HashMap<&'gn str, &'gn str>);
+pub struct GraphNode(pub HashMap<String, String>);
 
-pub struct GraphNodes<'gns>(pub Vec<GraphNode<'gn>>);
+pub struct GraphNodes(pub Vec<GraphNode>);
 
 pub enum CayleyAPIVersion { V1, DefaultVersion }
 
