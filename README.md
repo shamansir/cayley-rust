@@ -95,7 +95,7 @@ Gremlin:
 cayley-rust:
 
 ```rust
-graph.find(Vertex::start(AnyNode).All()) -> Result<GraphNodes(HashMap<String, String>), GraphError>
+graph.find(Vertex::start(AnyNode).All())
 ```
 
 ##### 2.
@@ -107,7 +107,7 @@ Gremlin:
 cayley-rust:
 
 ```rust
-graph.find(Vertex::start(Node("C")).OutP(Predicate("follows")).GetLimit(5)) -> Result<GraphNodes(HashMap<String, String>), GraphError>
+graph.find(Vertex::start(Node("C")).OutP(Predicate("follows")).GetLimit(5))
 ```
 
 ##### 3.
