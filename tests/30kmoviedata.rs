@@ -2,8 +2,10 @@ extern crate cayley;
 
 use cayley::graph::{Graph, V1};
 use cayley::graph::{GraphNodes, GraphNode};
-use cayley::path::{Vertex, Query};
+use cayley::path::{Vertex, Path, Query};
 use cayley::selector::{AnyNode, Node};
+use cayley::selector::AnyTag;
+use cayley::selector::Predicate;
 
 #[test]
 fn main() {
@@ -52,19 +54,25 @@ fn main() {
 
             }
 
-            /* match graph.v(Specific("Humphrey Bogart".to_string()))
-                       ._in("name")
-                       .all() {
+            match graph.find(Vertex::start(Node("Humphrey Bogart"))
+                                    .In(Predicate("name"), AnyTag)
+                                    .All()) {
 
                 Err(error) => fail!(error.to_string()),
-                Ok(nodes) => {
+                Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
-                    //assert_eq!(nodes.iter().next().unwrap().id().as_slice(), ":/en/humphrey_bogart");
+                    match nodes.iter().next() {
+                        Some(&GraphNode(ref humphrey)) => {
+                            assert_eq!(humphrey["id".to_string()].as_slice(), "/en/humphrey_bogart");
+                            // was: ":/en/humphrey_bogart"
+                        },
+                        None => fail!("first node was not found")
+                    }
                 }
 
             }
 
-            match graph.v(Specific("Casablanca".to_string()))
+            /* match graph.v(Specific("Casablanca".to_string()))
                        ._in("name")
                        .all() {
 

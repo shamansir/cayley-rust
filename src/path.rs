@@ -54,8 +54,24 @@ pub trait Path: Compile {
         self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
     }
 
+    fn InP(&mut self, predicates: PredicateSelector) -> &mut Self {
+        self.In(predicates, AnyTag)
+    }
+
+    fn InT(&mut self, tags: TagSelector) -> &mut Self {
+        self.In(AnyPredicate, tags)
+    }
+
     fn Both(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("Both({:s})", predicates_and_tags(predicates, tags)))
+    }
+
+    fn BothP(&mut self, predicates: PredicateSelector) -> &mut Self {
+        self.Both(predicates, AnyTag)
+    }
+
+    fn BothT(&mut self, tags: TagSelector) -> &mut Self {
+        self.Both(AnyPredicate, tags)
     }
 
     fn Is(&mut self, nodes: NodeSelector) -> &mut Self {
@@ -68,6 +84,14 @@ pub trait Path: Compile {
 
     fn Has(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &mut Self {
         self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, nodes)))
+    }
+
+    fn HasP(&mut self, predicates: PredicateSelector) -> &mut Self {
+        self.Has(predicates, AnyNode)
+    }
+
+    fn HasN(&mut self, nodes: NodeSelector) -> &mut Self {
+        self.Has(AnyPredicate, nodes)
     }
 
     fn Tag(&mut self, tags: TagSelector) -> &mut Self { self.As(tags) }
@@ -90,6 +114,14 @@ pub trait Path: Compile {
 
     fn Save(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("Save({:s})", predicates_and_tags(predicates, tags)))
+    }
+
+    fn SaveP(&mut self, predicates: PredicateSelector) -> &mut Self {
+        self.Save(predicates, AnyTag)
+    }
+
+    fn SaveT(&mut self, tags: TagSelector) -> &mut Self {
+        self.Save(AnyPredicate, tags)
     }
 
     fn Intersect(&mut self, query: &Query) -> &mut Self { self.And(query) }
@@ -328,20 +360,20 @@ fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> Stri
         (FromQuery(query), AnyTag) =>
             match query.compile() {
                 Some(compiled) => compiled,
-                None => "undefined".to_string()
+                None => "null".to_string()
             },
         (FromQuery(query), Tag(tag)) =>
             format!("{:s}, \"{:s}\"",
                     match query.compile() {
                         Some(compiled) => compiled,
-                        None => "undefined".to_string()
+                        None => "null".to_string()
                     },
                     tag),
         (FromQuery(query), Tags(tags)) =>
             format!("{:s}, [\"{:s}\"]",
                     match query.compile() {
                         Some(compiled) => compiled,
-                        None => "undefined".to_string()
+                        None => "null".to_string()
                     },
                     tags.connect("\",\""))
 
@@ -371,20 +403,20 @@ fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> S
         (FromQuery(query), AnyNode) =>
             match query.compile() {
                 Some(compiled) => compiled,
-                None => "undefined".to_string()
+                None => "null".to_string()
             },
         (FromQuery(query), Node(node)) =>
             format!("{:s},\"{:s}\"",
                     match query.compile() {
                         Some(compiled) => compiled,
-                        None => "undefined".to_string()
+                        None => "null".to_string()
                     },
                     node),
         (FromQuery(query), Nodes(nodes)) =>
             format!("{:s},[\"{:s}\"]",
                     match query.compile() {
                         Some(compiled) => compiled,
-                        None => "undefined".to_string()
+                        None => "null".to_string()
                     },
                     nodes.connect("\",\""))
 
