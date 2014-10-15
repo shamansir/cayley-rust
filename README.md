@@ -1,17 +1,17 @@
 [![Build Status](https://secure.travis-ci.org/shamansir/cayley-rust.png)](https://travis-ci.org/shamansir/cayley-rust)
 
-**In progress, but may be used for simple things**
+**In progress, but may be used for a simple things**
 
 **NB:** Built over nightly Rust, but not guaranteed to be up-to-date with the
-very latest version, since it is was made for fun. Since I use it, though, it will
+very latest version, since it is was made for fun. While I use it, though, it will
 appear rather fresh for some time, I suppose.
 
-# About
+## About
 
 Cayley is a new graph-driven Database engine from Google, read about it in
 [their Github][cayley] or in different articles.
 
-# Usage
+## Usage
 
 Add these lines to your `Cargo.toml`:
 
@@ -42,7 +42,7 @@ let graph = match Graph::new("localhost", 64210, V1) {
 };
 ```
 
-A simple query looks like this:
+A simple query pattern looks like this:
 
 ```rust
 use cayley::{GraphNode, GraphNodes};
@@ -50,7 +50,7 @@ use cayley::{GraphNode, GraphNodes};
 use cayley::path::{Vertex, Query}; // NB! `Query` is required.
 use cayley::selector::AnyNode;
 
-              // The query itself
+//               The query itself
 match graph.find(Vertex::start(AnyNode).All()) {
 
     Err(error) => fail!(error.to_string()),
@@ -74,11 +74,11 @@ method of a `Vertex` instance. If you feel you don't like it, feel free to suppo
 
 Look for more complex requests just [below](#syntax-examples).
 
-# API Docs
+## API Docs
 
 RustDoc is coming soon.
 
-# Syntax examples
+## Syntax examples
 
 Due to Rust strict typing, it's hard to transfer free-minded JS-inspired query
 syntax from Cayley as-is. Though I decided to leave upper-case style for Query/Path
@@ -86,13 +86,36 @@ methods, since i.e. no method can't be named `in()` in Rust, because `in` is a k
 
 Here are some parallels:
 
-Gremlin: `graph.Vertex().All()`
-cayley-rust: `graph.find(Vertex::start(AnyNode).All())` &rarr; `Result<GraphNodes(HashMap<String, String>), GraphError>`
+##### 1.
 
-Gremlin: `graph.Vertex("C").Out("follows").GetLimit(5)`
-cayley-rust: `graph.find(Vertex::start(Node("C")).OutP(Predicate("follows")).GetLimit(5))` &rarr; `Result<GraphNodes(HashMap<String, String>), GraphError>`
+Gremlin:
 
-Gremlin: `var friendOfFriend = Morphism().Out("follows").Out("follows")`
+`graph.Vertex().All()`
+
+cayley-rust:
+
+```rust
+graph.find(Vertex::start(AnyNode).All()) -> Result<GraphNodes(HashMap<String, String>), GraphError>
+```
+
+##### 2.
+
+Gremlin:
+
+`graph.Vertex("C").Out("follows").GetLimit(5)`
+
+cayley-rust:
+
+```rust
+graph.find(Vertex::start(Node("C")).OutP(Predicate("follows")).GetLimit(5)) -> Result<GraphNodes(HashMap<String, String>), GraphError>
+```
+
+##### 3.
+
+Gremlin:
+
+`var friendOfFriend = Morphism().Out("follows").Out("follows")`
+
 cayley-rust:
 
 ```rust
@@ -102,7 +125,12 @@ let friendOfFriend = Morphism::start("friendOfFriend")
 graph.save(friendOfFriend);
 ```
 
-Gremlin: `g.V("C").Follow(friendOfFriend).Has("status","cool_person")`
+##### 4.
+
+Gremlin:
+
+`g.V("C").Follow(friendOfFriend).Has("status","cool_person")`
+
 cayley-rust:
 
 ```rust
@@ -118,6 +146,7 @@ g.find(V::start(Node("C"))
          .Has(Predicate("status"), Node("cool_person")));
 ```
 
+##### More.
 
 For more examples, see [a test with queries to 30K-Movie database][30kmoviedata-test]
 and [a test of paths compilation][path-compile-test] sources.
