@@ -50,6 +50,14 @@ pub trait Path: Compile {
         self.add_string(format!("Out({:s})", predicates_and_tags(predicates, tags)))
     }
 
+    fn OutP(&mut self, predicates: PredicateSelector) -> &mut Self {
+        self.Out(predicates, AnyTag)
+    }
+
+    fn OutT(&mut self, tags: TagSelector) -> &mut Self {
+        self.Out(AnyPredicate, tags)
+    }
+
     fn In(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
     }

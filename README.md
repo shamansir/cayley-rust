@@ -82,7 +82,7 @@ RustDoc is coming soon.
 
 Due to Rust strict typing, it's hard to transfer free-minded JS-inspired query
 syntax from Cayley as-is. Though I decided to leave upper-case style for Query/Path
-methods, since i.e. no method can't be named `in()` in Rust, because `in` is a keyword.
+methods, since i.e. no method can be named `in()` in Rust, because `in` is a keyword.
 
 Here are some parallels:
 

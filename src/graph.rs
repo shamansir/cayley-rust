@@ -67,7 +67,7 @@ impl Graph {
         match reusable.save() {
             Some(query) => {
                 match self.perform_request(query) {
-                    Ok(body) => { reusable.set_saved(); Ok(()) },
+                    Ok(_) => { reusable.set_saved(); Ok(()) },
                     Err(error) => Err(error)
                 }
             },
@@ -79,7 +79,7 @@ impl Graph {
         match reusable.save_as(name) {
             Some(query) => {
                 match self.perform_request(query) {
-                    Ok(body) => { reusable.set_saved(); Ok(()) },
+                    Ok(_) => { reusable.set_saved(); Ok(()) },
                     Err(error) => Err(error)
                 }
             },
@@ -156,7 +156,7 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
     fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
         decoder.read_struct("__unused__", 0, |decoder| {
             decoder.read_struct_field("result", 0, |decoder| {
-                decoder.read_seq(|decoder, len| {
+                /* decoder.read_seq(|decoder, len| {
                     let mut nodes: Vec<GraphNode> = Vec::with_capacity(len);
                     for i in range(0u, len) {
                         nodes.push(match decoder.read_seq_elt(i,
@@ -166,6 +166,22 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
                         });
                     };
                     Ok(GraphNodes(nodes))
+                }) */
+                decoder.read_option(|decoder, res| {
+                    match res {
+                        false => Ok(GraphNodes(Vec::new())),
+                        true => decoder.read_seq(|decoder, len| {
+                            let mut nodes: Vec<GraphNode> = Vec::with_capacity(len);
+                            for i in range(0u, len) {
+                                nodes.push(match decoder.read_seq_elt(i,
+                                                |decoder| { Decodable::decode(decoder) }) {
+                                    Ok(node) => node,
+                                    Err(err) => return Err(err)
+                                });
+                            };
+                            Ok(GraphNodes(nodes))
+                        })
+                    }
                 })
             })
         })

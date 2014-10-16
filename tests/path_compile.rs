@@ -16,6 +16,7 @@ use cayley::selector::{AnyTag, Tag, Tags};
 use cayley::selector::{AnyPredicate, Predicate, Predicates, Query};
 
 #[test]
+#[allow(non_snake_case)]
 fn main() {
 
     macro_rules! path_eq(
