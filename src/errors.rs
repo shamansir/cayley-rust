@@ -15,6 +15,8 @@ pub enum GraphRequestError {
 }
 
 impl Show for GraphRequestError {
+
+    #[allow(unused_must_use)]
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
         match *self {
             InvalidUrl(ref perr, ref url) => {

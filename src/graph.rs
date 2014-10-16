@@ -1,22 +1,18 @@
 use std::str;
-use std::io::println;
-use std::io::Stream;
 
 use url::Url;
 use http::client::RequestWriter;
 use http::method::Post;
-use http::headers::HeaderEnum;
 
 use serialize::{Decoder, Decodable};
 use serialize::json::decode as json_decode;
-use serialize::json::DecoderError;
 
 use std::collections::HashMap;
 
 use path::Query;
 use path::Reuse;
 
-use errors::{GraphRequestError, GraphResult,
+use errors::{GraphResult,
              InvalidUrl, MalformedRequest, RequestFailed,
              DecodingFailed, ResponseParseFailed,
              QueryNotFinalized, QueryCompilationFailed,
@@ -67,6 +63,7 @@ impl Graph {
         match reusable.save() {
             Some(query) => {
                 match self.perform_request(query) {
+                    /* TODO: saved flag should know a graph where this morphism was saved */
                     Ok(_) => { reusable.set_saved(); Ok(()) },
                     Err(error) => Err(error)
                 }
@@ -79,6 +76,7 @@ impl Graph {
         match reusable.save_as(name) {
             Some(query) => {
                 match self.perform_request(query) {
+                    /* TODO: saved flag should know a graph where this morphism was saved */
                     Ok(_) => { reusable.set_saved(); Ok(()) },
                     Err(error) => Err(error)
                 }
@@ -156,20 +154,9 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
     fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
         decoder.read_struct("__unused__", 0, |decoder| {
             decoder.read_struct_field("result", 0, |decoder| {
-                /* decoder.read_seq(|decoder, len| {
-                    let mut nodes: Vec<GraphNode> = Vec::with_capacity(len);
-                    for i in range(0u, len) {
-                        nodes.push(match decoder.read_seq_elt(i,
-                                        |decoder| { Decodable::decode(decoder) }) {
-                            Ok(node) => node,
-                            Err(err) => return Err(err)
-                        });
-                    };
-                    Ok(GraphNodes(nodes))
-                }) */
-                decoder.read_option(|decoder, res| {
-                    match res {
-                        false => Ok(GraphNodes(Vec::new())),
+                decoder.read_option(|decoder, has_value| {
+                    match has_value {
+                        false => Ok(GraphNodes(Vec::new())), /* FIXME: return GraphNodes(None) */
                         true => decoder.read_seq(|decoder, len| {
                             let mut nodes: Vec<GraphNode> = Vec::with_capacity(len);
                             for i in range(0u, len) {

@@ -5,8 +5,6 @@ use selector::{AnyTag, Tag, Tags};
 use selector::{AnyPredicate, Predicate, Predicates};
 use selector::Query as FromQuery;
 
-use std::fmt::{Show, Formatter, FormatError};
-
 pub struct Vertex {
     finalized: bool,
     path: Vec<String>
@@ -195,6 +193,7 @@ pub trait Query: Path {
 
 // ================================ Vertex ================================== //
 
+#[allow(non_snake_case)]
 impl Vertex {
 
     pub fn start(nodes: NodeSelector) -> Vertex {
