@@ -18,22 +18,41 @@ use errors::{GraphResult,
              QueryNotFinalized, QueryCompilationFailed,
              ReusableCannotBeSaved };
 
+/// Provides access to currently running Cayley database, among with
+/// an ability to run queries there, and to write there your data
+/// (honestly, only if there's a `graph.emit()` method below—if not,
+/// it will just soon be there).
+///
+/// * Use `Graph::default()` to connect to `localhost:64210`.
+/// * Use `Graph::new(host, port, api_version)` to specify the location of database manually.
+///
+/// * Use `Graph::find(<Query>)` to find anything using [Query](./path/trait.Query.html) trait implementor
+/// (`Query`, for example, is implemented by [Vertex](./path/struct.Vertex.html)), which in its turn
+/// is similar to [Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md).
+/// * Use `Graph::find_by(<String>)` to find anything using [Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md) API
+/// from a prepared string. A raw, but not so beautiful, way to execute query.
+/// * Use `Graph::save(<Path>)` to save a [Morphism](./path/struct.Morphism.html).
 pub struct Graph {
     url: String
 }
 
+/// A wrapper for a single item Cayley returned in response for a query
 pub struct GraphNode(pub HashMap<String, String>);
 
+/// A collection of GraphNode instances
 pub struct GraphNodes(pub Vec<GraphNode>);
 
+/// Cayley API Version, planned to default to the latest, if it will ever change
 pub enum CayleyAPIVersion { V1, DefaultVersion }
 
 impl Graph {
 
+    /// Create a Graph which connects to the latest API at `localhost:64210`
     pub fn default() -> GraphResult<Graph> {
         Graph::new("localhost", 64210, DefaultVersion)
     }
 
+    /// Create a Graph which connects to the host you specified manually
     pub fn new(host: &str, port: int, version: CayleyAPIVersion) -> GraphResult<Graph> {
         let version_str = match version { V1 | DefaultVersion => "v1" };
         let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
@@ -41,7 +60,12 @@ impl Graph {
         Ok(Graph{ url: url })
     }
 
-    // find nodes by query implementation and return them parsed
+    /// Find nodes with the Query implementation (say, Vertex-path) and return them parsed
+    ///
+    /// Since only [Vertex](./path/struct.Vertex.html) implements [Query](./path/trait.Query.html) trait
+    /// following current spec, your code will look like that:
+    ///
+    /// `graph.find(Vertex::start(Node("foo")).....All()))`
     pub fn find(&self, query: &Query) -> GraphResult<GraphNodes> {
         if query.is_finalized() {
             match query.compile() {
@@ -51,14 +75,25 @@ impl Graph {
         } else { Err(QueryNotFinalized) }
     }
 
-    // find nodes using raw pre-compiled string query and return them parsed
-    pub fn find_by(&self, query: String) -> GraphResult<GraphNodes> {
+    /// Find nodes using raw pre-compiled query string and return them parsed
+    ///
+    /// If you want to run just the pure stringified Gremlin queries, bypassing
+    /// the string concatenation performed with `path::` module members, this
+    /// method is for you.
+    pub fn exec(&self, query: String) -> GraphResult<GraphNodes> {
         match self.perform_request(query) {
             Ok(body) => Graph::decode_nodes(body),
             Err(error) => Err(error)
         }
     }
 
+    /// Save Morphism or any [Reuse](./path/trait.Reuse.html) implementor in the
+    /// database, equivalent to Gremin's `var foo = g.Morphism()...`
+    ///
+    /// The difference is in the fact you set the name when you create a `Morphism` instance
+    /// and then just pass it here, like:
+    ///
+    /// `let m = Morphism::start("foo"); m...; graph.save(m);`
     pub fn save(&self, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save() {
             Some(query) => {
@@ -72,6 +107,10 @@ impl Graph {
         }
     }
 
+    /// Save Morphism or any [Reuse](./path/trait.Reuse.html) implementor in the
+    /// database, under the different name than the one used when it was created
+    ///
+    /// `let m = Morphism::start("foo"); m...; graph.save_as(m, "bar");`
     pub fn save_as(&self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save_as(name) {
             Some(query) => {

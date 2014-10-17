@@ -151,7 +151,7 @@ g.find(V::start(Node("C"))
 For more examples, see [a test with queries to 30K-Movie database][30kmoviedata-test]
 and [a test of paths compilation][path-compile-test] sources.
 
-Also, I'll try to expand this section later.
+Also, I plan to expand this section later.
 
 # Possible drawbacks
 
