@@ -65,7 +65,9 @@ impl Graph {
     /// Since only [Vertex](./path/struct.Vertex.html) implements [Query](./path/trait.Query.html) trait
     /// following current spec, your code will look like that:
     ///
-    /// `graph.find(Vertex::start(Node("foo")).....All()))`
+    /// ```
+    /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()));
+    /// ```
     pub fn find(&self, query: &Query) -> GraphResult<GraphNodes> {
         if query.is_finalized() {
             match query.compile() {
@@ -80,6 +82,10 @@ impl Graph {
     /// If you want to run just the pure stringified Gremlin queries, bypassing
     /// the string concatenation performed with `path::` module members, this
     /// method is for you.
+    ///
+    /// ```
+    /// graph.exec("g.V(\"foo\").In(\"bar\").All()");
+    /// ```
     pub fn exec(&self, query: String) -> GraphResult<GraphNodes> {
         match self.perform_request(query) {
             Ok(body) => Graph::decode_nodes(body),
@@ -93,7 +99,16 @@ impl Graph {
     /// The difference is in the fact you set the name when you create a `Morphism` instance
     /// and then just pass it here, like:
     ///
-    /// `let m = Morphism::start("foo"); m...; graph.save(m);`
+    /// ```
+    /// let m = Morphism::start("foo");
+    /// m.Out(Predicate("follows"), AnyTag);
+    /// graph.save(m);
+    /// ```
+    ///
+    /// Currently no check is performed if Morphism was already saved or not to
+    /// this graph, though it provides `is_saved()` method which may tell if this Morphism
+    /// instance was saved at least once to _some_ graph. If in future this check will be
+    /// performed, this method definiton won't change, only there will be a new error type.
     pub fn save(&self, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save() {
             Some(query) => {
@@ -110,7 +125,16 @@ impl Graph {
     /// Save Morphism or any [Reuse](./path/trait.Reuse.html) implementor in the
     /// database, under the different name than the one used when it was created
     ///
-    /// `let m = Morphism::start("foo"); m...; graph.save_as(m, "bar");`
+    /// ```
+    /// let m = Morphism::start("foo");
+    /// m.Out(Predicate("follows"), AnyTag);
+    /// graph.save_as(m, "bar");
+    /// ```
+    ///
+    /// Currently no check is performed if Morphism was already saved or not to
+    /// this graph, though it provides `is_saved()` method which may tell if this Morphism
+    /// instance was saved at least once to _some_ graph. If in future this check will be
+    /// performed, this method definiton won't change, only there will be a new error type.
     pub fn save_as(&self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save_as(name) {
             Some(query) => {

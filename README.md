@@ -11,6 +11,11 @@ appear rather fresh for some time, I suppose.
 Cayley is a new graph-driven Database engine from Google, read about it in
 [their Github][cayley] or in different articles.
 
+## Code example
+
+To get a first impression on how it looks in action, see
+[test with queries to 30K-Movie database][30kmoviedata-test] and [path compilation test][path-compile-test] sources.
+
 ## Usage
 
 Add these lines to your `Cargo.toml`:
@@ -145,13 +150,6 @@ g.find(V::start(Node("C"))
          .Follow(&friendOfFriend)
          .Has(Predicate("status"), Node("cool_person")));
 ```
-
-##### More.
-
-For more examples, see [a test with queries to 30K-Movie database][30kmoviedata-test]
-and [a test of paths compilation][path-compile-test] sources.
-
-Also, I plan to expand this section later.
 
 # Possible drawbacks
 
