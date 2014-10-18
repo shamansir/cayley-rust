@@ -15,10 +15,14 @@ use selector::Query as FromQuery;
 ///
 /// ```
 /// use cayley::graph::Graph;
-/// use cayley::path::Vertex;
-/// use cayley::selector::Tags;
+/// use cayley::path::{Vertex, Path, Query};
+/// use cayley::selector::{Tags, AnyNode, Predicate};
 ///
-/// graph.find(Vertex::start(AnyNode).As(Tags(vec!("tag-a", "tag-b"))).OutP("follows").All());
+/// let graph = Graph::default().unwrap();
+/// graph.find(Vertex::start(AnyNode)
+///                   .As(Tags(vec!("tag-a", "tag-b")))
+///                   .OutP(Predicate("follows"))
+///                   .All()).unwrap();
 /// ```
 ///
 /// Another example:
@@ -32,7 +36,7 @@ use selector::Query as FromQuery;
 /// let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
 /// match graph.find(Vertex::start(AnyNode).All()) {
 ///    Ok(GraphNodes(nodes)) => assert!(nodes.len() > 0),
-///    Err(error) => fail!(error.to_string()),
+///    Err(error) => fail!(error.to_string())
 /// };
 /// ```
 ///
@@ -47,7 +51,8 @@ use selector::Query as FromQuery;
 ///
 /// let graph = Graph::default().unwrap();
 /// let mut v = Vertex::prepare();
-/// v.From(Node("C")).OutP(Predicate("follows")).GetLimit(5);
+/// // NB: Do not finalize the queries you plan to reuse!
+/// v.From(Node("C")).OutP(Predicate("follows"));
 /// let mut other_v = Vertex::prepare();
 /// other_v.From(Node("D")).Union(&v).All();
 /// graph.find(&other_v).unwrap();
@@ -169,6 +174,7 @@ pub trait Compile: Clone/*+ToString*/ {
 ///   `graph.save(m);`
 ///   `graph.find(Vertex::start(AnyNode).Follow(&m).All());` is equivalent to Gremlin
 ///   `var foo = g.M()...; g.V().Follow(foo).All();`;
+///
 #[allow(non_snake_case)]
 pub trait Path: Compile {
 
@@ -491,14 +497,14 @@ pub trait Reuse: Compile {
 
     fn save(&self) -> Option<String> {
         match self.compile() {
-            Some(compiled) => Some(self.get_name().to_string() + " = " + compiled),
+            Some(compiled) => Some(format!("var {:s} = {:s}", self.get_name(), compiled)),
             None => None
         }
     }
 
     fn save_as(&self, name: &str) -> Option<String> {
         match self.compile() {
-            Some(compiled) => Some(name.to_string() + " = " + compiled),
+            Some(compiled) => Some(format!("var {:s} = {:s}", name, compiled)),
             None => None
         }
     }

@@ -72,9 +72,12 @@ impl Graph {
     /// following current spec, your code will look like that:
     ///
     /// ```
-    /// # use graph::Graph; use path::Vertex;
-    /// # let graph = Graph::default();
-    /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All());
+    /// use cayley::graph::Graph;
+    /// use cayley::path::{Vertex, Path, Query};
+    /// use cayley::selector::{Predicate, Node};
+    ///
+    /// let graph = Graph::default().unwrap();
+    /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
     pub fn find(&self, query: &Query) -> GraphResult<GraphNodes> {
         if query.is_finalized() {
@@ -94,10 +97,12 @@ impl Graph {
     /// method is for you.
     ///
     /// ```
-    /// # let graph = Graph::default();
-    /// graph.exec("g.V(\"foo\").In(\"bar\").All()");
+    /// use cayley::Graph;
+    /// let graph = Graph::default().unwrap();
+    /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
     /// ```
     pub fn exec(&self, query: String) -> GraphResult<GraphNodes> {
+        println!("Executing query: {:s}", query);
         match self.perform_request(query) {
             Ok(body) => Graph::decode_nodes(body),
             Err(error) => Err(error)
@@ -113,10 +118,14 @@ impl Graph {
     /// and then just pass it here, like:
     ///
     /// ```
-    /// # let graph = Graph::default();
-    /// let m = Morphism::start("foo");
+    /// use cayley::Graph;
+    /// use cayley::path::{Morphism, Path};
+    /// use cayley::selector::{Predicate, AnyTag};
+    ///
+    /// let graph = Graph::default().unwrap();
+    /// let mut m = Morphism::start("foo");
     /// m.Out(Predicate("follows"), AnyTag);
-    /// graph.save(m);
+    /// graph.save(&mut m).unwrap();
     /// ```
     ///
     /// Currently no check is performed if Morphism was already saved or not to
@@ -142,11 +151,14 @@ impl Graph {
     /// database, under the different name than the one used when it was created
     ///
     /// ```
-    /// # use path::Morphism;
-    /// # let graph = Graph::default();
-    /// let m = Morphism::start("foo");
+    /// use cayley::Graph;
+    /// use cayley::path::{Morphism, Path};
+    /// use cayley::selector::{Predicate, AnyTag};
+    ///
+    /// let graph = Graph::default().unwrap();
+    /// let mut m = Morphism::start("foo");
     /// m.Out(Predicate("follows"), AnyTag);
-    /// graph.save_as(m, "bar");
+    /// graph.save_as("bar", &mut m).unwrap();
     /// ```
     ///
     /// Currently no check is performed if Morphism was already saved or not to

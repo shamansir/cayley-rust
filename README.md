@@ -189,6 +189,7 @@ execution to some enum-wrapper, like `NodesMap(...)`, `NodeArray(...)`, `...`;
 * Check if `Morphism` instance is already saved in this graph and fire an error, if it does;
 * Some queries may produce additional errors while they just skip them, we need to store
 an error inside a query and fire it when query is completed:
+    * `.And`, `.Or`, `.Union`, `.Intersect` queries when the passed query is finalized;
     * `.And`, `.Or`, `.Union`, `.Intersect` queries when the passed queries failed to compile;
     * `Morphism` instance passed to `.Follow`/`FollowR` may not be saved when used;
     * Finalizers like `.All`, `.GetLimit`, ... may be called several times which should not happen;
@@ -197,6 +198,7 @@ an error inside a query and fire it when query is completed:
 and this case should be checked by API for sure;
 * May be, better [Error API](http://www.hydrocodedesign.com/2014/05/28/practicality-with-rust-error-handling/);
 * Some Path traits are public while they have no practical usage for user, like `Reuse`;
+* [Log](http://doc.rust-lang.org/log/) executed queries;
 
 # Thanks
 
