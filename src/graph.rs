@@ -71,7 +71,7 @@ impl Graph {
     pub fn find(&self, query: &Query) -> GraphResult<GraphNodes> {
         if query.is_finalized() {
             match query.compile() {
-                Some(compiled) => self.find_by(compiled),
+                Some(compiled) => self.exec(compiled),
                 None => Err(QueryCompilationFailed)
             }
         } else { Err(QueryNotFinalized) }

@@ -11,6 +11,10 @@ appear rather fresh for some time, I suppose.
 Cayley is a new graph-driven Database engine from Google, read about it in
 [their Github][cayley] or in different articles.
 
+## API Docs
+
+RustDoc is coming soon.
+
 ## Code example
 
 To get a first impression on how it looks in action, see
@@ -78,10 +82,6 @@ method of a `Vertex` instance. If you feel you don't like it, feel free to suppo
 [my post][trait-use-requirement-discuss] in Rust language discussions.
 
 Look for more complex requests just [below](#syntax-examples).
-
-## API Docs
-
-RustDoc is coming soon.
 
 ## Syntax examples
 
@@ -153,18 +153,25 @@ g.find(V::start(Node("C"))
 
 # Possible drawbacks
 
-`RequestWriter` instance from [rust-http][] is created for every new query performed.
+1. `RequestWriter` instance from [rust-http][] is created for every new query performed.
 I planned to re-use same `RequestWriter` instance for every request since URL
 is actually does not change, but Rust compiler appeared not to be happy enough with
 this idea, since anyway `RequestWriter` should be mutable, by
 spec, for `POST` requests, and so it just can't be passed here and there easily.
 
-Compiler is right, though, so we will wait for [teepee][] to be released
+    Compiler is right, though, so we will wait for [teepee][] to be released,
 to replace [rust-http][], may be there we will find some friendlier ways to do `POST`ing.
+
+2. Currently `GraphNodes` returned from a query are stored as `HashMap<String, String>`,
+which is a possible high memory over-use, since in most cases keys and values are immutable.
+Though `json::Decoder` makes it really hard to use immutable types of strings there.
+Anyway, I'll try to investigate in it and fix it among the first issues.
 
 # TODO
 
-Everything from [Gremlin API][] except points noted below, is implemented.
+## Features
+
+Things from [Gremlin API][] still not implemented:
 
 * `query.ToArray()`
 * `query.ToValue()`
@@ -172,6 +179,24 @@ Everything from [Gremlin API][] except points noted below, is implemented.
 * `query.TagValue()`
 * `query.ForEach(callback), query.ForEach(limit, callback)` a.k.a `query.Map`
 * Writing to DB: `graph.Emit(data)`
+
+## API improvements
+
+* API change: Store `GraphNodes` as a map with immutable strings (see above, p.2 in
+[Possible Drawbacks](#Possible-Drawbacks) section);
+* API change: Implementing methods listed above will require to change a result of query
+execution to some enum-wrapper, like `NodesMap(...)`, `NodeArray(...)`, `...`;
+* Check if `Morphism` instance is already saved in this graph and fire an error, if it does;
+* Some queries may produce additional errors while they just skip them, we need to store
+an error inside a query and fire it when query is completed:
+    * `.And`, `.Or`, `.Union`, `.Intersect` queries when the passed queries failed to compile;
+    * `Morphism` instance passed to `.Follow`/`FollowR` may not be saved when used;
+    * Finalizers like `.All`, `.GetLimit`, ... may be called several times which should not happen;
+* Maybe `Morphism` needs improvements, it's looks not so obvious in usage;
+* Preparing `Vertex` for re-use requires to start a query using `.From()` selector,
+and this case should be checked by API for sure;
+* May be, better [Error API](http://www.hydrocodedesign.com/2014/05/28/practicality-with-rust-error-handling/);
+* Some Path traits are public while they have no practical usage for user, like `Reuse`;
 
 # Thanks
 

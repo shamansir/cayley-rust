@@ -14,7 +14,7 @@ use selector::Query as FromQuery;
 /// Example:
 ///
 /// ```
-/// graph.find(Vertex::start(AnyNode).As(Tags(vec!("tag-a", "tag-b"))).OutP("follows").All())`.
+/// graph.find(Vertex::start(AnyNode).As(Tags(vec!("tag-a", "tag-b"))).OutP("follows").All());
 /// ```
 ///
 /// Another example:
@@ -167,12 +167,12 @@ pub trait Path: Compile {
         self.add_string(format!("Out({:s})", predicates_and_tags(predicates, tags)))
     }
 
-    /// `OutP`, an alias to `Out(<Predicate>, AnyTag)`
+    /// `OutP`, an alias for `Out(<Predicate>, AnyTag)`
     fn OutP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.Out(predicates, AnyTag)
     }
 
-    /// `OutT`, an alias to `Out(AnyPredicate, <Tag>)`
+    /// `OutT`, an alias for `Out(AnyPredicate, <Tag>)`
     fn OutT(&mut self, tags: TagSelector) -> &mut Self {
         self.Out(AnyPredicate, tags)
     }
@@ -182,12 +182,12 @@ pub trait Path: Compile {
         self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
     }
 
-    /// `InP`, an alias to `In(<Predicate>, AnyTag)`
+    /// `InP`, an alias for `In(<Predicate>, AnyTag)`
     fn InP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.In(predicates, AnyTag)
     }
 
-    /// `InT`, an alias to `In(AnyPredicate, <Tag>)`
+    /// `InT`, an alias for `In(AnyPredicate, <Tag>)`
     fn InT(&mut self, tags: TagSelector) -> &mut Self {
         self.In(AnyPredicate, tags)
     }
@@ -197,12 +197,12 @@ pub trait Path: Compile {
         self.add_string(format!("Both({:s})", predicates_and_tags(predicates, tags)))
     }
 
-    /// `BothP`, an alias to `Both(<Predicate>, AnyTag)`
+    /// `BothP`, an alias for `Both(<Predicate>, AnyTag)`
     fn BothP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.Both(predicates, AnyTag)
     }
 
-    /// `BothT`, an alias to `Both(AnyPredicate, <Tag>)`
+    /// `BothT`, an alias for `Both(AnyPredicate, <Tag>)`
     fn BothT(&mut self, tags: TagSelector) -> &mut Self {
         self.Both(AnyPredicate, tags)
     }
@@ -221,17 +221,17 @@ pub trait Path: Compile {
         self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, nodes)))
     }
 
-    /// `HasP`, an alias to `Has(<Predicate>, AnyNode)`
+    /// `HasP`, an alias for `Has(<Predicate>, AnyNode)`
     fn HasP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.Has(predicates, AnyNode)
     }
 
-    /// `HasN`, an alias to `Has(AnyPredicate, <Node>)`
+    /// `HasN`, an alias for `Has(AnyPredicate, <Node>)`
     fn HasN(&mut self, nodes: NodeSelector) -> &mut Self {
         self.Has(AnyPredicate, nodes)
     }
 
-    /// `.Tag`, an alias to `.As`
+    /// `.Tag`, an alias for `.As`
     fn Tag(&mut self, tags: TagSelector) -> &mut Self { self.As(tags) }
 
     /// `.As` Path method. Mark items with a tag.
@@ -257,19 +257,20 @@ pub trait Path: Compile {
         self.add_string(format!("Save({:s})", predicates_and_tags(predicates, tags)))
     }
 
-    /// `SaveP`, an alias to `Save(<Predicate>, AnyTag)`
+    /// `SaveP`, an alias for `Save(<Predicate>, AnyTag)`
     fn SaveP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.Save(predicates, AnyTag)
     }
 
-    /// `SaveT`, an alias to `Save(AnyPredicate, <Tag>)`
+    /// `SaveT`, an alias for `Save(AnyPredicate, <Tag>)`
     fn SaveT(&mut self, tags: TagSelector) -> &mut Self {
         self.Save(AnyPredicate, tags)
     }
 
-    /// `.Intersect`, an alias to `.And`
+    /// `.Intersect`, an alias for `.And`
     fn Intersect(&mut self, query: &Query) -> &mut Self { self.And(query) }
 
+    /// `.And` Path method. Intersect the results from one query with another.
     fn And(&mut self, query: &Query) -> &mut Self {
         /* FIXME: implicit return looking not so good here? */
         match query.compile() {
@@ -279,9 +280,10 @@ pub trait Path: Compile {
         self
     }
 
-    /// `.Union`, an alias to `.Or`
+    /// `.Union`, an alias for `.Or`
     fn Union(&mut self, query: &Query) -> &mut Self { self.Or(query) }
 
+    /// `.Or` Path method. Join the results from one query with another.
     fn Or(&mut self, query: &Query) -> &mut Self {
         /* FIXME: implicit return looking not so good here? */
         match query.compile() {
@@ -291,6 +293,7 @@ pub trait Path: Compile {
         self
     }
 
+    /// `.Follow`
     fn Follow(&mut self, reusable: &Reuse) -> &mut Self {
         /* TODO: match reusable.is_saved() {
             notify that reusable may not be saved
@@ -414,12 +417,12 @@ impl Clone for Vertex {
 pub trait Reuse: Compile {
 
     /// Get a prepared name for this Reusable
-    pub fn get_name(&self) -> &str;
+    /*pub*/ fn get_name(&self) -> &str;
 
     fn set_saved(&mut self);
 
     /// Was this item saved at least once in _some_ graph during this session.
-    pub fn is_saved(&self) -> bool;
+    /*pub*/ fn is_saved(&self) -> bool;
 
     fn save(&self) -> Option<String> {
         match self.compile() {
