@@ -91,8 +91,13 @@
 //! Follow the links above for a complete lists of methods and to get more information
 //! about every mentioned structure.
 
+#[doc(no_inline)]
 extern crate http;
+
+#[doc(no_inline)]
 extern crate url;
+
+#[doc(no_inline)]
 extern crate serialize;
 
 pub use graph::{Graph, GraphNodes, GraphNode};

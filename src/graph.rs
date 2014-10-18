@@ -26,12 +26,12 @@ use errors::{GraphResult,
 /// * Use `Graph::default()` to connect to `localhost:64210`.
 /// * Use `Graph::new(host, port, api_version)` to specify the location of database manually.
 ///
-/// * Use `Graph::find(<Query>)` to find anything using [Query](./path/trait.Query.html) trait implementor
-/// (`Query`, for example, is implemented by [Vertex](./path/struct.Vertex.html)), which in its turn
+/// * Use `Graph::find(<Query>)` to find anything using [Query](../path/trait.Query.html) trait implementor
+/// (`Query`, for example, is implemented by [Vertex](../path/struct.Vertex.html)), which in its turn
 /// is similar to [Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md).
 /// * Use `Graph::find_by(<String>)` to find anything using [Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md) API
 /// from a prepared string. A raw, but not so beautiful, way to execute query.
-/// * Use `Graph::save(<Path>)` to save a [Morphism](./path/struct.Morphism.html).
+/// * Use `Graph::save(<Path>)` to save a [Morphism](../path/struct.Morphism.html).
 pub struct Graph {
     url: String
 }
@@ -68,7 +68,7 @@ impl Graph {
 
     /// Find nodes with the Query implementation (say, Vertex-path) and return them parsed
     ///
-    /// Since only [Vertex](./path/struct.Vertex.html) implements [Query](./path/trait.Query.html) trait
+    /// Since only [Vertex](../path/struct.Vertex.html) implements [Query](../path/trait.Query.html) trait
     /// following current spec, your code will look like that:
     ///
     /// ```
@@ -111,7 +111,7 @@ impl Graph {
 
     // ---------------------------------- save ---------------------------------
 
-    /// Save Morphism or any [Reuse](./path/trait.Reuse.html) implementor in the
+    /// Save Morphism or any [Reuse](../path/trait.Reuse.html) implementor in the
     /// database, equivalent to Gremin's `var foo = g.Morphism()...`
     ///
     /// The difference is in the fact you set the name when you create a `Morphism` instance

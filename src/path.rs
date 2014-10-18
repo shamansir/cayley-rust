@@ -5,8 +5,8 @@ use selector::{AnyTag, Tag, Tags};
 use selector::{AnyPredicate, Predicate, Predicates};
 use selector::Query as FromQuery;
 
-/// An interface to a Path with the ability to be executed as a query to a database.
-/// The main entry point to ask for [GraphNodes](./struct.GraphNodes.html) from database using [Graph](./struct.Graph.html) as an interceptor.
+/// An interface to a [Path](../path/trait.Path.html) with the ability to be executed as a [Query](../path/trait.Query.html) to a database.
+/// The main entry point to ask for [GraphNodes](../graph/struct.GraphNodes.html) from database using [Graph](../graph/struct.Graph.html) as an interceptor.
 ///
 /// To query for anything you might describe with Path from database, use this pattern:
 /// `graph.find(Vertex::start(<NodeSelector>).<PathMethod>().<PathMethod>(<method_arg>).....<QueryMethod>())`.
@@ -15,7 +15,7 @@ use selector::Query as FromQuery;
 ///
 /// ```
 /// use cayley::graph::Graph;
-/// use cayley::path::{Vertex, Path, Query};
+/// use cayley::path::{Vertex, Path, Query}; // Query and Path trait imports are required
 /// use cayley::selector::{Tags, AnyNode, Predicate};
 ///
 /// let graph = Graph::default().unwrap();
@@ -413,7 +413,7 @@ pub trait Query: Path {
 #[allow(non_snake_case)]
 impl Vertex {
 
-    /// Create a Vertex instance and start a query from [NodeSelector](./selector/struct.NodeSelector.html)
+    /// Create a Vertex instance and start a query from [NodeSelector](../selector/struct.NodeSelector.html)
     pub fn start(nodes: NodeSelector) -> Vertex {
         let mut res = Vertex::prepare();
         res.From(nodes);

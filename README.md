@@ -13,7 +13,7 @@ Cayley is a new graph-driven Database engine from Google, read about it in
 
 ## API Docs
 
-RustDoc is coming soon.
+[API Docs](http://shamansir.github.io/cayley-rust/cayley/index.html) (`rustdoc`).
 
 ## Code example
 
