@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Vertex` struct in crate `cayley`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Vertex">
+
+    <title>cayley::path::Vertex - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='../index.html'>cayley</a>::<wbr><a href='index.html'>path</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.Morphism.html'>Morphism</a><a class='struct current' href='struct.Vertex.html'>Vertex</a></div><div class='block trait'><h2>Traits</h2><a class='trait ' href='trait.Compile.html'>Compile</a><a class='trait ' href='trait.Path.html'>Path</a><a class='trait ' href='trait.Query.html'>Query</a><a class='trait ' href='trait.Reuse.html'>Reuse</a></div>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>cayley</a>::<wbr><a href='index.html'>path</a>::<wbr><a class='struct' href=''>Vertex</a><wbr></span><span class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]
+            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-408' href='../../src/cayley/Users/shamansir/Workspace/cayley-rust/src/path.rs.html#60-63'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Vertex {
+    // some fields omitted
+}</pre><div class='docblock'><p>An interface to a Path with the ability to be executed as a query to a database.
+The main entry point to ask for <a href="./struct.GraphNodes.html">GraphNodes</a> from database using <a href="./struct.Graph.html">Graph</a> as an interceptor.</p>
+
+<p>To query for anything you might describe with Path from database, use this pattern:
+<code>graph.find(Vertex::start(&lt;NodeSelector&gt;).&lt;PathMethod&gt;().&lt;PathMethod&gt;(&lt;method_arg&gt;).....&lt;QueryMethod&gt;())</code>.</p>
+
+<p>Example:</p>
+<pre class='rust '>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>graph</span>::<span class='ident'>Graph</span>;
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::{<span class='ident'>Vertex</span>, <span class='ident'>Path</span>, <span class='ident'>Query</span>};
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>selector</span>::{<span class='ident'>Tags</span>, <span class='ident'>AnyNode</span>, <span class='ident'>Predicate</span>};
+
+<span class='kw'>let</span> <span class='ident'>graph</span> <span class='op'>=</span> <span class='ident'>Graph</span>::<span class='ident'>default</span>().<span class='ident'>unwrap</span>();
+<span class='ident'>graph</span>.<span class='ident'>find</span>(<span class='ident'>Vertex</span>::<span class='ident'>start</span>(<span class='ident'>AnyNode</span>)
+                  .<span class='ident'>As</span>(<span class='ident'>Tags</span>(<span class='macro'>vec</span><span class='macro'>!</span>(<span class='string'>&quot;tag-a&quot;</span>, <span class='string'>&quot;tag-b&quot;</span>)))
+                  .<span class='ident'>OutP</span>(<span class='ident'>Predicate</span>(<span class='string'>&quot;follows&quot;</span>))
+                  .<span class='ident'>All</span>()).<span class='ident'>unwrap</span>();
+</pre>
+
+<p>Another example:</p>
+<pre class='rust '>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::{<span class='ident'>Graph</span>, <span class='ident'>DefaultVersion</span>};
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>GraphNodes</span>;
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::{<span class='ident'>Vertex</span>, <span class='ident'>Query</span>}; <span class='comment'>// Query trait import is required</span>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>selector</span>::<span class='ident'>AnyNode</span>;
+
+<span class='kw'>let</span> <span class='ident'>graph</span> <span class='op'>=</span> <span class='ident'>Graph</span>::<span class='ident'>new</span>(<span class='string'>&quot;localhost&quot;</span>, <span class='number'>64210</span>, <span class='ident'>DefaultVersion</span>).<span class='ident'>unwrap</span>();
+<span class='kw'>match</span> <span class='ident'>graph</span>.<span class='ident'>find</span>(<span class='ident'>Vertex</span>::<span class='ident'>start</span>(<span class='ident'>AnyNode</span>).<span class='ident'>All</span>()) {
+   <span class='prelude-val'>Ok</span>(<span class='ident'>GraphNodes</span>(<span class='ident'>nodes</span>)) <span class='op'>=&gt;</span> <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>nodes</span>.<span class='ident'>len</span>() <span class='op'>&gt;</span> <span class='number'>0</span>),
+   <span class='prelude-val'>Err</span>(<span class='ident'>error</span>) <span class='op'>=&gt;</span> <span class='macro'>fail</span><span class='macro'>!</span>(<span class='ident'>error</span>.<span class='ident'>to_string</span>())
+};
+</pre>
+
+<p>Sometimes it is wanted to separate a vertex instance from a query construction.
+Use <code>prepare</code> static method for this purpose, but then ensure to start a query with <code>From</code> call:</p>
+<pre class='rust '>
+<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>allow</span>(<span class='ident'>unused_result</span>)]</span>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>Graph</span>;
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::{<span class='ident'>Vertex</span>, <span class='ident'>Path</span>, <span class='ident'>Query</span>};
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>selector</span>::{<span class='ident'>Node</span>, <span class='ident'>Predicate</span>};
+
+<span class='kw'>let</span> <span class='ident'>graph</span> <span class='op'>=</span> <span class='ident'>Graph</span>::<span class='ident'>default</span>().<span class='ident'>unwrap</span>();
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>Vertex</span>::<span class='ident'>prepare</span>();
+<span class='comment'>// NB: Do not finalize the queries you plan to reuse!</span>
+<span class='ident'>v</span>.<span class='ident'>From</span>(<span class='ident'>Node</span>(<span class='string'>&quot;C&quot;</span>)).<span class='ident'>OutP</span>(<span class='ident'>Predicate</span>(<span class='string'>&quot;follows&quot;</span>));
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>other_v</span> <span class='op'>=</span> <span class='ident'>Vertex</span>::<span class='ident'>prepare</span>();
+<span class='ident'>other_v</span>.<span class='ident'>From</span>(<span class='ident'>Node</span>(<span class='string'>&quot;D&quot;</span>)).<span class='ident'>Union</span>(<span class='kw-2'>&amp;</span><span class='ident'>v</span>).<span class='ident'>All</span>();
+<span class='ident'>graph</span>.<span class='ident'>find</span>(<span class='kw-2'>&amp;</span><span class='ident'>other_v</span>).<span class='ident'>unwrap</span>();
+</pre>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h3><div class='impl-methods'><h4 id='method.start' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.start' class='fnname'>start</a>(nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h4>
+<div class='docblock'><p>Create a Vertex instance and start a query from <a href="./selector/struct.NodeSelector.html">NodeSelector</a></p>
+</div><h4 id='method.prepare' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.prepare' class='fnname'>prepare</a>() -&gt; <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h4>
+<div class='docblock'><p>Prepare a vertex instance to specify a query later. Ensure to start a query with <code>.From()</code> method
+if you use <code>prepare()</code>.</p>
+</div><h4 id='method.From' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.From' class='fnname'>From</a>(&amp;mut self, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h4>
+<div class='docblock'><p>A method for postponed query creation, intended to be used after the <code>prepare()</code> method
+on the same Vertex instance.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='trait' href='../../cayley/path/trait.Compile.html' title='cayley::path::Compile'>Compile</a> for <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h3><div class='impl-methods'><h4 id='method.add_str' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.add_str' class='fnname'>add_str</a>(&amp;mut self, str: &amp;<a href='http://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; &amp;mut <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h4>
+<h4 id='method.add_string' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.add_string' class='fnname'>add_string</a>(&amp;mut self, str: <a class='struct' href='http://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>) -&gt; &amp;mut <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h4>
+<h4 id='method.compile' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.compile' class='fnname'>compile</a>(&amp;self) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='http://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;</code></h4>
+</div><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='trait' href='../../cayley/path/trait.Path.html' title='cayley::path::Path'>Path</a> for <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h3><div class='impl-methods'><h4 id='method.Out' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Out' class='fnname'>Out</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.OutP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.OutP' class='fnname'>OutP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.OutT' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.OutT' class='fnname'>OutT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.In' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.In' class='fnname'>In</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.InP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.InP' class='fnname'>InP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.InT' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.InT' class='fnname'>InT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Both' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Both' class='fnname'>Both</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.BothP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.BothP' class='fnname'>BothP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.BothT' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.BothT' class='fnname'>BothT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Is' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Is' class='fnname'>Is</a>(&amp;mut self, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Has' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Has' class='fnname'>Has</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.HasP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.HasP' class='fnname'>HasP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.HasN' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.HasN' class='fnname'>HasN</a>(&amp;mut self, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Tag' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Tag' class='fnname'>Tag</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.As' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.As' class='fnname'>As</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Back' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Back' class='fnname'>Back</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Save' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Save' class='fnname'>Save</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.SaveP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.SaveP' class='fnname'>SaveP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.SaveT' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.SaveT' class='fnname'>SaveT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Intersect' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Intersect' class='fnname'>Intersect</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.And' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.And' class='fnname'>And</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Union' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Union' class='fnname'>Union</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Or' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Or' class='fnname'>Or</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.Follow' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Follow' class='fnname'>Follow</a>(&amp;mut self, reusable: &amp;<a class='trait' href='../../cayley/path/trait.Reuse.html' title='cayley::path::Reuse'>Reuse</a>) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.FollowR' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.FollowR' class='fnname'>FollowR</a>(&amp;mut self, reusable: &amp;<a class='trait' href='../../cayley/path/trait.Reuse.html' title='cayley::path::Reuse'>Reuse</a>) -&gt; &amp;mut Self</code></h4>
+</div><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a> for <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h3><div class='impl-methods'><h4 id='method.set_finalized' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.set_finalized' class='fnname'>set_finalized</a>(&amp;mut self)</code></h4>
+<h4 id='method.is_finalized' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.is_finalized' class='fnname'>is_finalized</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.All' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.All' class='fnname'>All</a>(&amp;mut self) -&gt; &amp;mut Self</code></h4>
+<h4 id='method.GetLimit' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.GetLimit' class='fnname'>GetLimit</a>(&amp;mut self, limit: <a href='http://doc.rust-lang.org/nightly/std/primitive.int.html'>int</a>) -&gt; &amp;mut Self</code></h4>
+</div><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h3><div class='impl-methods'><h4 id='method.clone' class='method'><a class='stability Unstable' title='Unstable'></a><code>fn <a href='#method.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h4>
+<h4 id='method.clone_from' class='method'><a class='stability Experimental' title='Experimental: this function is mostly unused'></a><code>fn <a href='#tymethod.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "cayley";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script async src="../../search-index.js"></script>
+</body>
+</html>

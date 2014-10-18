@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `cayley` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, cayley">
+
+    <title>cayley - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'></p>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>cayley</a><wbr></span><span class='out-of-band'><a href='stability.html'>[stability]</a> <span id='render-detail'>
+            <a id="collapse-all" href="#">[-]
+            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-0' href='../src/cayley/Users/shamansir/Workspace/cayley-rust/src/lib.rs.html#1-109'>[src]</a></span></h1>
+<div class='docblock'><style>ul a { color: #4e8bca; }</style>
+
+<h1 id="google-cayley-database-driver" class='section-header'><a
+                           href="#google-cayley-database-driver">Google Cayley Database Driver</a></h1>
+<p><a href="https://github.com/shamansir/cayley-rust">Hosted at Github</a>.</p>
+
+<p>Jump to: <a href="./graph/struct.Graph.html">Graph</a> |
+         <a href="./path/struct.Vertex.html">Vertex</a> |
+         <a href="./path/struct.Morphism.html">Morphism</a>.</p>
+
+<h2 id="connection" class='section-header'><a
+                           href="#connection">Connection</a></h2>
+<p>To connect to a graph, start Cayley itself:</p>
+
+<p><code>$ ./cayley http --dbpath=&lt;your-database&gt;</code></p>
+
+<p>Then, bind driver to your host this way:</p>
+<pre class='rust '>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::{<span class='ident'>Graph</span>, <span class='ident'>DefaultVersion</span>};
+<span class='kw'>let</span> <span class='ident'>graph</span> <span class='op'>=</span> <span class='kw'>match</span> <span class='ident'>Graph</span>::<span class='ident'>new</span>(<span class='string'>&quot;localhost&quot;</span>, <span class='number'>64210</span>, <span class='ident'>DefaultVersion</span>) {
+   <span class='prelude-val'>Err</span>(<span class='ident'>error</span>) <span class='op'>=&gt;</span> <span class='macro'>fail</span><span class='macro'>!</span>(<span class='ident'>error</span>),
+   <span class='prelude-val'>Ok</span>(<span class='ident'>graph</span>) <span class='op'>=&gt;</span> <span class='ident'>graph</span>
+};
+</pre>
+
+<p>For the moment, this code performs no connection at all, when you only create a Graph.
+On the other hand, the connection is established for every query. So this error, if happened,
+is not telling that connection was failed here, it just tells about malformed URL.
+But things may change, and even when they&#39;ll do, you still have a chance to
+pattern-match the error, if you need.</p>
+
+<h2 id="query" class='section-header'><a
+                           href="#query">Query</a></h2>
+<p>Query pattern looks like this:</p>
+<pre class='rust '>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::{<span class='ident'>Graph</span>, <span class='ident'>DefaultVersion</span>};
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>GraphNodes</span>;
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::{<span class='ident'>Vertex</span>, <span class='ident'>Query</span>}; <span class='comment'>// Query trait import is required</span>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>selector</span>::<span class='ident'>AnyNode</span>;
+
+<span class='kw'>let</span> <span class='ident'>graph</span> <span class='op'>=</span> <span class='ident'>Graph</span>::<span class='ident'>new</span>(<span class='string'>&quot;localhost&quot;</span>, <span class='number'>64210</span>, <span class='ident'>DefaultVersion</span>).<span class='ident'>unwrap</span>();
+<span class='kw'>match</span> <span class='ident'>graph</span>.<span class='ident'>find</span>(<span class='ident'>Vertex</span>::<span class='ident'>start</span>(<span class='ident'>AnyNode</span>).<span class='ident'>All</span>()) {
+   <span class='prelude-val'>Ok</span>(<span class='ident'>GraphNodes</span>(<span class='ident'>nodes</span>)) <span class='op'>=&gt;</span> <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>nodes</span>.<span class='ident'>len</span>() <span class='op'>&gt;</span> <span class='number'>0</span>),
+   <span class='prelude-val'>Err</span>(<span class='ident'>error</span>) <span class='op'>=&gt;</span> <span class='macro'>fail</span><span class='macro'>!</span>(<span class='ident'>error</span>.<span class='ident'>to_string</span>()),
+};
+</pre>
+
+<p>So in general it looks like <code>graph.find(&lt;Query&gt;)</code>.</p>
+
+<p><a href="./graph/struct.GraphNodes.html">GraphNodes</a> is a wrapper for <code>Vec&lt;GraphNode&gt;</code>.
+<a href="./graph/struct.GraphNode.html">GraphNode</a> is a wrapper for <code>HashMap&lt;String, String&gt;</code></p>
+
+<p>Morphism used this way:</p>
+<pre class='rust '>
+<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>allow</span>(<span class='ident'>unused_result</span>)]</span>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::{<span class='ident'>Graph</span>, <span class='ident'>DefaultVersion</span>};
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::<span class='ident'>Vertex</span> <span class='kw'>as</span> <span class='ident'>V</span>;
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::<span class='ident'>Morphism</span> <span class='kw'>as</span> <span class='ident'>M</span>;
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::{<span class='ident'>Path</span>, <span class='ident'>Query</span>}; <span class='comment'>// both traits imports are required</span>
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>selector</span>::{<span class='ident'>Predicate</span>, <span class='ident'>Node</span>};
+
+<span class='kw'>let</span> <span class='ident'>graph</span> <span class='op'>=</span> <span class='ident'>Graph</span>::<span class='ident'>new</span>(<span class='string'>&quot;localhost&quot;</span>, <span class='number'>64210</span>, <span class='ident'>DefaultVersion</span>).<span class='ident'>unwrap</span>();
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>follows_m</span> <span class='op'>=</span> <span class='ident'>M</span>::<span class='ident'>start</span>(<span class='string'>&quot;foo&quot;</span>);
+        <span class='ident'>follows_m</span>.<span class='ident'>OutP</span>(<span class='ident'>Predicate</span>(<span class='string'>&quot;follows&quot;</span>));
+<span class='ident'>graph</span>.<span class='ident'>save</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>follows_m</span>).<span class='ident'>unwrap</span>();
+<span class='ident'>graph</span>.<span class='ident'>find</span>(<span class='ident'>V</span>::<span class='ident'>start</span>(<span class='ident'>Node</span>(<span class='string'>&quot;C&quot;</span>))
+             .<span class='ident'>Follow</span>(<span class='kw-2'>&amp;</span><span class='ident'>follows_m</span>)
+             .<span class='ident'>Has</span>(<span class='ident'>Predicate</span>(<span class='string'>&quot;status&quot;</span>), <span class='ident'>Node</span>(<span class='string'>&quot;cool_person&quot;</span>))
+             .<span class='ident'>All</span>()).<span class='ident'>unwrap</span>();
+</pre>
+
+<h2 id="api" class='section-header'><a
+                           href="#api">API</a></h2>
+<p><a href="https://github.com/google/cayley/blob/master/docs/GremlinAPI.md">Gremlin API</a> is implemented
+through these entry points:</p>
+
+<ul>
+<li><a href="./graph/struct.Graph.html">Graph</a> provides <code>.find(&lt;Query&gt;)</code> and <code>.save(&lt;Morphism&gt;)</code>;</li>
+<li><a href="./path/struct.Vertex.html">Vertex</a> provides:
+
+<ul>
+<li><a href="./path/trait.Path.html">Path</a> implemetation with <code>.Out(...)</code>, <code>.In(...)</code>, <code>.Has(...)</code>, <code>.Or(...)</code>, <code>.Follow(...)</code>, ...</li>
+<li><a href="./path/trait.Query.html">Query</a> implemetation with <code>.All()</code>, <code>.GetLimit(...)</code>, ...</li>
+</ul></li>
+<li><a href="./path/struct.Morphism.html">Morphism</a> provides:
+
+<ul>
+<li><a href="./path/trait.Path.html">Path</a> implemetation with <code>.Out(...)</code>, <code>.In(...)</code>, <code>.Has(...)</code>, <code>.Or(...)</code>, <code>.Follow(...)</code>, ...</li>
+</ul></li>
+</ul>
+
+<p>Follow the links above for a complete lists of methods and to get more information
+about every mentioned structure.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use graph::{<a class='struct' href='../cayley/graph/struct.Graph.html' title='cayley::graph::Graph'>Graph</a>, <a class='struct' href='../cayley/graph/struct.GraphNodes.html' title='cayley::graph::GraphNodes'>GraphNodes</a>, <a class='struct' href='../cayley/graph/struct.GraphNode.html' title='cayley::graph::GraphNode'>GraphNode</a>};</code></td></tr><tr><td><code>pub use graph::{<a class='enum' href='../cayley/graph/enum.CayleyAPIVersion.html' title='cayley::graph::CayleyAPIVersion'>V1</a>, <a class='enum' href='../cayley/graph/enum.CayleyAPIVersion.html' title='cayley::graph::CayleyAPIVersion'>DefaultVersion</a>};</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='errors/index.html'
+                               title='cayley::errors'>errors</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='graph/index.html'
+                               title='cayley::graph'>graph</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='path/index.html'
+                               title='cayley::path'>path</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='selector/index.html'
+                               title='cayley::selector'>selector</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "cayley";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>

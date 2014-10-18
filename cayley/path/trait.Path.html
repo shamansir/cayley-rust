@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Path` trait in crate `cayley`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Path">
+
+    <title>cayley::path::Path - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='../index.html'>cayley</a>::<wbr><a href='index.html'>path</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.Morphism.html'>Morphism</a><a class='struct ' href='struct.Vertex.html'>Vertex</a></div><div class='block trait'><h2>Traits</h2><a class='trait ' href='trait.Compile.html'>Compile</a><a class='trait current' href='trait.Path.html'>Path</a><a class='trait ' href='trait.Query.html'>Query</a><a class='trait ' href='trait.Reuse.html'>Reuse</a></div>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content trait">
+<h1 class='fqn'><span class='in-band'>Trait <a href='../index.html'>cayley</a>::<wbr><a href='index.html'>path</a>::<wbr><a class='trait' href=''>Path</a><wbr></span><span class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]
+            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-468' href='../../src/cayley/Users/shamansir/Workspace/cayley-rust/src/path.rs.html#179-378'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait Path: <a class='trait' href='../../cayley/path/trait.Compile.html' title='cayley::path::Compile'>Compile</a> {
+    fn <a href='#method.Out' class='fnname'>Out</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.OutP' class='fnname'>OutP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.OutT' class='fnname'>OutT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.In' class='fnname'>In</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.InP' class='fnname'>InP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.InT' class='fnname'>InT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Both' class='fnname'>Both</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.BothP' class='fnname'>BothP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.BothT' class='fnname'>BothT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Is' class='fnname'>Is</a>(&amp;mut self, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Has' class='fnname'>Has</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.HasP' class='fnname'>HasP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.HasN' class='fnname'>HasN</a>(&amp;mut self, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Tag' class='fnname'>Tag</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.As' class='fnname'>As</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Back' class='fnname'>Back</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Save' class='fnname'>Save</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.SaveP' class='fnname'>SaveP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.SaveT' class='fnname'>SaveT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Intersect' class='fnname'>Intersect</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.And' class='fnname'>And</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Union' class='fnname'>Union</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Or' class='fnname'>Or</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.Follow' class='fnname'>Follow</a>(&amp;mut self, reusable: &amp;<a class='trait' href='../../cayley/path/trait.Reuse.html' title='cayley::path::Reuse'>Reuse</a>) -&gt; &amp;mut Self { ... }
+    fn <a href='#method.FollowR' class='fnname'>FollowR</a>(&amp;mut self, reusable: &amp;<a class='trait' href='../../cayley/path/trait.Reuse.html' title='cayley::path::Reuse'>Reuse</a>) -&gt; &amp;mut Self { ... }
+}</pre><div class='docblock'><p>The trait which covers all the methods from <a href="https://github.com/google/cayley/blob/master/docs/GremlinAPI.md">Gremlin API</a>
+Path specification, but in a Rust way.</p>
+
+<p>Some methods requiring two parameters like predicate and tags have a siblings to help you in the
+cases when you need only one, like <code>Out(&lt;Predicate&gt;, &lt;Tag&gt;)</code> has a sibling <code>OutP(&lt;Predicate&gt;)</code>
+(alias for <code>Out(&lt;Predicate&gt;, AnyTag)</code> and a sibling <code>OutT(&lt;Tag&gt;)</code> (alias for <code>Out(AnyPredicate, &lt;Tag&gt;)</code>.</p>
+
+<p>The rules of conversion are like that:</p>
+
+<p>For <code>.Out</code>, <code>.In</code>, <code>.Both</code>, <code>.Save</code> methods, using <code>.Out</code> as an example:</p>
+
+<ul>
+<li><code>.Out(AnyPredicate, AnyTag)</code> is equivalent to Gremlin <code>.Out()</code>;</li>
+<li><code>.Out(Predicate(&quot;foo&quot;), AnyTag)</code> is equivalent to Gremlin <code>.Out(&quot;foo&quot;)</code>;</li>
+<li><code>.Out(Predicate(&quot;foo&quot;), Tag(&quot;bar&quot;))</code> is equivalent to Gremlin <code>.Out(&quot;foo&quot;, &quot;bar&quot;)</code>;</li>
+<li><code>.Out(Predicates(vec!(&quot;foo&quot;, &quot;bar&quot;)), AnyTag)</code> is equivalent to Gremlin <code>.Out([&quot;foo&quot;, &quot;bar&quot;])</code>;</li>
+<li><code>.Out(AnyPredicate, Tag(&quot;foo&quot;))</code> is equivalent to Gremlin <code>.Out(null, &quot;foo&quot;)</code>;</li>
+<li><code>.Out(AnyPredicate, Tags(vec!(&quot;foo&quot;, &quot;bar&quot;)))</code> is equivalent to Gremlin <code>.Out(null, [&quot;foo&quot;, &quot;bar&quot;])</code>;</li>
+<li><code>.Out(Predicates(vec!(&quot;foo&quot;, &quot;bar&quot;)), Tags(vec!(&quot;bar&quot;, &quot;foo&quot;)))</code> is equivalent to Gremlin <code>.Out([&quot;foo&quot;, &quot;bar&quot;], [&quot;bar&quot;, &quot;foo&quot;])</code>;</li>
+</ul>
+
+<p>For <code>.OutP</code>, <code>.InP</code>, <code>.BothP</code>, <code>.SaveP</code> methods, using <code>.OutP</code> as an example:</p>
+
+<ul>
+<li><code>.OutP(AnyPredicate)</code> is equivalent to Gremlin <code>.Out()</code>;</li>
+<li><code>.OutP(Predicate(&quot;foo&quot;))</code> is equivalent to Gremlin <code>.Out(&quot;foo&quot;)</code>;</li>
+<li><code>.OutP(Predicates(vec!(&quot;foo&quot;, &quot;bar&quot;)))</code> is equivalent to Gremlin <code>.Out([&quot;foo&quot;, &quot;bar&quot;])</code>;</li>
+</ul>
+
+<p>For <code>.OutT</code>, <code>.InT</code>, <code>.BothT</code>, <code>.SaveT</code> methods, using <code>.OutT</code> as an example:</p>
+
+<ul>
+<li><code>.OutT(AnyTag)</code> is equivalent to Gremlin <code>.Out()</code>;</li>
+<li><code>.OutT(Tag(&quot;foo&quot;))</code> is equivalent to Gremlin <code>.Out(null, &quot;foo&quot;)</code>;</li>
+<li><code>.OutT(Tags(vec!(&quot;foo&quot;, &quot;bar&quot;)))</code> is equivalent to Gremlin <code>.Out(null, [&quot;foo&quot;, &quot;bar&quot;])</code>;</li>
+</ul>
+
+<p>For <code>.Has</code>, <code>.HasP</code>, <code>.HasN</code> methods it is the same as for three types above,
+just replace <code>TagSelector</code> with <code>NodeSelector</code></p>
+
+<p>For <code>.Tag</code>, <code>.As</code>, <code>.Back</code> methods, using <code>.As</code> as an example:</p>
+
+<ul>
+<li><code>.As(AnyTag)</code> is equivalent to Gremlin <code>.As()</code> (which has no sense, but allowed);</li>
+<li><code>.As(Tag(&quot;foo&quot;))</code> is equivalent to Gremlin <code>.As(&quot;foo&quot;)</code>;</li>
+<li><code>.As(Tags(vec!(&quot;foo&quot;, &quot;bar&quot;)))</code> is equivalent to Gremlin <code>.As(&quot;foo&quot;, &quot;bar&quot;)</code>;</li>
+</ul>
+
+<p>For <code>.Is</code> method:</p>
+
+<ul>
+<li><code>.Is(AnyNode)</code> is equivalent to Gremlin <code>.Is()</code> (which has no sense, but allowed);</li>
+<li><code>.Is(Node(&quot;foo&quot;))</code> is equivalent to Gremlin <code>.Is(&quot;foo&quot;)</code>;</li>
+<li><code>.Is(Nodes(vec!(&quot;foo&quot;, &quot;bar&quot;)))</code> is equivalent to Gremlin <code>.Is(&quot;foo&quot;, &quot;bar&quot;)</code>;</li>
+</ul>
+
+<p>For <code>.Intersect</code>, <code>.And</code>, <code>.Union</code>, <code>.Or</code> methods, using <code>.Intersect</code> as example:</p>
+
+<ul>
+<li><code>let some_v = Vertex(AnyNode).OutT(Tag(&quot;follows&quot;)).All();</code>
+<code>graph.find(Vertex::start(Node(&quot;C&quot;)).Intersect(&amp;some_v).All());</code>
+is equivalent to Gremlin <code>g.V(&quot;C&quot;).Intersect(g.V.Out(&quot;follows&quot;).All()).All();</code>;</li>
+</ul>
+
+<p>For <code>Follow</code> and <code>FollowR</code> methods:</p>
+
+<ul>
+<li><code>let m = Morphism::start(&quot;foo&quot;)...;</code>
+<code>graph.save(m);</code>
+<code>graph.find(Vertex::start(AnyNode).Follow(&amp;m).All());</code> is equivalent to Gremlin
+<code>var foo = g.M()...; g.V().Follow(foo).All();</code>;</li>
+</ul>
+</div>
+            <h2 id='provided-methods'>Provided Methods</h2>
+            <div class='methods'>
+        <h3 id='method.Out' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Out' class='fnname'>Out</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Out</code> Path method. Follow forwards the quads with given predicates.</p>
+</div><h3 id='method.OutP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.OutP' class='fnname'>OutP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>OutP</code>, an alias for <code>Out(&lt;Predicate&gt;, AnyTag)</code></p>
+</div><h3 id='method.OutT' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.OutT' class='fnname'>OutT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>OutT</code>, an alias for <code>Out(AnyPredicate, &lt;Tag&gt;)</code></p>
+</div><h3 id='method.In' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.In' class='fnname'>In</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.In</code> Path method. Follow backwards the quads with given predicates.</p>
+</div><h3 id='method.InP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.InP' class='fnname'>InP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>InP</code>, an alias for <code>In(&lt;Predicate&gt;, AnyTag)</code></p>
+</div><h3 id='method.InT' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.InT' class='fnname'>InT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>InT</code>, an alias for <code>In(AnyPredicate, &lt;Tag&gt;)</code></p>
+</div><h3 id='method.Both' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Both' class='fnname'>Both</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Both</code> Path method.</p>
+</div><h3 id='method.BothP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.BothP' class='fnname'>BothP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>BothP</code>, an alias for <code>Both(&lt;Predicate&gt;, AnyTag)</code></p>
+</div><h3 id='method.BothT' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.BothT' class='fnname'>BothT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>BothT</code>, an alias for <code>Both(AnyPredicate, &lt;Tag&gt;)</code></p>
+</div><h3 id='method.Is' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Is' class='fnname'>Is</a>(&amp;mut self, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Is</code> Path method. Filter all paths which are on the given node(-s).</p>
+</div><h3 id='method.Has' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Has' class='fnname'>Has</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Has</code> Path method. Filter all paths which are on the subject, but do not follow the path.</p>
+</div><h3 id='method.HasP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.HasP' class='fnname'>HasP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>HasP</code>, an alias for <code>Has(&lt;Predicate&gt;, AnyNode)</code></p>
+</div><h3 id='method.HasN' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.HasN' class='fnname'>HasN</a>(&amp;mut self, nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>HasN</code>, an alias for <code>Has(AnyPredicate, &lt;Node&gt;)</code></p>
+</div><h3 id='method.Tag' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Tag' class='fnname'>Tag</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Tag</code>, an alias for <code>.As</code></p>
+</div><h3 id='method.As' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.As' class='fnname'>As</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.As</code> Path method. Mark items with a tag.</p>
+</div><h3 id='method.Back' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Back' class='fnname'>Back</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Back</code> Path method. Follow backwards the tagged quads.</p>
+</div><h3 id='method.Save' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Save' class='fnname'>Save</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Save</code> Path method. Save all quads with predicate into tag, without traversal.</p>
+</div><h3 id='method.SaveP' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.SaveP' class='fnname'>SaveP</a>(&amp;mut self, predicates: <a class='enum' href='../../cayley/selector/enum.PredicateSelector.html' title='cayley::selector::PredicateSelector'>PredicateSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>SaveP</code>, an alias for <code>Save(&lt;Predicate&gt;, AnyTag)</code></p>
+</div><h3 id='method.SaveT' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.SaveT' class='fnname'>SaveT</a>(&amp;mut self, tags: <a class='enum' href='../../cayley/selector/enum.TagSelector.html' title='cayley::selector::TagSelector'>TagSelector</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>SaveT</code>, an alias for <code>Save(AnyPredicate, &lt;Tag&gt;)</code></p>
+</div><h3 id='method.Intersect' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Intersect' class='fnname'>Intersect</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Intersect</code>, an alias for <code>.And</code></p>
+</div><h3 id='method.And' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.And' class='fnname'>And</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.And</code> Path method. Intersect the results from one query with another.</p>
+</div><h3 id='method.Union' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Union' class='fnname'>Union</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Union</code>, an alias for <code>.Or</code></p>
+</div><h3 id='method.Or' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Or' class='fnname'>Or</a>(&amp;mut self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Or</code> Path method. Join the results from one query with another.</p>
+</div><h3 id='method.Follow' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.Follow' class='fnname'>Follow</a>(&amp;mut self, reusable: &amp;<a class='trait' href='../../cayley/path/trait.Reuse.html' title='cayley::path::Reuse'>Reuse</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.Follow</code> Path method. Applies the path chain on the <code>Morphism</code> object to the current path.</p>
+</div><h3 id='method.FollowR' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.FollowR' class='fnname'>FollowR</a>(&amp;mut self, reusable: &amp;<a class='trait' href='../../cayley/path/trait.Reuse.html' title='cayley::path::Reuse'>Reuse</a>) -&gt; &amp;mut Self</code></h3><div class='docblock'><p><code>.FollowR</code> Path method. Applies the path chain on the <code>Morphism</code> object to the current path.</p>
+</div></div>
+        <h2 id='implementors'>Implementors</h2>
+        <ul class='item-list' id='implementors-list'>
+    <li><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='trait' href='../../cayley/path/trait.Path.html' title='cayley::path::Path'>Path</a> for <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></li>
+<li><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='trait' href='../../cayley/path/trait.Path.html' title='cayley::path::Path'>Path</a> for <a class='struct' href='../../cayley/path/struct.Morphism.html' title='cayley::path::Morphism'>Morphism</a></code></li>
+</ul><script type="text/javascript" async
+                              src="../../implementors/cayley/path/trait.Path.js">
+                      </script></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "cayley";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script async src="../../search-index.js"></script>
+</body>
+</html>
