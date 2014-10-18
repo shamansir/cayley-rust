@@ -47,10 +47,14 @@ pub enum CayleyAPIVersion { V1, DefaultVersion }
 
 impl Graph {
 
+    // ---------------------------------- default ------------------------------
+
     /// Create a Graph which connects to the latest API at `localhost:64210`
     pub fn default() -> GraphResult<Graph> {
         Graph::new("localhost", 64210, DefaultVersion)
     }
+
+    // ---------------------------------- new ----------------------------------
 
     /// Create a Graph which connects to the host you specified manually
     pub fn new(host: &str, port: int, version: CayleyAPIVersion) -> GraphResult<Graph> {
@@ -60,13 +64,17 @@ impl Graph {
         Ok(Graph{ url: url })
     }
 
+    // ---------------------------------- find ---------------------------------
+
     /// Find nodes with the Query implementation (say, Vertex-path) and return them parsed
     ///
     /// Since only [Vertex](./path/struct.Vertex.html) implements [Query](./path/trait.Query.html) trait
     /// following current spec, your code will look like that:
     ///
     /// ```
-    /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()));
+    /// # use graph::Graph; use path::Vertex;
+    /// # let graph = Graph::default();
+    /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All());
     /// ```
     pub fn find(&self, query: &Query) -> GraphResult<GraphNodes> {
         if query.is_finalized() {
@@ -77,6 +85,8 @@ impl Graph {
         } else { Err(QueryNotFinalized) }
     }
 
+    // ---------------------------------- exec ---------------------------------
+
     /// Find nodes using raw pre-compiled query string and return them parsed
     ///
     /// If you want to run just the pure stringified Gremlin queries, bypassing
@@ -84,6 +94,7 @@ impl Graph {
     /// method is for you.
     ///
     /// ```
+    /// # let graph = Graph::default();
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()");
     /// ```
     pub fn exec(&self, query: String) -> GraphResult<GraphNodes> {
@@ -93,6 +104,8 @@ impl Graph {
         }
     }
 
+    // ---------------------------------- save ---------------------------------
+
     /// Save Morphism or any [Reuse](./path/trait.Reuse.html) implementor in the
     /// database, equivalent to Gremin's `var foo = g.Morphism()...`
     ///
@@ -100,6 +113,7 @@ impl Graph {
     /// and then just pass it here, like:
     ///
     /// ```
+    /// # let graph = Graph::default();
     /// let m = Morphism::start("foo");
     /// m.Out(Predicate("follows"), AnyTag);
     /// graph.save(m);
@@ -122,10 +136,14 @@ impl Graph {
         }
     }
 
+    // ---------------------------------- save_as ------------------------------
+
     /// Save Morphism or any [Reuse](./path/trait.Reuse.html) implementor in the
     /// database, under the different name than the one used when it was created
     ///
     /// ```
+    /// # use path::Morphism;
+    /// # let graph = Graph::default();
     /// let m = Morphism::start("foo");
     /// m.Out(Predicate("follows"), AnyTag);
     /// graph.save_as(m, "bar");

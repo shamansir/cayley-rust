@@ -14,6 +14,10 @@ use selector::Query as FromQuery;
 /// Example:
 ///
 /// ```
+/// use cayley::graph::Graph;
+/// use cayley::path::Vertex;
+/// use cayley::selector::Tags;
+///
 /// graph.find(Vertex::start(AnyNode).As(Tags(vec!("tag-a", "tag-b"))).OutP("follows").All());
 /// ```
 ///
@@ -36,11 +40,17 @@ use selector::Query as FromQuery;
 /// Use `prepare` static method for this purpose, but then ensure to start a query with `From` call:
 ///
 /// ```
-/// let v = Vertex::prepare();
-/// // ...
-/// v.From(Node("C")).OutP("follows").GetLimit(5);
-/// let other_v = Vertex.Node("D").Union(&v).All();
-/// graph.find(other_v);
+/// #![allow(unused_result)]
+/// use cayley::Graph;
+/// use cayley::path::{Vertex, Path, Query};
+/// use cayley::selector::{Node, Predicate};
+///
+/// let graph = Graph::default().unwrap();
+/// let mut v = Vertex::prepare();
+/// v.From(Node("C")).OutP(Predicate("follows")).GetLimit(5);
+/// let mut other_v = Vertex::prepare();
+/// other_v.From(Node("D")).Union(&v).All();
+/// graph.find(&other_v).unwrap();
 /// ```
 pub struct Vertex {
     finalized: bool,
@@ -162,50 +172,70 @@ pub trait Compile: Clone/*+ToString*/ {
 #[allow(non_snake_case)]
 pub trait Path: Compile {
 
+    // ---------------------------------- Out ----------------------------------
+
     /// `.Out` Path method. Follow forwards the quads with given predicates.
     fn Out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("Out({:s})", predicates_and_tags(predicates, tags)))
     }
+
+    // ---------------------------------- OutP ---------------------------------
 
     /// `OutP`, an alias for `Out(<Predicate>, AnyTag)`
     fn OutP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.Out(predicates, AnyTag)
     }
 
+    // ---------------------------------- OutT ---------------------------------
+
     /// `OutT`, an alias for `Out(AnyPredicate, <Tag>)`
     fn OutT(&mut self, tags: TagSelector) -> &mut Self {
         self.Out(AnyPredicate, tags)
     }
+
+    // ---------------------------------- In -----------------------------------
 
     /// `.In` Path method. Follow backwards the quads with given predicates.
     fn In(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
     }
 
+    // ---------------------------------- InP ----------------------------------
+
     /// `InP`, an alias for `In(<Predicate>, AnyTag)`
     fn InP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.In(predicates, AnyTag)
     }
+
+    // ---------------------------------- InT ----------------------------------
 
     /// `InT`, an alias for `In(AnyPredicate, <Tag>)`
     fn InT(&mut self, tags: TagSelector) -> &mut Self {
         self.In(AnyPredicate, tags)
     }
 
+    // ---------------------------------- Both ---------------------------------
+
     /// `.Both` Path method.
     fn Both(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("Both({:s})", predicates_and_tags(predicates, tags)))
     }
+
+    // ---------------------------------- BothP --------------------------------
 
     /// `BothP`, an alias for `Both(<Predicate>, AnyTag)`
     fn BothP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.Both(predicates, AnyTag)
     }
 
+    // ---------------------------------- BothT --------------------------------
+
     /// `BothT`, an alias for `Both(AnyPredicate, <Tag>)`
     fn BothT(&mut self, tags: TagSelector) -> &mut Self {
         self.Both(AnyPredicate, tags)
     }
+
+    // ---------------------------------- Is -----------------------------------
 
     /// `.Is` Path method. Filter all paths which are on the given node(-s).
     fn Is(&mut self, nodes: NodeSelector) -> &mut Self {
@@ -216,23 +246,33 @@ pub trait Path: Compile {
         })
     }
 
+    // ---------------------------------- Has ----------------------------------
+
     /// `.Has` Path method. Filter all paths which are on the subject, but do not follow the path.
     fn Has(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &mut Self {
         self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, nodes)))
     }
+
+    // ---------------------------------- HasP ---------------------------------
 
     /// `HasP`, an alias for `Has(<Predicate>, AnyNode)`
     fn HasP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.Has(predicates, AnyNode)
     }
 
+    // ---------------------------------- HasN ---------------------------------
+
     /// `HasN`, an alias for `Has(AnyPredicate, <Node>)`
     fn HasN(&mut self, nodes: NodeSelector) -> &mut Self {
         self.Has(AnyPredicate, nodes)
     }
 
+    // ---------------------------------- Tag ----------------------------------
+
     /// `.Tag`, an alias for `.As`
     fn Tag(&mut self, tags: TagSelector) -> &mut Self { self.As(tags) }
+
+    // ---------------------------------- As -----------------------------------
 
     /// `.As` Path method. Mark items with a tag.
     fn As(&mut self, tags: TagSelector) -> &mut Self {
@@ -243,6 +283,8 @@ pub trait Path: Compile {
         })
     }
 
+    // ---------------------------------- Back ---------------------------------
+
     /// `.Back` Path method. Follow backwards the tagged quads.
     fn Back(&mut self, tags: TagSelector) -> &mut Self {
         self.add_string(match tags {
@@ -252,23 +294,33 @@ pub trait Path: Compile {
         })
     }
 
+    // ---------------------------------- Save ---------------------------------
+
     /// `.Save` Path method. Save all quads with predicate into tag, without traversal.
     fn Save(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("Save({:s})", predicates_and_tags(predicates, tags)))
     }
+
+    // ---------------------------------- SaveP --------------------------------
 
     /// `SaveP`, an alias for `Save(<Predicate>, AnyTag)`
     fn SaveP(&mut self, predicates: PredicateSelector) -> &mut Self {
         self.Save(predicates, AnyTag)
     }
 
+    // ---------------------------------- SaveT --------------------------------
+
     /// `SaveT`, an alias for `Save(AnyPredicate, <Tag>)`
     fn SaveT(&mut self, tags: TagSelector) -> &mut Self {
         self.Save(AnyPredicate, tags)
     }
 
+    // ---------------------------------- Intersect ----------------------------
+
     /// `.Intersect`, an alias for `.And`
     fn Intersect(&mut self, query: &Query) -> &mut Self { self.And(query) }
+
+    // ---------------------------------- And ----------------------------------
 
     /// `.And` Path method. Intersect the results from one query with another.
     fn And(&mut self, query: &Query) -> &mut Self {
@@ -280,8 +332,12 @@ pub trait Path: Compile {
         self
     }
 
+    // ---------------------------------- Union --------------------------------
+
     /// `.Union`, an alias for `.Or`
     fn Union(&mut self, query: &Query) -> &mut Self { self.Or(query) }
+
+    // ---------------------------------- Or -----------------------------------
 
     /// `.Or` Path method. Join the results from one query with another.
     fn Or(&mut self, query: &Query) -> &mut Self {
@@ -293,7 +349,9 @@ pub trait Path: Compile {
         self
     }
 
-    /// `.Follow`
+    // ---------------------------------- Follow -------------------------------
+
+    /// `.Follow` Path method. Applies the path chain on the `Morphism` object to the current path.
     fn Follow(&mut self, reusable: &Reuse) -> &mut Self {
         /* TODO: match reusable.is_saved() {
             notify that reusable may not be saved
@@ -301,6 +359,9 @@ pub trait Path: Compile {
         self.add_string(format!("Follow({:s})", reusable.get_name()))
     }
 
+    // ---------------------------------- FollowR ------------------------------
+
+    /// `.FollowR` Path method. Applies the path chain on the `Morphism` object to the current path.
     fn FollowR(&mut self, reusable: &Reuse) -> &mut Self {
         /* TODO: match reusable.is_saved() {
             notify that reusable may not be saved
@@ -319,9 +380,13 @@ pub trait Query: Path {
 
     fn is_finalized(&self) -> bool;
 
+    // ---------------------------------- All ----------------------------------
+
     /// `.All` Query method. Equivalent to Gremlin `Query.All()`.
     /// Returns all the items found within this path.
     fn All(&mut self) -> &mut Self { self.set_finalized(); self.add_str("All()") }
+
+    // ---------------------------------- GetAll -------------------------------
 
     /// `.GetLimit` Query method. Equivalent to Gremlin `Query.GetLimit(<number>)`.
     /// Returns first `<n>` items found within this path.
