@@ -47,8 +47,8 @@
         </span><a id='src-408' href='../../src/cayley/Users/shamansir/Workspace/cayley-rust/src/path.rs.html#60-63'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Vertex {
     // some fields omitted
-}</pre><div class='docblock'><p>An interface to a Path with the ability to be executed as a query to a database.
-The main entry point to ask for <a href="./struct.GraphNodes.html">GraphNodes</a> from database using <a href="./struct.Graph.html">Graph</a> as an interceptor.</p>
+}</pre><div class='docblock'><p>An interface to a <a href="../path/trait.Path.html">Path</a> with the ability to be executed as a <a href="../path/trait.Query.html">Query</a> to a database.
+The main entry point to ask for <a href="../graph/struct.GraphNodes.html">GraphNodes</a> from database using <a href="../graph/struct.Graph.html">Graph</a> as an interceptor.</p>
 
 <p>To query for anything you might describe with Path from database, use this pattern:
 <code>graph.find(Vertex::start(&lt;NodeSelector&gt;).&lt;PathMethod&gt;().&lt;PathMethod&gt;(&lt;method_arg&gt;).....&lt;QueryMethod&gt;())</code>.</p>
@@ -56,7 +56,7 @@ The main entry point to ask for <a href="./struct.GraphNodes.html">GraphNodes</a
 <p>Example:</p>
 <pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>graph</span>::<span class='ident'>Graph</span>;
-<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::{<span class='ident'>Vertex</span>, <span class='ident'>Path</span>, <span class='ident'>Query</span>};
+<span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>path</span>::{<span class='ident'>Vertex</span>, <span class='ident'>Path</span>, <span class='ident'>Query</span>}; <span class='comment'>// Query and Path trait imports are required</span>
 <span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>selector</span>::{<span class='ident'>Tags</span>, <span class='ident'>AnyNode</span>, <span class='ident'>Predicate</span>};
 
 <span class='kw'>let</span> <span class='ident'>graph</span> <span class='op'>=</span> <span class='ident'>Graph</span>::<span class='ident'>default</span>().<span class='ident'>unwrap</span>();
@@ -97,7 +97,7 @@ Use <code>prepare</code> static method for this purpose, but then ensure to star
 <span class='ident'>graph</span>.<span class='ident'>find</span>(<span class='kw-2'>&amp;</span><span class='ident'>other_v</span>).<span class='ident'>unwrap</span>();
 </pre>
 </div><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h3><div class='impl-methods'><h4 id='method.start' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.start' class='fnname'>start</a>(nodes: <a class='enum' href='../../cayley/selector/enum.NodeSelector.html' title='cayley::selector::NodeSelector'>NodeSelector</a>) -&gt; <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h4>
-<div class='docblock'><p>Create a Vertex instance and start a query from <a href="./selector/struct.NodeSelector.html">NodeSelector</a></p>
+<div class='docblock'><p>Create a Vertex instance and start a query from <a href="../selector/struct.NodeSelector.html">NodeSelector</a></p>
 </div><h4 id='method.prepare' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.prepare' class='fnname'>prepare</a>() -&gt; <a class='struct' href='../../cayley/path/struct.Vertex.html' title='cayley::path::Vertex'>Vertex</a></code></h4>
 <div class='docblock'><p>Prepare a vertex instance to specify a query later. Ensure to start a query with <code>.From()</code> method
 if you use <code>prepare()</code>.</p>

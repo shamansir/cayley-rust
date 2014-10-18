@@ -338,12 +338,12 @@
 <span class='doccomment'>/// * Use `Graph::default()` to connect to `localhost:64210`.</span>
 <span class='doccomment'>/// * Use `Graph::new(host, port, api_version)` to specify the location of database manually.</span>
 <span class='doccomment'>///</span>
-<span class='doccomment'>/// * Use `Graph::find(&lt;Query&gt;)` to find anything using [Query](./path/trait.Query.html) trait implementor</span>
-<span class='doccomment'>/// (`Query`, for example, is implemented by [Vertex](./path/struct.Vertex.html)), which in its turn</span>
+<span class='doccomment'>/// * Use `Graph::find(&lt;Query&gt;)` to find anything using [Query](../path/trait.Query.html) trait implementor</span>
+<span class='doccomment'>/// (`Query`, for example, is implemented by [Vertex](../path/struct.Vertex.html)), which in its turn</span>
 <span class='doccomment'>/// is similar to [Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md).</span>
 <span class='doccomment'>/// * Use `Graph::find_by(&lt;String&gt;)` to find anything using [Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md) API</span>
 <span class='doccomment'>/// from a prepared string. A raw, but not so beautiful, way to execute query.</span>
-<span class='doccomment'>/// * Use `Graph::save(&lt;Path&gt;)` to save a [Morphism](./path/struct.Morphism.html).</span>
+<span class='doccomment'>/// * Use `Graph::save(&lt;Path&gt;)` to save a [Morphism](../path/struct.Morphism.html).</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Graph</span> {
     <span class='ident'>url</span>: <span class='ident'>String</span>
 }
@@ -380,7 +380,7 @@
 
     <span class='doccomment'>/// Find nodes with the Query implementation (say, Vertex-path) and return them parsed</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// Since only [Vertex](./path/struct.Vertex.html) implements [Query](./path/trait.Query.html) trait</span>
+    <span class='doccomment'>/// Since only [Vertex](../path/struct.Vertex.html) implements [Query](../path/trait.Query.html) trait</span>
     <span class='doccomment'>/// following current spec, your code will look like that:</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// ```</span>
@@ -423,7 +423,7 @@
 
     <span class='comment'>// ---------------------------------- save ---------------------------------</span>
 
-    <span class='doccomment'>/// Save Morphism or any [Reuse](./path/trait.Reuse.html) implementor in the</span>
+    <span class='doccomment'>/// Save Morphism or any [Reuse](../path/trait.Reuse.html) implementor in the</span>
     <span class='doccomment'>/// database, equivalent to Gremin&#39;s `var foo = g.Morphism()...`</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// The difference is in the fact you set the name when you create a `Morphism` instance</span>

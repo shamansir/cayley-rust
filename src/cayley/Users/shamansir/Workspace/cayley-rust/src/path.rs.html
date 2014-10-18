@@ -704,8 +704,8 @@
 <span class='kw'>use</span> <span class='ident'>selector</span>::{<span class='ident'>AnyPredicate</span>, <span class='ident'>Predicate</span>, <span class='ident'>Predicates</span>};
 <span class='kw'>use</span> <span class='ident'>selector</span>::<span class='ident'>Query</span> <span class='kw'>as</span> <span class='ident'>FromQuery</span>;
 
-<span class='doccomment'>/// An interface to a Path with the ability to be executed as a query to a database.</span>
-<span class='doccomment'>/// The main entry point to ask for [GraphNodes](./struct.GraphNodes.html) from database using [Graph](./struct.Graph.html) as an interceptor.</span>
+<span class='doccomment'>/// An interface to a [Path](../path/trait.Path.html) with the ability to be executed as a [Query](../path/trait.Query.html) to a database.</span>
+<span class='doccomment'>/// The main entry point to ask for [GraphNodes](../graph/struct.GraphNodes.html) from database using [Graph](../graph/struct.Graph.html) as an interceptor.</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// To query for anything you might describe with Path from database, use this pattern:</span>
 <span class='doccomment'>/// `graph.find(Vertex::start(&lt;NodeSelector&gt;).&lt;PathMethod&gt;().&lt;PathMethod&gt;(&lt;method_arg&gt;).....&lt;QueryMethod&gt;())`.</span>
@@ -714,7 +714,7 @@
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// ```</span>
 <span class='doccomment'>/// use cayley::graph::Graph;</span>
-<span class='doccomment'>/// use cayley::path::{Vertex, Path, Query};</span>
+<span class='doccomment'>/// use cayley::path::{Vertex, Path, Query}; // Query and Path trait imports are required</span>
 <span class='doccomment'>/// use cayley::selector::{Tags, AnyNode, Predicate};</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// let graph = Graph::default().unwrap();</span>
@@ -1112,7 +1112,7 @@
 <span class='attribute'>#[<span class='ident'>allow</span>(<span class='ident'>non_snake_case</span>)]</span>
 <span class='kw'>impl</span> <span class='ident'>Vertex</span> {
 
-    <span class='doccomment'>/// Create a Vertex instance and start a query from [NodeSelector](./selector/struct.NodeSelector.html)</span>
+    <span class='doccomment'>/// Create a Vertex instance and start a query from [NodeSelector](../selector/struct.NodeSelector.html)</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>start</span>(<span class='ident'>nodes</span>: <span class='ident'>NodeSelector</span>) <span class='op'>-&gt;</span> <span class='ident'>Vertex</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>Vertex</span>::<span class='ident'>prepare</span>();
         <span class='ident'>res</span>.<span class='ident'>From</span>(<span class='ident'>nodes</span>);

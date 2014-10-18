@@ -55,12 +55,12 @@ it will just soon be there).</p>
 <ul>
 <li>Use <code>Graph::default()</code> to connect to <code>localhost:64210</code>.</li>
 <li><p>Use <code>Graph::new(host, port, api_version)</code> to specify the location of database manually.</p></li>
-<li><p>Use <code>Graph::find(&lt;Query&gt;)</code> to find anything using <a href="./path/trait.Query.html">Query</a> trait implementor
-(<code>Query</code>, for example, is implemented by <a href="./path/struct.Vertex.html">Vertex</a>), which in its turn
+<li><p>Use <code>Graph::find(&lt;Query&gt;)</code> to find anything using <a href="../path/trait.Query.html">Query</a> trait implementor
+(<code>Query</code>, for example, is implemented by <a href="../path/struct.Vertex.html">Vertex</a>), which in its turn
 is similar to <a href="https://github.com/google/cayley/blob/master/docs/GremlinAPI.md">Gremlin API</a>.</p></li>
 <li><p>Use <code>Graph::find_by(&lt;String&gt;)</code> to find anything using <a href="https://github.com/google/cayley/blob/master/docs/GremlinAPI.md">Gremlin API</a> API
 from a prepared string. A raw, but not so beautiful, way to execute query.</p></li>
-<li><p>Use <code>Graph::save(&lt;Path&gt;)</code> to save a <a href="./path/struct.Morphism.html">Morphism</a>.</p></li>
+<li><p>Use <code>Graph::save(&lt;Path&gt;)</code> to save a <a href="../path/struct.Morphism.html">Morphism</a>.</p></li>
 </ul>
 </div><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='struct' href='../../cayley/graph/struct.Graph.html' title='cayley::graph::Graph'>Graph</a></code></h3><div class='impl-methods'><h4 id='method.default' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.default' class='fnname'>default</a>() -&gt; <a class='type' href='../../cayley/errors/type.GraphResult.html' title='cayley::errors::GraphResult'>GraphResult</a>&lt;<a class='struct' href='../../cayley/graph/struct.Graph.html' title='cayley::graph::Graph'>Graph</a>&gt;</code></h4>
 <div class='docblock'><p>Create a Graph which connects to the latest API at <code>localhost:64210</code></p>
@@ -69,7 +69,7 @@ from a prepared string. A raw, but not so beautiful, way to execute query.</p></
 </div><h4 id='method.find' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.find' class='fnname'>find</a>(&amp;self, query: &amp;<a class='trait' href='../../cayley/path/trait.Query.html' title='cayley::path::Query'>Query</a>) -&gt; <a class='type' href='../../cayley/errors/type.GraphResult.html' title='cayley::errors::GraphResult'>GraphResult</a>&lt;<a class='struct' href='../../cayley/graph/struct.GraphNodes.html' title='cayley::graph::GraphNodes'>GraphNodes</a>&gt;</code></h4>
 <div class='docblock'><p>Find nodes with the Query implementation (say, Vertex-path) and return them parsed</p>
 
-<p>Since only <a href="./path/struct.Vertex.html">Vertex</a> implements <a href="./path/trait.Query.html">Query</a> trait
+<p>Since only <a href="../path/struct.Vertex.html">Vertex</a> implements <a href="../path/trait.Query.html">Query</a> trait
 following current spec, your code will look like that:</p>
 <pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>cayley</span>::<span class='ident'>graph</span>::<span class='ident'>Graph</span>;
@@ -91,7 +91,7 @@ method is for you.</p>
 <span class='ident'>graph</span>.<span class='ident'>exec</span>(<span class='string'>&quot;g.V(\&quot;foo\&quot;).In(\&quot;bar\&quot;).All()&quot;</span>.<span class='ident'>to_string</span>()).<span class='ident'>unwrap</span>();
 </pre>
 </div><h4 id='method.save' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.save' class='fnname'>save</a>(&amp;self, reusable: &amp;mut <a class='trait' href='../../cayley/path/trait.Reuse.html' title='cayley::path::Reuse'>Reuse</a>) -&gt; <a class='type' href='../../cayley/errors/type.GraphResult.html' title='cayley::errors::GraphResult'>GraphResult</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.unit.html'>()</a>&gt;</code></h4>
-<div class='docblock'><p>Save Morphism or any <a href="./path/trait.Reuse.html">Reuse</a> implementor in the
+<div class='docblock'><p>Save Morphism or any <a href="../path/trait.Reuse.html">Reuse</a> implementor in the
 database, equivalent to Gremin&#39;s <code>var foo = g.Morphism()...</code></p>
 
 <p>The difference is in the fact you set the name when you create a <code>Morphism</code> instance
