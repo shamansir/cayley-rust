@@ -6,6 +6,7 @@ authors = ["Ulric Wilfred <shaman.sir@gmail.com>"]
 [lib]
 name = "cayley"
 doc = true
+doctest = false
 
 [dependencies.url]
 git = "https://github.com/servo/rust-url"
