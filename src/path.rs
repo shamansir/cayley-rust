@@ -62,8 +62,8 @@ pub struct Vertex {
     path: Vec<String>
 }
 
-/// An interface to a Path with the ability to be saved and reused to
-/// construct other Paths, but not to query anything.
+/// An interface to a [Path](../path/trait.Path.html) with the ability to be saved and reused to
+/// construct other [Paths](../path/trait.Path.html), but not to query anything.
 ///
 /// Use it to prepare a Path and re-use it several times
 ///
@@ -135,20 +135,17 @@ pub trait Compile: Clone/*+ToString*/ {
 /// * `.Out(AnyPredicate, Tags(vec!("foo", "bar")))` is equivalent to Gremlin `.Out(null, ["foo", "bar"])`;
 /// * `.Out(Predicates(vec!("foo", "bar")), Tags(vec!("bar", "foo")))` is equivalent to Gremlin `.Out(["foo", "bar"], ["bar", "foo"])`;
 ///
-/// For `.OutP`, `.InP`, `.BothP`, `.SaveP` methods, using `.OutP` as an example:
+/// For `.OutP`, `.InP`, `.BothP` methods, using `.OutP` as an example:
 ///
 /// * `.OutP(AnyPredicate)` is equivalent to Gremlin `.Out()`;
 /// * `.OutP(Predicate("foo"))` is equivalent to Gremlin `.Out("foo")`;
 /// * `.OutP(Predicates(vec!("foo", "bar")))` is equivalent to Gremlin `.Out(["foo", "bar"])`;
 ///
-/// For `.OutT`, `.InT`, `.BothT`, `.SaveT` methods, using `.OutT` as an example:
+/// For `.OutT`, `.InT`, `.BothT` methods, using `.OutT` as an example:
 ///
 /// * `.OutT(AnyTag)` is equivalent to Gremlin `.Out()`;
 /// * `.OutT(Tag("foo"))` is equivalent to Gremlin `.Out(null, "foo")`;
 /// * `.OutT(Tags(vec!("foo", "bar")))` is equivalent to Gremlin `.Out(null, ["foo", "bar"])`;
-///
-/// For `.Has`, `.HasP`, `.HasN` methods it is the same as for three types above,
-/// just replace `TagSelector` with `NodeSelector`
 ///
 /// For `.Tag`, `.As`, `.Back` methods, using `.As` as an example:
 ///
@@ -259,20 +256,6 @@ pub trait Path: Compile {
         self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, nodes)))
     }
 
-    // ---------------------------------- HasP ---------------------------------
-
-    /// `HasP`, an alias for `Has(<Predicate>, AnyNode)`
-    fn HasP(&mut self, predicates: PredicateSelector) -> &mut Self {
-        self.Has(predicates, AnyNode)
-    }
-
-    // ---------------------------------- HasN ---------------------------------
-
-    /// `HasN`, an alias for `Has(AnyPredicate, <Node>)`
-    fn HasN(&mut self, nodes: NodeSelector) -> &mut Self {
-        self.Has(AnyPredicate, nodes)
-    }
-
     // ---------------------------------- Tag ----------------------------------
 
     /// `.Tag`, an alias for `.As`
@@ -305,20 +288,6 @@ pub trait Path: Compile {
     /// `.Save` Path method. Save all quads with predicate into tag, without traversal.
     fn Save(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
         self.add_string(format!("Save({:s})", predicates_and_tags(predicates, tags)))
-    }
-
-    // ---------------------------------- SaveP --------------------------------
-
-    /// `SaveP`, an alias for `Save(<Predicate>, AnyTag)`
-    fn SaveP(&mut self, predicates: PredicateSelector) -> &mut Self {
-        self.Save(predicates, AnyTag)
-    }
-
-    // ---------------------------------- SaveT --------------------------------
-
-    /// `SaveT`, an alias for `Save(AnyPredicate, <Tag>)`
-    fn SaveT(&mut self, tags: TagSelector) -> &mut Self {
-        self.Save(AnyPredicate, tags)
     }
 
     // ---------------------------------- Intersect ----------------------------

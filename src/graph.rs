@@ -37,6 +37,10 @@ pub struct Graph {
 }
 
 /// A wrapper for a single item Cayley returned in response for a query
+///
+/// This is a subject to change, since I'd prefer here would be `&str`
+/// items inside, but it's quite hard to achieve this with `json::Decoder`
+/* TODO: change to MayBeOwned? */
 pub struct GraphNode(pub HashMap<String, String>);
 
 /// A collection of GraphNode instances
@@ -135,6 +139,7 @@ impl Graph {
     pub fn save(&self, reusable: &mut Reuse) -> GraphResult<()> {
         match reusable.save() {
             Some(query) => {
+                println!("Executing query: {:s}", query);
                 match self.perform_request(query) {
                     /* TODO: saved flag should know a graph where this morphism was saved */
                     Ok(_) => { reusable.set_saved(); Ok(()) },
