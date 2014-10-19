@@ -2,7 +2,7 @@ extern crate cayley;
 
 use cayley::graph::{Graph, V1};
 use cayley::graph::{GraphNodes, GraphNode};
-use cayley::path::{Vertex, Path, Query};
+use cayley::path::{Morphism, Vertex, Path, Query};
 use cayley::selector::{AnyNode, Node};
 use cayley::selector::AnyTag;
 use cayley::selector::Predicate;
@@ -72,44 +72,59 @@ fn main() {
 
             }
 
-            /* match graph.v(Specific("Casablanca".to_string()))
-                       ._in("name")
-                       .all() {
+            match graph.find(Vertex::start(Node("Casablanca"))
+                                    .InP(Predicate("name"))
+                                    .All()) {
 
                 Err(error) => fail!(error.to_string()),
-                Ok(nodes) => {
+                Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
-                    //assert_eq!(nodes.iter().next().unwrap().id().as_slice(), ":/en/casablanca_194");
+                    match nodes.iter().next() {
+                        Some(&GraphNode(ref casablanca)) => {
+                            assert_eq!(casablanca["id".to_string()].as_slice(), "/en/casablanca_1942");
+                            // was: ":/en/casablanca_1942"
+                        },
+                        None => fail!("first node was not found")
+                    }
                 }
 
-            } */
+            }
 
+            match graph.find(Vertex::start(AnyNode)
+                                    .Has(Predicate("name"), Node("Casablanca"))
+                                    .OutP(Predicate("/film/film/starring"))
+                                    .OutP(Predicate("/film/performance/actor"))
+                                    .OutP(Predicate("name"))
+                                    .All()) {
+
+                Err(error) => fail!(error.to_string()),
+                Ok(GraphNodes(nodes)) => {
+                    assert!(nodes.len() > 0);
+                }
+            }
+
+            /* let mut film_to_actor = Morphism::start("fta");
+                    film_to_actor.OutP(Predicate("/film/film/starring"))
+                                 .OutP(Predicate("/film/performance/actor"));
+            match graph.save(&mut film_to_actor) {
+                Err(error) => fail!(error.to_string()),
+                Ok(_) =>
+                    match graph.find(Vertex::start(AnyNode)
+                                            .Has(Predicate("name"), Node("Casablanca"))
+                                            .Follow(&mut film_to_actor)
+                                            .OutP(Predicate("name"))
+                                            .All()) {
+
+                        Err(error) => fail!(error.to_string()),
+                        Ok(GraphNodes(nodes)) => {
+                            println!("{}",nodes.len());
+                            assert!(nodes.len() > 0);
+                        }
+                    }
+            } */
         }
 
     }
-
-    //
-    // a = graph.v().has("name", "Casablanca").all();
-    // assert_eq!(a.len(), 1);
-    // assert_eq!(a[0].id, ":/en/casablanca_194");
-    //
-    // a = graph.v()
-    //          .has("name", "Casablanca")
-    //          .out("/film/film/starring")
-    //          .out("/film/performance/actor")
-    //          .out("name")
-    //          .all();
-    // assert!(a.len() > 0);
-    //
-    // let film_to_actor = graph.morphism()
-    //                          .out("/film/film/starring")
-    //                          .out("/film/performance/actor");
-    //
-    // a = graph.v()
-    //          .has("name", "Casablanca")
-    //          .follow(film_to_actor)
-    //          .out("name").all();
-    // assert!(a.len() > 0);
 
     // it('test Emit', function(done) {
     //     this.timeout(10000);
