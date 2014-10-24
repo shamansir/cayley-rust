@@ -127,7 +127,6 @@ cayley-rust:
 let friendOfFriend = Morphism::start("friendOfFriend")
                               .OutP(Predicate("follows"))
                               .OutP(Predicate("follows"));
-graph.save(friendOfFriend);
 ```
 
 ##### 4.
@@ -143,8 +142,8 @@ cayley-rust:
 use cayley::path::Vertex as V;
 
 let g = Graph::new(...);
-let friendOfFriend = ...;
-graph.save(friendOfFriend);
+let mut friendOfFriend = Morphism::start("friendOfFriend");
+        friendOfFriend.OutP...;
 ...
 g.find(V::start(Node("C"))
          .Follow(&friendOfFriend)
@@ -178,7 +177,7 @@ Things from [Gremlin API][] still not implemented:
 * `query.TagArray()`
 * `query.TagValue()`
 * `query.ForEach(callback), query.ForEach(limit, callback)` a.k.a `query.Map`
-* Writing to DB: `graph.Emit(data)`
+* `graph.Emit(data)`
 
 ## API improvements
 
@@ -199,6 +198,14 @@ and this case should be checked by API for sure;
 * May be, better [Error API](http://www.hydrocodedesign.com/2014/05/28/practicality-with-rust-error-handling/);
 * Some Path traits are public while they have no practical usage for user, like `Reuse`;
 * [Log](http://doc.rust-lang.org/log/) executed queries;
+
+* API change: Rather a thought to think on: This `mutable self` passed everywhere
+may be solved with being a bit more functional and stopping using method chains — and using tuples
+or vectors of enum-values instead, then iterating and mapping over them;
+So, i.e. `Path` may appear as enum and be passed as a tuple of values:
+`( Has(Predicate("foo")), Tag("bar")), And((..., ..., ...)), Out(...) ), ( All, )`;
+On the other hand, this way looks not so easy to read the whole thing as an actual chain of operations,
+in comparison to method chains; Linked lists, then? Or operator overloading? Or macros?
 
 # Thanks
 

@@ -59,7 +59,8 @@ use selector::Query as FromQuery;
 /// ```
 pub struct Vertex {
     finalized: bool,
-    path: Vec<String>
+    path: Vec<String>,
+    includes: Option<Vec<String>>
 }
 
 /// An interface to a [Path](../path/trait.Path.html) with the ability to be saved and reused to
@@ -78,7 +79,6 @@ pub struct Vertex {
 /// let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
 /// let mut follows_m = M::start("foo");
 ///         follows_m.OutP(Predicate("follows"));
-/// graph.save(&mut follows_m).unwrap();
 /// graph.find(V::start(Node("C"))
 ///              .Follow(&follows_m)
 ///              .Has(Predicate("status"), Node("cool_person"))
@@ -87,7 +87,8 @@ pub struct Vertex {
 pub struct Morphism {
     saved: bool,
     name: String,
-    path: Vec<String>
+    path: Vec<String>,
+    includes: Option<Vec<String>>
 }
 
 // ================================ Compile ================================= //
@@ -168,7 +169,6 @@ pub trait Compile: Clone/*+ToString*/ {
 /// For `Follow` and `FollowR` methods:
 ///
 /// * `let m = Morphism::start("foo")...;`
-///   `graph.save(m);`
 ///   `graph.find(Vertex::start(AnyNode).Follow(&m).All());` is equivalent to Gremlin
 ///   `var foo = g.M()...; g.V().Follow(foo).All();`;
 ///
@@ -328,9 +328,6 @@ pub trait Path: Compile {
 
     /// `.Follow` Path method. Applies the path chain on the `Morphism` object to the current path.
     fn Follow(&mut self, reusable: &Reuse) -> &mut Self {
-        /* TODO: match reusable.is_saved() {
-            notify that reusable may not be saved
-        } */
         self.add_string(format!("Follow({:s})", reusable.get_name()))
     }
 
@@ -338,9 +335,6 @@ pub trait Path: Compile {
 
     /// `.FollowR` Path method. Applies the path chain on the `Morphism` object to the current path.
     fn FollowR(&mut self, reusable: &Reuse) -> &mut Self {
-        /* TODO: match reusable.is_saved() {
-            notify that reusable may not be saved
-        } */
         self.add_string(format!("FollowR({:s})", reusable.get_name()))
     }
 
@@ -393,7 +387,7 @@ impl Vertex {
     /// if you use `prepare()`.
     pub fn prepare() -> Vertex {
         /* FIXME: calling this with no From call afterwars should fail the construction */
-        Vertex{ path: Vec::with_capacity(10), finalized: false }
+        Vertex{ path: Vec::with_capacity(10), includes: None, finalized: false }
     }
 
     /// A method for postponed query creation, intended to be used after the `prepare()` method
@@ -412,6 +406,17 @@ impl Vertex {
             })
     }
 
+    fn add_include(&mut self, include: &Reuse) {
+        match include.save() {
+            Some(saved) =>
+                match self.includes {
+                    Some(ref mut includes) => includes.push(saved),
+                    None => self.includes = Some(vec![saved])
+                },
+            None => { }
+        }
+    }
+
 }
 
 impl Compile for Vertex {
@@ -427,13 +432,30 @@ impl Compile for Vertex {
     }
 
     fn compile(&self) -> Option<String> {
-        // a bolt-hole to return None, if path was incorrectly constructed
-        Some(self.path.connect("."))
+        Some(
+            match self.includes {
+                None => self.path.connect("."),
+                Some(ref includes) => includes.connect(";") + ";".to_string() + self.path.connect(".")
+            })
     }
 
 }
 
-impl Path for Vertex { }
+impl Path for Vertex {
+
+    fn Follow(&mut self, reusable: &Reuse) -> &mut Vertex {
+        self.add_include(reusable);
+        //Path::Follow(self, reusable)
+        self.add_string(format!("Follow({:s})", reusable.get_name()))
+    }
+
+    fn FollowR(&mut self, reusable: &Reuse) -> &mut Vertex {
+        self.add_include(reusable);
+        //Path::FollowR(self, reusable)
+        self.add_string(format!("FollowR({:s})", reusable.get_name()))
+    }
+
+}
 
 impl Query for Vertex {
 
@@ -447,7 +469,8 @@ impl Clone for Vertex {
 
     fn clone(&self) -> Vertex {
         Vertex { finalized: self.finalized,
-                 path: self.path.clone() }
+                 path: self.path.clone(),
+                 includes: self.includes.clone() }
     }
 
 }
@@ -488,9 +511,21 @@ impl Morphism {
     pub fn start(name: &str) -> Morphism {
         let mut res = Morphism { name: name.to_string(),
                                  path: Vec::with_capacity(10),
+                                 includes: None,
                                  saved: false };
         res.add_string("g.M()".to_string());
         res
+    }
+
+    fn add_include(&mut self, include: &Reuse) {
+        match include.save() {
+            Some(saved) =>
+                match self.includes {
+                    Some(ref mut includes) => includes.push(saved),
+                    None => self.includes = Some(vec![saved])
+                },
+            None => { }
+        }
     }
 
 }
@@ -508,13 +543,30 @@ impl Compile for Morphism {
     }
 
     fn compile(&self) -> Option<String> {
-        // a bolt-hole to return None, if path was incorrectly constructed
-        Some(self.path.connect("."))
+        Some(
+            match self.includes {
+                None => self.path.connect("."),
+                Some(ref includes) => includes.connect(";") + ";".to_string() + self.path.connect(".")
+            })
     }
 
 }
 
-impl Path for Morphism { }
+impl Path for Morphism {
+
+    fn Follow(&mut self, reusable: &Reuse) -> &mut Morphism {
+        self.add_include(reusable);
+        //Path::Follow(self, reusable)
+        self.add_string(format!("Follow({:s})", reusable.get_name()))
+    }
+
+    fn FollowR(&mut self, reusable: &Reuse) -> &mut Morphism {
+        self.add_include(reusable);
+        //Path::FollowR(reusable)
+        self.add_string(format!("FollowR({:s})", reusable.get_name()))
+    }
+
+}
 
 impl Reuse for Morphism {
 
@@ -531,7 +583,8 @@ impl Clone for Morphism {
     fn clone(&self) -> Morphism {
         Morphism { saved: self.saved,
                    name: self.name.clone(),
-                   path: self.path.clone() }
+                   path: self.path.clone(),
+                   includes: self.includes.clone() }
     }
 
 }

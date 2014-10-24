@@ -10,8 +10,7 @@ pub enum GraphRequestError {
     DecodingFailed(DecoderError, String),
     ResponseParseFailed,
     QueryNotFinalized,
-    QueryCompilationFailed,
-    ReusableCannotBeSaved
+    QueryCompilationFailed
 }
 
 impl Show for GraphRequestError {
@@ -33,8 +32,7 @@ impl Show for GraphRequestError {
                 derr.fmt(fmt) },
             ResponseParseFailed => fmt.pad("Response parsing failed"),
             QueryNotFinalized => fmt.pad("Query is not finalized"),
-            QueryCompilationFailed => fmt.pad("Query can not be compiled"),
-            ReusableCannotBeSaved => fmt.pad("Reusable can not be saved")
+            QueryCompilationFailed => fmt.pad("Query can not be compiled")
         }
     }
 }

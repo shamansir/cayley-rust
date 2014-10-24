@@ -196,12 +196,12 @@ fn main() {
     path_eq!(friendOfFriend, "g.M().Out(\"follows\").Out(\"follows\")");
 
     path_eq!(V::start(Node("C")).Follow(&friendOfFriend).Has(Predicate("status"), Node("cool_person")),
-             "g.V(\"C\").Follow(friendOfFriend).Has(\"status\",\"cool_person\")");
+             "var friendOfFriend = g.M().Out(\"follows\").Out(\"follows\");g.V(\"C\").Follow(friendOfFriend).Has(\"status\",\"cool_person\")");
 
     // path.FollowR
 
     path_eq!(V::start(AnyNode).Has(Predicate("status"), Node("cool_person")).FollowR(&friendOfFriend),
-             "g.V().Has(\"status\",\"cool_person\").FollowR(friendOfFriend)");
+             "var friendOfFriend = g.M().Out(\"follows\").Out(\"follows\");g.V().Has(\"status\",\"cool_person\").FollowR(friendOfFriend)");
 
     // == Query finals ==
 

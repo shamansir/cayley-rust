@@ -69,7 +69,6 @@
 //! let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
 //! let mut follows_m = M::start("foo");
 //!         follows_m.OutP(Predicate("follows"));
-//! graph.save(&mut follows_m).unwrap();
 //! graph.find(V::start(Node("C"))
 //!              .Follow(&follows_m)
 //!              .Has(Predicate("status"), Node("cool_person"))
@@ -81,7 +80,7 @@
 //! [Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md) is implemented
 //! through these entry points:
 //!
-//! * [Graph](./graph/struct.Graph.html) provides `.find(<Query>)` and `.save(<Morphism>)`;
+//! * [Graph](./graph/struct.Graph.html) provides `.find(<Query>)`;
 //! * [Vertex](./path/struct.Vertex.html) provides:
 //!     * [Path](./path/trait.Path.html) implemetation with `.Out(...)`, `.In(...)`, `.Has(...)`, `.Or(...)`, `.Follow(...)`, ...
 //!     * [Query](./path/trait.Query.html) implemetation with `.All()`, `.GetLimit(...)`, ...

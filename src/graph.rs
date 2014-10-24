@@ -10,13 +10,11 @@ use serialize::json::decode as json_decode;
 use std::collections::HashMap;
 
 use path::Query;
-use path::Reuse;
 
-use errors::{GraphResult,
-             InvalidUrl, MalformedRequest, RequestFailed,
-             DecodingFailed, ResponseParseFailed,
-             QueryNotFinalized, QueryCompilationFailed,
-             ReusableCannotBeSaved };
+use errors::{ GraphResult,
+              InvalidUrl, MalformedRequest, RequestFailed,
+              DecodingFailed, ResponseParseFailed,
+              QueryNotFinalized, QueryCompilationFailed };
 
 /// Provides access to currently running Cayley database, among with
 /// an ability to run queries there, and to write there your data
@@ -110,76 +108,6 @@ impl Graph {
         match self.perform_request(query) {
             Ok(body) => Graph::decode_nodes(body),
             Err(error) => Err(error)
-        }
-    }
-
-    // ---------------------------------- save ---------------------------------
-
-    /// Save Morphism or any [Reuse](../path/trait.Reuse.html) implementor in the
-    /// database, equivalent to Gremin's `var foo = g.Morphism()...`
-    ///
-    /// The difference is in the fact you set the name when you create a `Morphism` instance
-    /// and then just pass it here, like:
-    ///
-    /// ```
-    /// use cayley::Graph;
-    /// use cayley::path::{Morphism, Path};
-    /// use cayley::selector::{Predicate, AnyTag};
-    ///
-    /// let graph = Graph::default().unwrap();
-    /// let mut m = Morphism::start("foo");
-    /// m.Out(Predicate("follows"), AnyTag);
-    /// graph.save(&mut m).unwrap();
-    /// ```
-    ///
-    /// Currently no check is performed if Morphism was already saved or not to
-    /// this graph, though it provides `is_saved()` method which may tell if this Morphism
-    /// instance was saved at least once to _some_ graph. If in future this check will be
-    /// performed, this method definiton won't change, only there will be a new error type.
-    pub fn save(&self, reusable: &mut Reuse) -> GraphResult<()> {
-        match reusable.save() {
-            Some(query) => {
-                println!("Executing query: {:s}", query);
-                match self.perform_request(query) {
-                    /* TODO: saved flag should know a graph where this morphism was saved */
-                    Ok(_) => { reusable.set_saved(); Ok(()) },
-                    Err(error) => Err(error)
-                }
-            },
-            None => Err(ReusableCannotBeSaved)
-        }
-    }
-
-    // ---------------------------------- save_as ------------------------------
-
-    /// Save Morphism or any [Reuse](./path/trait.Reuse.html) implementor in the
-    /// database, under the different name than the one used when it was created
-    ///
-    /// ```
-    /// use cayley::Graph;
-    /// use cayley::path::{Morphism, Path};
-    /// use cayley::selector::{Predicate, AnyTag};
-    ///
-    /// let graph = Graph::default().unwrap();
-    /// let mut m = Morphism::start("foo");
-    /// m.Out(Predicate("follows"), AnyTag);
-    /// graph.save_as("bar", &mut m).unwrap();
-    /// ```
-    ///
-    /// Currently no check is performed if Morphism was already saved or not to
-    /// this graph, though it provides `is_saved()` method which may tell if this Morphism
-    /// instance was saved at least once to _some_ graph. If in future this check will be
-    /// performed, this method definiton won't change, only there will be a new error type.
-    pub fn save_as(&self, name: &str, reusable: &mut Reuse) -> GraphResult<()> {
-        match reusable.save_as(name) {
-            Some(query) => {
-                match self.perform_request(query) {
-                    /* TODO: saved flag should know a graph where this morphism was saved */
-                    Ok(_) => { reusable.set_saved(); Ok(()) },
-                    Err(error) => Err(error)
-                }
-            },
-            None => Err(ReusableCannotBeSaved)
         }
     }
 
