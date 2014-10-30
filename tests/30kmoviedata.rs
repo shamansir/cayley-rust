@@ -123,6 +123,14 @@ fn main() {
 
     }
 
+    // graph.write([ { subject: "Subject Node",
+    //                 predicate: "Predicate Node",
+    //                 object: "Object Node" }]);
+    //
+    // graph.delete([ { subject: "Subject Node",
+    //                 predicate: "Predicate Node",
+    //                 object: "Object Node" }]);
+
     // it('test Emit', function(done) {
     //     this.timeout(10000);
     //     g.V("Casablanca").ForEach(function(d) { g.Emit(d); }, function(err, result) {

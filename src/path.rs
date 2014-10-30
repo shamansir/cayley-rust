@@ -395,8 +395,8 @@ impl Vertex {
     pub fn From(&mut self, nodes: NodeSelector) -> &mut Vertex {
         match self.path.is_empty() {
             true => (),
-            false => fail!("Vertex.From should be the first method to be called after Vertex::prepare()
-                           or Vertex::start(nodes) should be used instead")
+            false => panic!("Vertex.From should be the first method to be called after Vertex::prepare()
+                             or Vertex::start(nodes) should be used instead")
         }
         self.add_str("g");
         self.add_string(match nodes {

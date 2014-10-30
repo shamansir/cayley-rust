@@ -1,13 +1,12 @@
 use std::str;
 
-use url::Url;
-use http::client::RequestWriter;
-use http::method::Post;
-
 use serialize::{Decoder, Decodable};
 use serialize::json::decode as json_decode;
 
 use std::collections::HashMap;
+
+use hyper::Url;
+use hyper::client::Request;
 
 use path::Query;
 
@@ -111,23 +110,31 @@ impl Graph {
         }
     }
 
-    // uses RequestWriter to perform a request with given request body and returns the response body
     fn perform_request(&self, body: String) -> GraphResult<Vec<u8>> {
-        match Graph::prepare_request(self.url.as_slice()) {
-            Err(error) => Err(error),
-            Ok(mut request) => {
-                request.headers.content_length = Some(body.len());
-                match request.write_str(body.as_slice()) {
-                    Err(error) => Err(RequestFailed(error, body)),
-                    Ok(_) => match request.read_response() {
-                        Err((_, error)) => Err(RequestFailed(error, body)),
-                        Ok(mut response) => match response.read_to_end() {
-                            Err(error) => Err(RequestFailed(error, body)),
-                            Ok(response_body) => Ok(response_body)
-                        }
-                    }
-                }
-            }
+        let url = match Url::parse(self.url) {
+            Err(error) => Err(InvalidUrl(error, self.url)),
+            Ok(parsed_url) => parsed_url
+        };
+        let req = match Request::post(parsed_url) {
+            Err(error) => Err(MalformedRequest(error, url.to_string())),
+            Ok(request) => request
+        };
+        req.headers_mut().set(ContentLength(body.len()));
+        match request.start() {
+            Err(error) => Err(RequestFailed(error, body)),
+            Ok(_) => { }
+        };
+        match request.write_str(body.as_slice()) {
+            Err(error) => Err(RequestFailed(error, body)),
+            Ok(_) => { }
+        };
+        let resp = match request.send() {
+            Err(error) => Err(RequestFailed(error, body)),
+            Ok(response) => response
+        };
+        match resp.read_to_end() {
+            Err(error) => Err(RequestFailed(error, body)),
+            Ok(response_body) => Ok(response_body)
         }
     }
 

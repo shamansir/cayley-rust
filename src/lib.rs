@@ -91,7 +91,7 @@
 //! about every mentioned structure.
 
 #[doc(no_inline)]
-extern crate http;
+extern crate hyper;
 
 #[doc(no_inline)]
 extern crate url;

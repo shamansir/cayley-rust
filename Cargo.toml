@@ -7,10 +7,6 @@ authors = ["Ulric Wilfred <shaman.sir@gmail.com>"]
 name = "cayley"
 doc = true
 
-[dependencies.url]
-git = "https://github.com/servo/rust-url"
-doc = false
-
-[dependencies.http]
-git = "https://github.com/chris-morgan/rust-http.git"
+[dependencies.hyper]
+git = "https://github.com/hyperium/hyper"
 doc = false
