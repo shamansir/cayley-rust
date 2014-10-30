@@ -112,12 +112,12 @@ impl Graph {
     }
 
     fn perform_request(&self, body: String) -> GraphResult<Vec<u8>> {
-        let ref url = self.url;
         let mut request = {
-            match Url::parse(url.as_slice()) {
-                Err(error) => return Err(InvalidUrl(error, url)),
+            let url_str = self.url.as_slice();
+            match Url::parse(url_str) {
+                Err(error) => return Err(InvalidUrl(error, url_str.to_string())),
                 Ok(parsed_url) => match Request::post(parsed_url) {
-                    Err(error) => return Err(MalformedRequest(error, url)),
+                    Err(error) => return Err(MalformedRequest(error, url_str.to_string())),
                     Ok(request) => request
                 }
             }

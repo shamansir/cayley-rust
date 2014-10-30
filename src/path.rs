@@ -36,7 +36,7 @@ use selector::Query as FromQuery;
 /// let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
 /// match graph.find(Vertex::start(AnyNode).All()) {
 ///    Ok(GraphNodes(nodes)) => assert!(nodes.len() > 0),
-///    Err(error) => fail!(error.to_string())
+///    Err(error) => panic!(error.to_string())
 /// };
 /// ```
 ///

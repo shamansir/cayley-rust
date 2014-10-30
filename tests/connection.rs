@@ -12,14 +12,14 @@ fn main() {
 
     let graph = match Graph::new("localhost", 64210, V1) {
 
-        Err(error) => fail!(error),
+        Err(error) => panic!(error),
         Ok(graph) => graph
 
     };
 
     match graph.find(Vertex::start(AnyNode).All()) {
 
-        Err(error) => fail!(error.to_string()),
+        Err(error) => panic!(error.to_string()),
         Ok(GraphNodes(nodes)) => {
             assert!(nodes.len() > 0);
             match nodes.iter().next() {
@@ -27,7 +27,7 @@ fn main() {
                     // node is a HashMap<String, String>
                     println!("{:s}", first_node["id".to_string()]);
                 },
-                None => fail!("first node was not found")
+                None => panic!("first node was not found")
             }
         }
 

@@ -46,7 +46,7 @@ To connect to a graph at `localhost:64210`, use code like this:
 use cayley::{Graph, V1};
 
 let graph = match Graph::new("localhost", 64210, V1) {
-    Err(error) => fail!(error),
+    Err(error) => panic!(error),
     Ok(graph) => graph
 };
 ```
@@ -62,7 +62,7 @@ use cayley::selector::AnyNode;
 //               The query itself
 match graph.find(Vertex::start(AnyNode).All()) {
 
-    Err(error) => fail!(error.to_string()),
+    Err(error) => panic!(error.to_string()),
     Ok(GraphNodes(nodes)) => {
         assert!(nodes.len() > 0);
         match nodes.iter().next() {
@@ -70,7 +70,7 @@ match graph.find(Vertex::start(AnyNode).All()) {
                 // node is a HashMap<String, String>
                 println!("{:s}", first_node["id".to_string()]);
             },
-            None => fail!("first node was not found")
+            None => panic!("first node was not found")
         }
     }
 

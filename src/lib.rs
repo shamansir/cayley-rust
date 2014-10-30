@@ -23,7 +23,7 @@
 //! ```
 //! use cayley::{Graph, DefaultVersion};
 //! let graph = match Graph::new("localhost", 64210, DefaultVersion) {
-//!    Err(error) => fail!(error),
+//!    Err(error) => panic!(error),
 //!    Ok(graph) => graph
 //! };
 //! ```
@@ -47,7 +47,7 @@
 //! let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
 //! match graph.find(Vertex::start(AnyNode).All()) {
 //!    Ok(GraphNodes(nodes)) => assert!(nodes.len() > 0),
-//!    Err(error) => fail!(error.to_string()),
+//!    Err(error) => panic!(error.to_string()),
 //! };
 //! ```
 //!
