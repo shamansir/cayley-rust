@@ -7,11 +7,12 @@ use std::collections::HashMap;
 
 use hyper::Url;
 use hyper::client::Request;
+use hyper::header::common::ContentLength;
 
 use path::Query;
 
 use errors::{ GraphResult,
-              InvalidUrl, MalformedRequest, RequestFailed,
+              InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
               DecodingFailed, ResponseParseFailed,
               QueryNotFinalized, QueryCompilationFailed };
 
@@ -111,44 +112,31 @@ impl Graph {
     }
 
     fn perform_request(&self, body: String) -> GraphResult<Vec<u8>> {
-        let url = match Url::parse(self.url) {
-            Err(error) => Err(InvalidUrl(error, self.url)),
-            Ok(parsed_url) => parsed_url
+        let ref url = self.url;
+        let mut request = {
+            match Url::parse(url.as_slice()) {
+                Err(error) => return Err(InvalidUrl(error, url)),
+                Ok(parsed_url) => match Request::post(parsed_url) {
+                    Err(error) => return Err(MalformedRequest(error, url)),
+                    Ok(request) => request
+                }
+            }
         };
-        let req = match Request::post(parsed_url) {
-            Err(error) => Err(MalformedRequest(error, url.to_string())),
-            Ok(request) => request
-        };
-        req.headers_mut().set(ContentLength(body.len()));
+        request.headers_mut().set(ContentLength(body.len()));
         match request.start() {
-            Err(error) => Err(RequestFailed(error, body)),
-            Ok(_) => { }
-        };
-        match request.write_str(body.as_slice()) {
-            Err(error) => Err(RequestFailed(error, body)),
-            Ok(_) => { }
-        };
-        let resp = match request.send() {
-            Err(error) => Err(RequestFailed(error, body)),
-            Ok(response) => response
-        };
-        match resp.read_to_end() {
-            Err(error) => Err(RequestFailed(error, body)),
-            Ok(response_body) => Ok(response_body)
-        }
-    }
-
-    // prepares the RequestWriter object from URL to save it inside the Graph for future re-use
-    fn prepare_request(url: &str) -> GraphResult<Box<RequestWriter>> {
-        match Url::parse(url) {
-            Err(error) => Err(InvalidUrl(error, url.to_string())),
-            Ok(parsed_url) => {
-                match RequestWriter::new(Post, parsed_url) {
-                    Err(error) => Err(MalformedRequest(error, url.to_string())),
-                    Ok(request) => Ok(box request)
+            Err(error) => return Err(RequestFailed(error, body)),
+            Ok(mut request) => match request.write_str(body.as_slice()) {
+                Err(error) => return Err(RequestIoFailed(error, body)),
+                Ok(_) => match request.send() {
+                    Err(error) => return Err(RequestFailed(error, body)),
+                    Ok(mut response) => match response.read_to_end() {
+                        Err(error) => Err(RequestIoFailed(error, body)),
+                        Ok(response_body) => Ok(response_body)
+                    }
                 }
             }
         }
+
     }
 
     // extract JSON nodes from response
