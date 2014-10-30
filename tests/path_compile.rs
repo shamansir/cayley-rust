@@ -28,7 +28,7 @@ fn main() {
     macro_rules! path_fail(
         ($src:expr, $msg:ident) => (
             match $src.compile() {
-                Some(_) => fail!($msg),
+                Some(_) => panic!($msg),
                 None => ()
             };
         );
@@ -64,7 +64,7 @@ fn main() {
         Some(result) => {
             assert_eq!(result, "g.M().Out(\"foo\").Out(\"bar\")".to_string())
         }
-        None => fail!()
+        None => panic!()
     }
 
     path_eq!(M::start("morph").Out(Predicate("foo"), AnyTag)
@@ -155,13 +155,13 @@ fn main() {
              "g.V(\"D\",\"B\").Save(\"follows\",\"target\")");
 
     /* TODO:
-    path_fail!(V::start(Nodes(vec!("D", "B"))).Save(AnyPredicate, Tag("target")),
+    path_panic!(V::start(Nodes(vec!("D", "B"))).Save(AnyPredicate, Tag("target")),
                "should fail to compile path.Save w/AnyPredicate");
-    path_fail!(V::start(Nodes(vec!("D", "B"))).Save(Predicates(vec!("foo", "bar")), Tag("target")),
+    path_panic!(V::start(Nodes(vec!("D", "B"))).Save(Predicates(vec!("foo", "bar")), Tag("target")),
                "should fail to compile path.Save w/Predicates");
-    path_fail!(V::start(Nodes(vec!("D", "B"))).Save(Predicate("follows"), AnyTag),
+    path_panic!(V::start(Nodes(vec!("D", "B"))).Save(Predicate("follows"), AnyTag),
                "should fail to compile path.Save w/AnyTag");
-    path_fail!(V::start(Nodes(vec!("D", "B"))).Save(Predicate("follows"), Tags(vec!("foo", "bar"))),
+    path_panic!(V::start(Nodes(vec!("D", "B"))).Save(Predicate("follows"), Tags(vec!("foo", "bar"))),
                "should fail to compile path.Save w/AnyTag"); */
 
     // == Joining ==

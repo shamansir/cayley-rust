@@ -16,14 +16,14 @@ fn main() {
 
     match Graph::new("localhost", 64210, V1) {
 
-        Err(error) => fail!(error),
+        Err(error) => panic!(error),
         Ok(graph) => {
 
             /* TODO: test saving Morphism */
 
             match graph.find(Vertex::start(AnyNode).All()) {
 
-                Err(error) => fail!(error.to_string()),
+                Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert!(nodes.len() > 0);
                 }
@@ -32,7 +32,7 @@ fn main() {
 
             match graph.find(Vertex::start(AnyNode).GetLimit(5)) {
 
-                Err(error) => fail!(error.to_string()),
+                Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 5);
                 }
@@ -41,14 +41,14 @@ fn main() {
 
             match graph.find(Vertex::start(Node("Humphrey Bogart")).All()) {
 
-                Err(error) => fail!(error.to_string()),
+                Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
                         Some(&GraphNode(ref humphrey)) => {
                             assert_eq!(humphrey["id".to_string()].as_slice(), "Humphrey Bogart");
                         },
-                        None => fail!("first node was not found")
+                        None => panic!("first node was not found")
                     }
                 }
 
@@ -58,7 +58,7 @@ fn main() {
                                     .In(Predicate("name"), AnyTag)
                                     .All()) {
 
-                Err(error) => fail!(error.to_string()),
+                Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
@@ -66,7 +66,7 @@ fn main() {
                             assert_eq!(humphrey["id".to_string()].as_slice(), "/en/humphrey_bogart");
                             // was: ":/en/humphrey_bogart"
                         },
-                        None => fail!("first node was not found")
+                        None => panic!("first node was not found")
                     }
                 }
 
@@ -76,7 +76,7 @@ fn main() {
                                     .InP(Predicate("name"))
                                     .All()) {
 
-                Err(error) => fail!(error.to_string()),
+                Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
@@ -84,7 +84,7 @@ fn main() {
                             assert_eq!(casablanca["id".to_string()].as_slice(), "/en/casablanca_1942");
                             // was: ":/en/casablanca_1942"
                         },
-                        None => fail!("first node was not found")
+                        None => panic!("first node was not found")
                     }
                 }
 
@@ -97,7 +97,7 @@ fn main() {
                                     .OutP(Predicate("name"))
                                     .All()) {
 
-                Err(error) => fail!(error.to_string()),
+                Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert!(nodes.len() > 0);
                 }
@@ -112,7 +112,7 @@ fn main() {
                                     .OutP(Predicate("name"))
                                     .All()) {
 
-                Err(error) => fail!(error.to_string()),
+                Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     println!("{}",nodes.len());
                     assert!(nodes.len() > 0);

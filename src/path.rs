@@ -36,7 +36,7 @@ use selector::Query as FromQuery;
 /// let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
 /// match graph.find(Vertex::start(AnyNode).All()) {
 ///    Ok(GraphNodes(nodes)) => assert!(nodes.len() > 0),
-///    Err(error) => fail!(error.to_string())
+///    Err(error) => panic!(error.to_string())
 /// };
 /// ```
 ///
@@ -395,7 +395,7 @@ impl Vertex {
     pub fn From(&mut self, nodes: NodeSelector) -> &mut Vertex {
         match self.path.is_empty() {
             true => (),
-            false => fail!("Vertex.From should be the first method to be called after Vertex::prepare()
+            false => panic!("Vertex.From should be the first method to be called after Vertex::prepare()
                            or Vertex::start(nodes) should be used instead")
         }
         self.add_str("g");
