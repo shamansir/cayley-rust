@@ -10,7 +10,8 @@
 //!
 //! Jump to: [Graph](./graph/struct.Graph.html) |
 //!          [Vertex](./path/struct.Vertex.html) |
-//!          [Morphism](./path/struct.Morphism.html).
+//!          [Morphism](./path/struct.Morphism.html) |
+//!          [Traversal](./graph/enum.Traversal.html)
 //!
 //! ## Connection
 //!
@@ -99,13 +100,10 @@ extern crate url;
 #[doc(no_inline)]
 extern crate serialize;
 
-pub use graph::{Graph, GraphNodes, GraphNode};
+pub use graph::{Graph, Nodes, Node};
 pub use graph::{V1, DefaultVersion};
 
 pub mod errors;
 pub mod selector;
 pub mod path;
 pub mod graph;
-
-// echo "graph.Vertex('Humphrey Bogart').All()" |
-// http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain

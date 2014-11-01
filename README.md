@@ -202,7 +202,7 @@ and this case should be checked by API for sure;
 * API change: Rather a thought to think on: This `mutable self` passed everywhere
 may be solved with being a bit more functional and stopping using method chains — and using tuples
 or vectors of enum-values instead, then iterating and mapping over them;
-So, i.e. `Path` may appear as enum and be passed as a tuple of values:
+So, i.e. `Path` may appear as `enum` and be passed as a vector of values:
 `( Has(Predicate("foo")), Tag("bar")), And((..., ..., ...)), Out(...) ), ( All, )`;
 On the other hand, this way looks not so easy to read the whole thing as an actual chain of operations,
 in comparison to method chains; Linked lists, then? Or operator overloading? Or macros?

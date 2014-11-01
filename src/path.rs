@@ -1,3 +1,5 @@
+use graph::Expectation;
+
 use selector::{NodeSelector, TagSelector, PredicateSelector};
 
 use selector::{AnyNode, Node, Nodes};
@@ -100,7 +102,7 @@ pub trait Compile: Clone/*+ToString*/ {
 
     fn add_string(&mut self, what: String) -> &mut Self;
 
-    fn compile(&self) -> Option<String>;
+    fn compile(&self) -> Option<(String, Expectation)>;
 
     /* fn to_string(&self) -> String {
         match self.compile() {

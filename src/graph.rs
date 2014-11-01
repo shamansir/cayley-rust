@@ -38,11 +38,33 @@ pub struct Graph {
 ///
 /// This is a subject to change, since I'd prefer here would be `&str`
 /// items inside, but it's quite hard to achieve this with `json::Decoder`
-/* TODO: change to MayBeOwned? */
-pub struct GraphNode(pub HashMap<String, String>);
+pub struct Node(pub HashMap<String, String>);//
 
-/// A collection of GraphNode instances
-pub struct GraphNodes(pub Vec<GraphNode>);
+pub struct Nodes(Vec<Node>);
+
+pub struct Tag(String);
+
+pub struct Tags(Vec<String>);
+
+pub struct NodeNames(Vec<String>);
+
+//pub struct Nodes(pub Vec<GraphNode>);
+
+pub enum Traversal {
+    SingleNode(Node), // Query.ToValue()
+    NodeSequence(Nodes), // Query.All(), Query.GetLimit(n)
+    NameSequence(NodeNames), // Query.ToArray()
+    TagSequence(Tags), // Query.TagArray()
+    SingleTag(Tag) // Query.TagValue()
+}
+
+pub enum Expectation {
+    ExpectedSingleNode,
+    ExpectedNodeSequence,
+    ExpectedNameSequence,
+    ExpectedTagSequence,
+    ExpectedSingleTag
+}
 
 /// Cayley API Version, planned to default to the latest, if it will ever change
 pub enum CayleyAPIVersion { V1, DefaultVersion }
@@ -81,7 +103,7 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
-    pub fn find(&self, query: &Query) -> GraphResult<GraphNodes> {
+    pub fn find(&self, query: &Query) -> GraphResult<Traversal> {
         if query.is_finalized() {
             match query.compile() {
                 Some(compiled) => self.exec(compiled),
@@ -103,10 +125,10 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
     /// ```
-    pub fn exec(&self, query: String) -> GraphResult<GraphNodes> {
+    pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<Traversal> {
         println!("Executing query: {:s}", query);
         match self.perform_request(query) {
-            Ok(body) => Graph::decode_nodes(body),
+            Ok(body) => Graph::decode_traversal(body, expectation),
             Err(error) => Err(error)
         }
     }
@@ -140,13 +162,31 @@ impl Graph {
     }
 
     // extract JSON nodes from response
-    fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
+    fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<Traversal> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
-            Some(nodes_json) => {
-                match json_decode(nodes_json) {
-                    Err(error) => Err(DecodingFailed(error, nodes_json.to_string())),
-                    Ok(nodes) => Ok(nodes)
+            Some(traversal_json) => {
+                match expectation {
+                    ExpectedSingleNode => match json_decode(traversal_json) {
+                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
+                            Ok(node) => Ok(SingleNode(node))
+                        },
+                    ExpectedNodeSequence => match json_decode(traversal_json) {
+                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
+                            Ok(nodes) => Ok(NodeSequence(nodes))
+                        },
+                    ExpectedNameSequence => match json_decode(traversal_json) {
+                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
+                            Ok(names) => Ok(NameSequence(names))
+                        },
+                    ExpectedTagSequence => match json_decode(traversal_json) {
+                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
+                            Ok(tags) => Ok(TagSequence(tags))
+                        },
+                    ExpectedSingleTag => match json_decode(traversal_json) {
+                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
+                            Ok(tag) => Ok(SingleTag(tag))
+                        }
                 }
             }
         }
@@ -154,8 +194,8 @@ impl Graph {
 
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
-    fn decode(decoder: &mut S) -> Result<GraphNode, E> {
+impl<S: Decoder<E>, E> Decodable<S, E> for Node {
+    fn decode(decoder: &mut S) -> Result<Node, E> {
         decoder.read_map(|decoder, len| {
             let mut data_map: HashMap<String, String> = HashMap::new();
             for i in range(0u, len) {
@@ -166,20 +206,20 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
                                     Ok(val) => val, Err(err) => return Err(err)
                                 });
             }
-            Ok(GraphNode(data_map))
+            Ok(Node(data_map))
         })
     }
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
-    fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
+impl<S: Decoder<E>, E> Decodable<S, E> for Nodes {
+    fn decode(decoder: &mut S) -> Result<Nodes, E> {
         decoder.read_struct("__unused__", 0, |decoder| {
             decoder.read_struct_field("result", 0, |decoder| {
                 decoder.read_option(|decoder, has_value| {
                     match has_value {
-                        false => Ok(GraphNodes(Vec::new())), /* FIXME: return GraphNodes(None) */
+                        false => Ok(Nodes(Vec::new())),
                         true => decoder.read_seq(|decoder, len| {
-                            let mut nodes: Vec<GraphNode> = Vec::with_capacity(len);
+                            let mut nodes: Vec<Node> = Vec::with_capacity(len);
                             for i in range(0u, len) {
                                 nodes.push(match decoder.read_seq_elt(i,
                                                 |decoder| { Decodable::decode(decoder) }) {
@@ -187,7 +227,7 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
                                     Err(err) => return Err(err)
                                 });
                             };
-                            Ok(GraphNodes(nodes))
+                            Ok(Nodes(nodes))
                         })
                     }
                 })
@@ -195,3 +235,8 @@ impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
         })
     }
 }
+
+/* impl<S: Decoder<E>, E> Decodable<S, E> for Traversal {
+    fn decode(decoder: &mut S) -> Result<Traversal, E> {
+    }
+} */
