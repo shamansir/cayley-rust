@@ -9,12 +9,12 @@ use hyper::Url;
 use hyper::client::Request;
 use hyper::header::common::ContentLength;
 
-use path::Query;
+use path::{Query, Expectation};
 
 use errors::{ GraphResult,
               InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
               DecodingFailed, ResponseParseFailed,
-              QueryNotFinalized, QueryCompilationFailed };
+              QueryNotFinalized, QueryCompilationFailed, ExpectationUnknown };
 
 /// Provides access to currently running Cayley database, among with
 /// an ability to run queries there, and to write there your data
@@ -58,14 +58,6 @@ pub enum Traversal {
     SingleTag(Tag) // Query.TagValue()
 }
 
-pub enum Expectation {
-    ExpectedSingleNode,
-    ExpectedNodeSequence,
-    ExpectedNameSequence,
-    ExpectedTagSequence,
-    ExpectedSingleTag
-}
-
 /// Cayley API Version, planned to default to the latest, if it will ever change
 pub enum CayleyAPIVersion { V1, DefaultVersion }
 
@@ -106,7 +98,7 @@ impl Graph {
     pub fn find(&self, query: &Query) -> GraphResult<Traversal> {
         if query.is_finalized() {
             match query.compile() {
-                Some(compiled) => self.exec(compiled),
+                Some((compiled, expectation)) => self.exec(compiled, expectation),
                 None => Err(QueryCompilationFailed)
             }
         } else { Err(QueryNotFinalized) }
@@ -167,23 +159,24 @@ impl Graph {
             None => Err(ResponseParseFailed),
             Some(traversal_json) => {
                 match expectation {
-                    ExpectedSingleNode => match json_decode(traversal_json) {
+                    Unknown => Err(ExpectationUnknown),
+                    ASingleNode => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(node) => Ok(SingleNode(node))
                         },
-                    ExpectedNodeSequence => match json_decode(traversal_json) {
+                    ANodeSequence => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(nodes) => Ok(NodeSequence(nodes))
                         },
-                    ExpectedNameSequence => match json_decode(traversal_json) {
+                    ANameSequence => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(names) => Ok(NameSequence(names))
                         },
-                    ExpectedTagSequence => match json_decode(traversal_json) {
+                    ATagSequence => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(tags) => Ok(TagSequence(tags))
                         },
-                    ExpectedSingleTag => match json_decode(traversal_json) {
+                    ASingleTag => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(tag) => Ok(SingleTag(tag))
                         }

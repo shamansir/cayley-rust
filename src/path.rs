@@ -1,5 +1,3 @@
-use graph::Expectation;
-
 use selector::{NodeSelector, TagSelector, PredicateSelector};
 
 use selector::{AnyNode, Node, Nodes};
@@ -60,8 +58,8 @@ use selector::Query as FromQuery;
 /// graph.find(&other_v).unwrap();
 /// ```
 pub struct Vertex {
-    finalized: bool,
     path: Vec<String>,
+    expectation: Expectation,
     includes: Option<Vec<String>>
 }
 
@@ -91,6 +89,15 @@ pub struct Morphism {
     name: String,
     path: Vec<String>,
     includes: Option<Vec<String>>
+}
+
+pub enum Expectation {
+    Unknown,
+    ASingleNode,
+    ANodeSequence,
+    ANameSequence,
+    ATagSequence,
+    ASingleTag
 }
 
 // ================================ StringChain =========================== //
@@ -291,7 +298,7 @@ pub trait Path: StringChain {
     fn And(&mut self, query: &Query) -> &mut Self {
         /* FIXME: implicit return looking not so good here? */
         match query.compile() {
-            Some(compiled) => { return self.add_string(format!("And({:s})", compiled)); },
+            Some((compiled, _)) => { return self.add_string(format!("And({:s})", compiled)); },
             None => { } /* FIXME: save error */
         }
         self
@@ -308,7 +315,7 @@ pub trait Path: StringChain {
     fn Or(&mut self, query: &Query) -> &mut Self {
         /* FIXME: implicit return looking not so good here? */
         match query.compile() {
-            Some(compiled) => { return self.add_string(format!("Or({:s})", compiled)); },
+            Some((compiled, _)) => { return self.add_string(format!("Or({:s})", compiled)); },
             None => { } /* FIXME: save error */
         }
         self
@@ -317,14 +324,14 @@ pub trait Path: StringChain {
     // ---------------------------------- Follow -------------------------------
 
     /// `.Follow` Path method. Applies the path chain on the `Morphism` object to the current path.
-    fn Follow(&mut self, reusable: &Reuse) -> &mut Self {
+    fn Follow(&mut self, reusable: &NamedPath) -> &mut Self {
         self.add_string(format!("Follow({:s})", reusable.get_name()))
     }
 
     // ---------------------------------- FollowR ------------------------------
 
     /// `.FollowR` Path method. Applies the path chain on the `Morphism` object to the current path.
-    fn FollowR(&mut self, reusable: &Reuse) -> &mut Self {
+    fn FollowR(&mut self, reusable: &NamedPath) -> &mut Self {
         self.add_string(format!("FollowR({:s})", reusable.get_name()))
     }
 
@@ -335,24 +342,20 @@ pub trait Path: StringChain {
 #[allow(non_snake_case)]
 pub trait Query: Path {
 
-    fn set_finalized(&mut self);
-
-    fn is_finalized(&self) -> bool;
-
-    fn set_expectation(&mut self, expectation: Expectation);
+    fn expect(&mut self, expectation: Expectation);
 
     // ---------------------------------- All ----------------------------------
 
     /// `.All` Query method. Equivalent to Gremlin `Query.All()`.
     /// Returns all the items found within this path.
-    fn All(&mut self) -> &mut Self { self.set_finalized(); self.add_str("All()") }
+    fn All(&mut self) -> &mut Self { self.expect(ANodeSequence); self.add_str("All()") }
 
     // ---------------------------------- GetAll -------------------------------
 
     /// `.GetLimit` Query method. Equivalent to Gremlin `Query.GetLimit(<number>)`.
     /// Returns first `<n>` items found within this path.
     fn GetLimit(&mut self, limit: int) -> &mut Self {
-        self.set_finalized(); self.add_string(format!("GetLimit({:i})", limit))
+        self.expect(ANodeSequence); self.add_string(format!("GetLimit({:i})", limit))
     }
 
     /* TODO: ToArray() */
@@ -400,7 +403,7 @@ impl Vertex {
             })
     }
 
-    fn add_include(&mut self, include: &Reuse) {
+    fn add_include(&mut self, include: &NamedPath) {
         match include.save() {
             Some(saved) =>
                 match self.includes {
@@ -425,17 +428,25 @@ impl StringChain for Vertex {
         self
     }
 
+    fn to_string(&self) -> Option<String> {
+        Some(
+            match self.includes {
+                None => self.path.connect("."),
+                Some(ref includes) => includes.connect(";") + ";".to_string() + self.path.connect(".")
+            })
+    }
+
 }
 
 impl Path for Vertex {
 
-    fn Follow(&mut self, reusable: &Reuse) -> &mut Vertex {
+    fn Follow(&mut self, reusable: &NamedPath) -> &mut Vertex {
         self.add_include(reusable);
         //Path::Follow(self, reusable)
         self.add_string(format!("Follow({:s})", reusable.get_name()))
     }
 
-    fn FollowR(&mut self, reusable: &Reuse) -> &mut Vertex {
+    fn FollowR(&mut self, reusable: &NamedPath) -> &mut Vertex {
         self.add_include(reusable);
         //Path::FollowR(self, reusable)
         self.add_string(format!("FollowR({:s})", reusable.get_name()))
@@ -445,11 +456,7 @@ impl Path for Vertex {
 
 impl Query for Vertex {
 
-    fn set_finalized(&mut self) { self.finalized = true; }
-
-    fn is_finalized(&self) -> bool { self.finalized }
-
-    fn set_expectation(&mut self, expectation: Expectation) { }
+    fn expect(&mut self, expectation: Expectation) { self.expectation = expectation; }
 
     fn compile(&self) -> Option<(String, Expectation)> {
         Some(
@@ -513,7 +520,7 @@ impl Morphism {
         res
     }
 
-    fn add_include(&mut self, include: &Reuse) {
+    fn add_include(&mut self, include: &NamedPath) {
         match include.save() {
             Some(saved) =>
                 match self.includes {
@@ -550,13 +557,13 @@ impl StringChain for Morphism {
 
 impl Path for Morphism {
 
-    fn Follow(&mut self, reusable: &Reuse) -> &mut Morphism {
+    fn Follow(&mut self, reusable: &NamedPath) -> &mut Morphism {
         self.add_include(reusable);
         //Path::Follow(self, reusable)
         self.add_string(format!("Follow({:s})", reusable.get_name()))
     }
 
-    fn FollowR(&mut self, reusable: &Reuse) -> &mut Morphism {
+    fn FollowR(&mut self, reusable: &NamedPath) -> &mut Morphism {
         self.add_include(reusable);
         //Path::FollowR(reusable)
         self.add_string(format!("FollowR({:s})", reusable.get_name()))
@@ -609,20 +616,20 @@ fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> Stri
 
         (FromQuery(query), AnyTag) =>
             match query.compile() {
-                Some(compiled) => compiled,
+                Some((compiled, _)) => compiled,
                 None => "null".to_string()
             },
         (FromQuery(query), Tag(tag)) =>
             format!("{:s}, \"{:s}\"",
                     match query.compile() {
-                        Some(compiled) => compiled,
+                        Some((compiled, _)) => compiled,
                         None => "null".to_string()
                     },
                     tag),
         (FromQuery(query), Tags(tags)) =>
             format!("{:s}, [\"{:s}\"]",
                     match query.compile() {
-                        Some(compiled) => compiled,
+                        Some((compiled, _)) => compiled,
                         None => "null".to_string()
                     },
                     tags.connect("\",\""))
@@ -652,20 +659,20 @@ fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> S
 
         (FromQuery(query), AnyNode) =>
             match query.compile() {
-                Some(compiled) => compiled,
+                Some((compiled, _)) => compiled,
                 None => "null".to_string()
             },
         (FromQuery(query), Node(node)) =>
             format!("{:s},\"{:s}\"",
                     match query.compile() {
-                        Some(compiled) => compiled,
+                        Some((compiled, _)) => compiled,
                         None => "null".to_string()
                     },
                     node),
         (FromQuery(query), Nodes(nodes)) =>
             format!("{:s},[\"{:s}\"]",
                     match query.compile() {
-                        Some(compiled) => compiled,
+                        Some((compiled, _)) => compiled,
                         None => "null".to_string()
                     },
                     nodes.connect("\",\""))

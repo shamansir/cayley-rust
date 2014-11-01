@@ -12,7 +12,8 @@ pub enum GraphRequestError {
     DecodingFailed(DecoderError, String),
     ResponseParseFailed,
     QueryNotFinalized,
-    QueryCompilationFailed
+    QueryCompilationFailed,
+    ExpectationUnknown
 }
 
 impl Show for GraphRequestError {
@@ -37,7 +38,8 @@ impl Show for GraphRequestError {
                 derr.fmt(fmt) },
             ResponseParseFailed => fmt.pad("Response parsing failed"),
             QueryNotFinalized => fmt.pad("Query is not finalized"),
-            QueryCompilationFailed => fmt.pad("Query can not be compiled")
+            QueryCompilationFailed => fmt.pad("Query can not be compiled"),
+            ExpectationUnknown => fmt.pad("This query is not finalized, so has no knowledge of what to expect in response from Cayley"),
         }
     }
 }
