@@ -93,27 +93,15 @@ pub struct Morphism {
     includes: Option<Vec<String>>
 }
 
-// ================================ Compile ================================= //
+// ================================ StringChain =========================== //
 
-/// Marks any Path which is able to be compiled to a string Gremlin-compatible query
-pub trait Compile: Clone/*+ToString*/ {
+pub trait StringChain: Clone {
 
     fn add_str(&mut self, what: &str) -> &mut Self;
 
     fn add_string(&mut self, what: String) -> &mut Self;
 
-    fn compile(&self) -> Option<(String, Expectation)>;
-
-    /* fn to_string(&self) -> String {
-        match self.compile() {
-            Some(compiled) => compiled,
-            None => "[-]".to_string()
-        }
-    }
-
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
-        write!(fmt, "{}", self.to_string())
-    } */
+    fn to_string(&self) -> Option<String>;
 
 }
 
@@ -175,7 +163,7 @@ pub trait Compile: Clone/*+ToString*/ {
 ///   `var foo = g.M()...; g.V().Follow(foo).All();`;
 ///
 #[allow(non_snake_case)]
-pub trait Path: Compile {
+pub trait Path: StringChain {
 
     // ---------------------------------- Out ----------------------------------
 
@@ -351,6 +339,8 @@ pub trait Query: Path {
 
     fn is_finalized(&self) -> bool;
 
+    fn set_expectation(&mut self, expectation: Expectation);
+
     // ---------------------------------- All ----------------------------------
 
     /// `.All` Query method. Equivalent to Gremlin `Query.All()`.
@@ -370,6 +360,8 @@ pub trait Query: Path {
     /* TODO: TagArray() */
     /* TODO: TagValue() */
     /* TODO: query.ForEach(callback), query.ForEach(limit, callback) */
+
+    fn compile(&self) -> Option<(String, Expectation)>;
 
 }
 
@@ -421,7 +413,7 @@ impl Vertex {
 
 }
 
-impl Compile for Vertex {
+impl StringChain for Vertex {
 
     fn add_str(&mut self, str: &str) -> &mut Vertex {
         self.path.push(str.to_string());
@@ -431,14 +423,6 @@ impl Compile for Vertex {
     fn add_string(&mut self, str: String) -> &mut Vertex {
         self.path.push(str);
         self
-    }
-
-    fn compile(&self) -> Option<String> {
-        Some(
-            match self.includes {
-                None => self.path.connect("."),
-                Some(ref includes) => includes.connect(";") + ";".to_string() + self.path.connect(".")
-            })
     }
 
 }
@@ -465,6 +449,16 @@ impl Query for Vertex {
 
     fn is_finalized(&self) -> bool { self.finalized }
 
+    fn set_expectation(&mut self, expectation: Expectation) { }
+
+    fn compile(&self) -> Option<(String, Expectation)> {
+        Some(
+            match self.includes {
+                None => self.path.connect("."),
+                Some(ref includes) => includes.connect(";") + ";".to_string() + self.path.connect(".")
+            })
+    }
+
 }
 
 impl Clone for Vertex {
@@ -477,9 +471,9 @@ impl Clone for Vertex {
 
 }
 
-// ================================ Reuse =================================== //
+// ================================ NamedPath =============================== //
 
-pub trait Reuse: Compile {
+pub trait NamedPath: Path {
 
     /// Get a prepared name for this Reusable
     /*pub*/ fn get_name(&self) -> &str;
@@ -532,7 +526,7 @@ impl Morphism {
 
 }
 
-impl Compile for Morphism {
+impl StringChain for Morphism {
 
     fn add_str(&mut self, str: &str) -> &mut Morphism {
         self.path.push(str.to_string());
@@ -544,7 +538,7 @@ impl Compile for Morphism {
         self
     }
 
-    fn compile(&self) -> Option<String> {
+    fn to_string(&self) -> Option<String> {
         Some(
             match self.includes {
                 None => self.path.connect("."),
@@ -570,7 +564,7 @@ impl Path for Morphism {
 
 }
 
-impl Reuse for Morphism {
+impl NamedPath for Morphism {
 
     fn get_name(&self) -> &str { self.name.as_slice() }
 
