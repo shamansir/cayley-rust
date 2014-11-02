@@ -344,6 +344,8 @@ pub trait Query: Path {
 
     fn expect(&mut self, expectation: Expectation);
 
+    fn has_expectation(&self) -> bool;
+
     // ---------------------------------- All ----------------------------------
 
     /// `.All` Query method. Equivalent to Gremlin `Query.All()`.
@@ -384,7 +386,7 @@ impl Vertex {
     /// if you use `prepare()`.
     pub fn prepare() -> Vertex {
         /* FIXME: calling this with no From call afterwars should fail the construction */
-        Vertex{ path: Vec::with_capacity(10), includes: None, finalized: false }
+        Vertex{ path: Vec::with_capacity(10), includes: None, expectation: Unknown }
     }
 
     /// A method for postponed query creation, intended to be used after the `prepare()` method
@@ -458,12 +460,21 @@ impl Query for Vertex {
 
     fn expect(&mut self, expectation: Expectation) { self.expectation = expectation; }
 
+    fn has_expectation(&self) -> bool {
+        match self.expectation {
+            Unknown => false,
+            _ => true
+        }
+    }
+
     fn compile(&self) -> Option<(String, Expectation)> {
-        Some(
+        Some( (
             match self.includes {
                 None => self.path.connect("."),
                 Some(ref includes) => includes.connect(";") + ";".to_string() + self.path.connect(".")
-            })
+            },
+            self.expectation
+        ) )
     }
 
 }
@@ -471,7 +482,7 @@ impl Query for Vertex {
 impl Clone for Vertex {
 
     fn clone(&self) -> Vertex {
-        Vertex { finalized: self.finalized,
+        Vertex { expectation: self.expectation,
                  path: self.path.clone(),
                  includes: self.includes.clone() }
     }
@@ -491,15 +502,15 @@ pub trait NamedPath: Path {
     /*pub*/ fn is_saved(&self) -> bool;
 
     fn save(&self) -> Option<String> {
-        match self.compile() {
-            Some(compiled) => Some(format!("var {:s} = {:s}", self.get_name(), compiled)),
+        match self.to_string() {
+            Some(stringified) => Some(format!("var {:s} = {:s}", self.get_name(), stringified)),
             None => None
         }
     }
 
     fn save_as(&self, name: &str) -> Option<String> {
-        match self.compile() {
-            Some(compiled) => Some(format!("var {:s} = {:s}", name, compiled)),
+        match self.to_string() {
+            Some(stringified) => Some(format!("var {:s} = {:s}", name, stringified)),
             None => None
         }
     }

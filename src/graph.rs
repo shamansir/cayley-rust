@@ -96,7 +96,7 @@ impl Graph {
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
     pub fn find(&self, query: &Query) -> GraphResult<Traversal> {
-        if query.is_finalized() {
+        if query.has_expectation() {
             match query.compile() {
                 Some((compiled, expectation)) => self.exec(compiled, expectation),
                 None => Err(QueryCompilationFailed)
