@@ -136,3 +136,34 @@ fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> S
 
     }
 }
+
+/*
+
+#![feature(macro_rules)]
+
+enum EnumOne {
+    Var11,
+    Var12,
+    Var13
+}
+
+enum EnumTwo {
+    Var21,
+    Var22,
+    Var23
+}
+
+macro_rules! enum_macro(
+    [ $($e1:ident)->+ => $e2:ident ] => (
+        vec!($($e1,)+), $e2
+    )
+)
+
+
+fn with_enums(e1: Vec<EnumOne>, e2: EnumTwo) { }
+
+fn main() {
+    with_enums(enum_macro![Var11 -> Var12 => Var22 ]);
+}
+
+*/
