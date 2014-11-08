@@ -38,7 +38,7 @@ pub struct Graph {
 ///
 /// This is a subject to change, since I'd prefer here would be `&str`
 /// items inside, but it's quite hard to achieve this with `json::Decoder`
-pub struct Node(pub HashMap<String, String>);//
+pub struct Node(pub HashMap<String, String>);
 
 pub struct Nodes(Vec<Node>);
 
