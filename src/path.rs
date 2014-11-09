@@ -36,7 +36,7 @@ pub enum Query {
     ToValue,
     TagArray,
     TagValue,
-    /* ForEach */
+    /* ForEach(|int|:'q -> int) */
 }
 
 /* pub enum Expectation {
@@ -167,3 +167,21 @@ fn main() {
 }
 
 */
+
+/*
+pub enum Test<'t> {
+    TestVal(|int|:'t -> int),
+    AnotherVal
+}
+
+fn ret_val<'t>() -> Test<'t> {
+    TestVal(|x| { x * 2 })
+}
+
+fn main() {
+    match ret_val() {
+        TestVal(cl) => { println!("{:i}", cl(5)) },
+        AnotherVal => {}
+    }
+}
+ */
