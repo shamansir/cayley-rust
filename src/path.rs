@@ -25,8 +25,8 @@ pub enum Path {
     And(Query),
     Union(Query),
     Or(Query),
-    Follow(&Reuse),
-    FollowR(&Reuse)
+    Follow(Reuse),
+    FollowR(Reuse)
 }
 
 pub enum Query {
@@ -48,6 +48,8 @@ pub enum Query {
     SingleTag
 } */
 
+pub struct Vertex((&[Path], Query));
+pub struct Morphism(&[Path])
 
 // ================================ utils =================================== //
 
