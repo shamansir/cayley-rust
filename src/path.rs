@@ -5,6 +5,25 @@ use selector::{AnyTag, Tag, Tags};
 use selector::{AnyPredicate, Predicate, Predicates};
 use selector::Query as FromQuery;
 
+#[macro_export]
+macro_rules! vertex(
+    [ $($e1:ident)->+ => $e2:ident ] => (
+        Vertex(&[$($e1,)+], $e2)
+    )
+)
+/* macro_rules! enum_macro(
+    [ $($e1:ident)->+ => $e2:ident ] => (
+        vec!($($e1,)+), $e2
+    )
+) */
+
+#[macro_export]
+macro_rules! morphism(
+    [ $($e1:ident)->+ => $e2:ident ] => (
+        Morphism(&[$($e1,)+])
+    )
+)
+
 pub enum Path {
     Out(PredicateSelector, TagSelector),
     OutP(PredicateSelector)
@@ -35,7 +54,7 @@ pub enum Query {
     ToArray,
     ToValue,
     TagArray,
-    TagValue,
+    TagValue
     /* ForEach(|int|:'q -> int) */
 }
 
@@ -48,8 +67,8 @@ pub enum Query {
     SingleTag
 } */
 
-pub struct Vertex((&[Path], Query));
-pub struct Morphism(&[Path])
+pub struct Vertex(&[Path], Query);
+pub struct Morphism(&[Path]);
 
 // ================================ utils =================================== //
 
