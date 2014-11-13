@@ -21,7 +21,7 @@ fn main() {
 
             /* TODO: test saving Morphism */
 
-            match graph.find(Vertex::start(AnyNode).All()) {
+            match graph.find(vertex!(AnyNode => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -30,7 +30,7 @@ fn main() {
 
             };
 
-            match graph.find(Vertex::start(AnyNode).GetLimit(5)) {
+            match graph.find(vertex!(AnyNode => GetLimit(5))) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -39,7 +39,7 @@ fn main() {
 
             };
 
-            match graph.find(Vertex::start(Node("Humphrey Bogart")).All()) {
+            match graph.find(vertex!(Node("Humphrey Bogart") => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -54,9 +54,9 @@ fn main() {
 
             }
 
-            match graph.find(Vertex::start(Node("Humphrey Bogart"))
-                                    .In(Predicate("name"), AnyTag)
-                                    .All()) {
+            match graph.find(vertex!(Node("Humphrey Bogart")
+                                     -> In(Predicate("name"), AnyTag)
+                                     => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -72,9 +72,9 @@ fn main() {
 
             }
 
-            match graph.find(Vertex::start(Node("Casablanca"))
-                                    .InP(Predicate("name"))
-                                    .All()) {
+            match graph.find(vertex!(Node("Casablanca")
+                                     -> InP(Predicate("name"))
+                                     => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -90,12 +90,12 @@ fn main() {
 
             }
 
-            match graph.find(Vertex::start(AnyNode)
-                                    .Has(Predicate("name"), Node("Casablanca"))
-                                    .OutP(Predicate("/film/film/starring"))
-                                    .OutP(Predicate("/film/performance/actor"))
-                                    .OutP(Predicate("name"))
-                                    .All()) {
+            match graph.find(vertex!(AnyNode
+                                     -> Has(Predicate("name"), Node("Casablanca"))
+                                     -> OutP(Predicate("/film/film/starring"))
+                                     -> OutP(Predicate("/film/performance/actor"))
+                                     -> OutP(Predicate("name"))
+                                     => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {

@@ -7,8 +7,8 @@ use selector::Query as FromQuery;
 
 #[macro_export]
 macro_rules! vertex(
-    [ $($e1:ident)->+ => $e2:ident ] => (
-        Vertex(&[$($e1,)+], $e2)
+    [ $e1:ident -> $($e2:ident)->+ => $e3:ident ] => (
+        Vertex($e1, &[$($e2,)+], $e3)
     )
 )
 /* macro_rules! enum_macro(
@@ -20,7 +20,7 @@ macro_rules! vertex(
 #[macro_export]
 macro_rules! morphism(
     [ $($e1:ident)->+ => $e2:ident ] => (
-        Morphism(&[$($e1,)+])
+        Morphism("", &[$($e1,)+])
     )
 )
 
@@ -67,8 +67,8 @@ pub enum Query {
     SingleTag
 } */
 
-pub struct Vertex(&[Path], Query);
-pub struct Morphism(&[Path]);
+pub struct Vertex(NodeSelector, &[Path], Query);
+pub struct Morphism(&str, &[Path]);
 
 // ================================ utils =================================== //
 
