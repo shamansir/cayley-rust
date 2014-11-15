@@ -24,32 +24,32 @@ macro_rules! morphism(
     )
 )
 
-pub enum Traversal {
+pub enum Traversal<'t> {
     // Basic Traversals
-    Out(PredicateSelector, TagSelector),
-    OutP(PredicateSelector),
-    OutT(TagSelector),
-    In(PredicateSelector, TagSelector),
-    InP(PredicateSelector),
-    InT(TagSelector),
-    Both(PredicateSelector, TagSelector),
-    BothP(PredicateSelector),
-    BothT(TagSelector),
-    Is(NodeSelector),
-    Has(PredicateSelector, NodeSelector),
+    Out(PredicateSelector<'t>, TagSelector<'t>),
+    OutP(PredicateSelector<'t>),
+    OutT(TagSelector<'t>),
+    In(PredicateSelector<'t>, TagSelector<'t>),
+    InP(PredicateSelector<'t>),
+    InT(TagSelector<'t>),
+    Both(PredicateSelector<'t>, TagSelector<'t>),
+    BothP(PredicateSelector<'t>),
+    BothT(TagSelector<'t>),
+    Is(NodeSelector<'t>),
+    Has(PredicateSelector<'t>, NodeSelector<'t>),
     // Tagging
-    Tag(TagSelector),
-    As(TagSelector),
-    Back(TagSelector),
-    Save(PredicateSelector, TagSelector),
+    Tag(TagSelector<'t>),
+    As(TagSelector<'t>),
+    Back(TagSelector<'t>),
+    Save(PredicateSelector<'t>, TagSelector<'t>),
     // Joining
-    Intersect(Query),
-    And(Query),
-    Union(Query),
-    Or(Query),
+    Intersect(Query+'t),
+    And(Query+'t),
+    Union(Query+'t),
+    Or(Query+'t),
     // Morphisms
-    Follow(Path),
-    FollowR(Path)
+    Follow(Path+'t),
+    FollowR(Path+'t)
 }
 
 pub enum Final {
@@ -63,16 +63,16 @@ pub enum Final {
     /* Map(|int|:'q -> int) */
 }
 
-pub struct Vertex(NodeSelector, &[Traversal], Final);
-pub struct Morphism(&[Traversal]);
+pub struct Vertex<'v>(NodeSelector<'v>, &'v[Traversal<'v>], Final);
+pub struct Morphism<'m>(&'m[Traversal<'m>]);
 
 pub trait Query { }
 
 pub trait Path { }
 
-impl Query for Vertex { }
+impl<'q> Query for Vertex<'q> { }
 
-impl Path for Morphism { }
+impl<'p> Path for Morphism<'p> { }
 
 // ================================ utils =================================== //
 

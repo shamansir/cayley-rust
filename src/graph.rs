@@ -66,7 +66,7 @@ pub enum QueryObject {
     SingleTag(Tag) // Query.TagValue()
 }
 
-pub struct PathObject(&str, Path);
+pub struct PathObject<'po>(&'po str, Path+'po);
 
 /// Cayley API Version, planned to default to the latest, if it will ever change
 pub enum CayleyAPIVersion { V1, DefaultVersion }
