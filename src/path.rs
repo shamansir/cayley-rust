@@ -24,31 +24,35 @@ macro_rules! morphism(
     )
 )
 
-pub enum Path {
+pub enum Traversal {
+    // Basic Traversals
     Out(PredicateSelector, TagSelector),
-    OutP(PredicateSelector)
+    OutP(PredicateSelector),
     OutT(TagSelector),
     In(PredicateSelector, TagSelector),
-    InP(PredicateSelector)
+    InP(PredicateSelector),
     InT(TagSelector),
     Both(PredicateSelector, TagSelector),
-    BothP(PredicateSelector)
+    BothP(PredicateSelector),
     BothT(TagSelector),
     Is(NodeSelector),
     Has(PredicateSelector, NodeSelector),
+    // Tagging
     Tag(TagSelector),
     As(TagSelector),
     Back(TagSelector),
     Save(PredicateSelector, TagSelector),
+    // Joining
     Intersect(Query),
     And(Query),
     Union(Query),
     Or(Query),
-    Follow(Reuse),
-    FollowR(Reuse)
+    // Morphisms
+    Follow(Path),
+    FollowR(Path)
 }
 
-pub enum Query {
+pub enum Final {
     All,
     GetLimit(int),
     ToArray,
@@ -56,19 +60,19 @@ pub enum Query {
     TagArray,
     TagValue
     /* ForEach(|int|:'q -> int) */
+    /* Map(|int|:'q -> int) */
 }
 
-/* pub enum Expectation {
-    Unknown,
-    SingleNode,
-    NodeSequence,
-    NameSequence,
-    TagSequence,
-    SingleTag
-} */
+pub struct Vertex(NodeSelector, &[Traversal], Final);
+pub struct Morphism(&[Traversal]);
 
-pub struct Vertex(NodeSelector, &[Path], Query);
-pub struct Morphism(&str, &[Path]);
+pub trait Query { }
+
+pub trait Path { }
+
+impl Query for Vertex { }
+
+impl Path for Morphism { }
 
 // ================================ utils =================================== //
 

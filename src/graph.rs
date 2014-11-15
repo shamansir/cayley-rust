@@ -9,7 +9,7 @@ use hyper::Url;
 use hyper::client::Request;
 use hyper::header::common::ContentLength;
 
-use path::{Query, Expectation};
+use path::{Query, Path};
 
 use errors::{ GraphResult,
               InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
@@ -50,13 +50,23 @@ pub struct NodeNames(Vec<String>);
 
 //pub struct Nodes(pub Vec<GraphNode>);
 
-pub enum Traversal {
+pub enum Expectation {
+    ExpectSingleNode,
+    ExpectNodeSequence,
+    ExpectNameSequence,
+    ExpectTagSequence,
+    ExpectSingleTag
+}
+
+pub enum QueryObject {
     SingleNode(Node), // Query.ToValue()
     NodeSequence(Nodes), // Query.All(), Query.GetLimit(n)
     NameSequence(NodeNames), // Query.ToArray()
     TagSequence(Tags), // Query.TagArray()
     SingleTag(Tag) // Query.TagValue()
 }
+
+pub struct PathObject(&str, Path);
 
 /// Cayley API Version, planned to default to the latest, if it will ever change
 pub enum CayleyAPIVersion { V1, DefaultVersion }
@@ -95,7 +105,7 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
-    pub fn find(&self, query: &Query) -> GraphResult<Traversal> {
+    pub fn find(&self, query: &Query) -> GraphResult<QueryObject> {
         if query.has_expectation() {
             match query.compile() {
                 Some((compiled, expectation)) => self.exec(compiled, expectation),
@@ -117,7 +127,7 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
     /// ```
-    pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<Traversal> {
+    pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<QueryObject> {
         println!("Executing query: {:s}", query);
         match self.perform_request(query) {
             Ok(body) => Graph::decode_traversal(body, expectation),
@@ -154,7 +164,7 @@ impl Graph {
     }
 
     // extract JSON nodes from response
-    fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<Traversal> {
+    fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<QueryObject> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(traversal_json) => {
@@ -229,7 +239,7 @@ impl<S: Decoder<E>, E> Decodable<S, E> for Nodes {
     }
 }
 
-/* impl<S: Decoder<E>, E> Decodable<S, E> for Traversal {
-    fn decode(decoder: &mut S) -> Result<Traversal, E> {
+/* impl<S: Decoder<E>, E> Decodable<S, E> for QueryObject {
+    fn decode(decoder: &mut S) -> Result<QueryObject, E> {
     }
 } */
