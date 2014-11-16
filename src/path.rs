@@ -1,3 +1,5 @@
+#![macro_escape]
+
 use std::fmt::{Show, Formatter, FormatError};
 
 use selector::{NodeSelector, TagSelector, PredicateSelector};
@@ -9,7 +11,7 @@ use selector::Query as FromQuery;
 
 #[macro_export]
 macro_rules! vertex(
-    [ $e1:ident $(-> $e2:ident)* => $e3:ident ] => (
+    [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
         Vertex($e1, &[$($e2,)*], $e3)
     )
 )
@@ -112,7 +114,6 @@ impl<'ts> ToString for Vertex<'ts> {
                     Nodes(ref names) => format!("g.V(\"{:s}\")", names.connect("\",\""))
                 }.as_slice());
                 result
-
             }
         }
     }

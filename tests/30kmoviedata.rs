@@ -1,4 +1,6 @@
-extern crate cayley;
+#![feature(phase, macro_rules)]
+
+#[phase(plugin, link)] extern crate cayley;
 
 use cayley::graph::{Graph, V1};
 use cayley::graph::{GraphNodes, GraphNode};
@@ -6,6 +8,8 @@ use cayley::path::{Morphism, Vertex, Path, Query};
 use cayley::selector::{AnyNode, Node};
 use cayley::selector::AnyTag;
 use cayley::selector::Predicate;
+
+use cayley::path::vertex;
 
 #[test]
 fn main() {
