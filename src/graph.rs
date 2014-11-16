@@ -11,6 +11,8 @@ use hyper::header::common::ContentLength;
 
 use path::{Query, Path};
 
+use path::Expectation;
+
 use errors::{ GraphResult,
               InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
               DecodingFailed, ResponseParseFailed,
@@ -49,14 +51,6 @@ pub struct Tags(Vec<String>);
 pub struct NodeNames(Vec<String>);
 
 //pub struct Nodes(pub Vec<GraphNode>);
-
-pub enum Expectation {
-    ExpectSingleNode,
-    ExpectNodeSequence,
-    ExpectNameSequence,
-    ExpectTagSequence,
-    ExpectSingleTag
-}
 
 pub enum QueryObject {
     SingleNode(Node), // Query.ToValue()
@@ -106,12 +100,10 @@ impl Graph {
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
     pub fn find(&self, query: &Query) -> GraphResult<QueryObject> {
-        if query.has_expectation() {
-            match query.compile() {
-                Some((compiled, expectation)) => self.exec(compiled, expectation),
-                None => Err(QueryCompilationFailed)
-            }
-        } else { Err(QueryNotFinalized) }
+        match query.compile() {
+            Some((compiled, expectation)) => self.exec(compiled, expectation),
+            None => Err(QueryCompilationFailed)
+        }
     }
 
     // ---------------------------------- exec ---------------------------------

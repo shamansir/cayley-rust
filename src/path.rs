@@ -1,3 +1,5 @@
+use std::fmt::{Show, Formatter, FormatError};
+
 use selector::{NodeSelector, TagSelector, PredicateSelector};
 
 use selector::{AnyNode, Node, Nodes};
@@ -38,7 +40,7 @@ pub enum Traversal<'t> {
     Is(NodeSelector<'t>),
     Has(PredicateSelector<'t>, NodeSelector<'t>),
     // Tagging
-    Tag(TagSelector<'t>),
+    // Tag(TagSelector<'t>): TagSelector has the same name
     As(TagSelector<'t>),
     Back(TagSelector<'t>),
     Save(PredicateSelector<'t>, TagSelector<'t>),
@@ -63,16 +65,79 @@ pub enum Final {
     /* Map(|int|:'q -> int) */
 }
 
-pub struct Vertex<'v>(NodeSelector<'v>, &'v[Traversal<'v>], Final);
+pub enum Expectation {
+    ExpectationUnknown,
+    ExpectSingleNode,
+    ExpectNodeSequence,
+    ExpectNameSequence,
+    ExpectTagSequence,
+    ExpectSingleTag
+}
+
+// ================================ Path & Query ============================ //
+
+pub trait Path: ToString { }
+
+pub trait Query: Path {
+
+    fn compile(&self) -> Option<(String, Expectation)>;
+
+}
+
+// ================================ Morphism ================================ //
+
 pub struct Morphism<'m>(&'m[Traversal<'m>]);
 
-pub trait Query { }
+impl<'ts> ToString for Morphism<'ts> {
 
-pub trait Path { }
+    fn to_string(&self) -> String { String::new() }
 
-impl<'q> Query for Vertex<'q> { }
+}
 
 impl<'p> Path for Morphism<'p> { }
+
+// ================================ Vertex ================================== //
+
+pub struct Vertex<'v>(NodeSelector<'v>, &'v[Traversal<'v>], Final);
+
+impl<'ts> ToString for Vertex<'ts> {
+
+    fn to_string(&self) -> String {
+        match *self {
+            Vertex(start, traversals, _final) => {
+                let mut result = String::with_capacity(15);
+                result.push_str(match start {
+                    AnyNode => "g.V()",
+                    Node(name) => format!("g.V(\"{:s}\")", name).as_slice(),
+                    Nodes(names) => format!("g.V(\"{:s}\")", names.connect("\",\"")).as_slice()
+                });
+                result
+            }
+        }
+    }
+
+}
+
+impl<'p> Path for Vertex<'p> { }
+
+impl<'q> Query for Vertex<'q> {
+
+    fn compile(&self) -> Option<(String, Expectation)> {
+        Some((self.to_string(), match *self {
+            Vertex(_, _, _final) => {
+                match _final {
+                    All => ExpectNodeSequence,
+                    GetLimit(_) => ExpectNodeSequence,
+                    ToArray => ExpectNameSequence,
+                    ToValue => ExpectSingleNode,
+                    TagArray => ExpectTagSequence,
+                    TagValue => ExpectSingleTag
+                }
+            }
+        }))
+    }
+
+}
 
 // ================================ utils =================================== //
 
