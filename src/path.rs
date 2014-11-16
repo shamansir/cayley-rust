@@ -45,13 +45,13 @@ pub enum Traversal<'t> {
     Back(TagSelector<'t>),
     Save(PredicateSelector<'t>, TagSelector<'t>),
     // Joining
-    Intersect(Query+'t),
-    And(Query+'t),
-    Union(Query+'t),
-    Or(Query+'t),
+    Intersect(&'t Query+'t),
+    And(&'t Query+'t),
+    Union(&'t Query+'t),
+    Or(&'t Query+'t),
     // Morphisms
-    Follow(Path+'t),
-    FollowR(Path+'t)
+    Follow(&'t Path+'t),
+    FollowR(&'t Path+'t)
 }
 
 pub enum Final {
@@ -112,6 +112,7 @@ impl<'ts> ToString for Vertex<'ts> {
                     Nodes(ref names) => format!("g.V(\"{:s}\")", names.connect("\",\""))
                 }.as_slice());
                 result
+
             }
         }
     }
