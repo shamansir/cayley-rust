@@ -9,8 +9,8 @@ use selector::Query as FromQuery;
 
 #[macro_export]
 macro_rules! vertex(
-    [ $e1:ident -> $($e2:ident)->+ => $e3:ident ] => (
-        Vertex($e1, &[$($e2,)+], $e3)
+    [ $e1:ident $(-> $e2:ident)* => $e3:ident ] => (
+        Vertex($e1, &[$($e2,)*], $e3)
     )
 )
 /* macro_rules! enum_macro(
@@ -21,8 +21,8 @@ macro_rules! vertex(
 
 #[macro_export]
 macro_rules! morphism(
-    [ $($e1:ident)->+ => $e2:ident ] => (
-        Morphism("", &[$($e1,)+])
+    [ $e1:ident $(-> $e2:ident)* ] => (
+        Morphism($e1, &[$($e2,)*])
     )
 )
 
