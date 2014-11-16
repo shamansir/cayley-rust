@@ -13,7 +13,7 @@ pub enum GraphRequestError {
     ResponseParseFailed,
     QueryNotFinalized,
     QueryCompilationFailed,
-    ExpectationUnknown
+    VagueExpectation
 }
 
 impl Show for GraphRequestError {
@@ -39,7 +39,7 @@ impl Show for GraphRequestError {
             ResponseParseFailed => fmt.pad("Response parsing failed"),
             QueryNotFinalized => fmt.pad("Query is not finalized"),
             QueryCompilationFailed => fmt.pad("Query can not be compiled"),
-            ExpectationUnknown => fmt.pad("This query is not finalized, so has no knowledge of what to expect in response from Cayley"),
+            VagueExpectation => fmt.pad("Driver has no knowledge of what to expect in response from Cayley"),
         }
     }
 }

@@ -11,12 +11,14 @@ use hyper::header::common::ContentLength;
 
 use path::{Query, Path};
 
-use path::Expectation;
+use path::{ Expectation,
+            ExpectationUnknown, ExpectSingleNode, ExpectSingleTag,
+            ExpectNodeSequence, ExpectNameSequence, ExpectTagSequence };
 
 use errors::{ GraphResult,
               InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
               DecodingFailed, ResponseParseFailed,
-              QueryNotFinalized, QueryCompilationFailed, ExpectationUnknown };
+              QueryNotFinalized, QueryCompilationFailed, VagueExpectation };
 
 /// Provides access to currently running Cayley database, among with
 /// an ability to run queries there, and to write there your data
@@ -161,27 +163,28 @@ impl Graph {
             None => Err(ResponseParseFailed),
             Some(traversal_json) => {
                 match expectation {
-                    Unknown => Err(ExpectationUnknown),
-                    ASingleNode => match json_decode(traversal_json) {
+                    ExpectationUnknown => Err(VagueExpectation),
+                    ExpectSingleNode => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(node) => Ok(SingleNode(node))
                         },
-                    ANodeSequence => match json_decode(traversal_json) {
+                    ExpectNodeSequence => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(nodes) => Ok(NodeSequence(nodes))
-                        },
-                    ANameSequence => match json_decode(traversal_json) {
+                        } /*,
+                    ExpectNameSequence => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(names) => Ok(NameSequence(names))
                         },
-                    ATagSequence => match json_decode(traversal_json) {
+                    ExpectTagSequence => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(tags) => Ok(TagSequence(tags))
                         },
-                    ASingleTag => match json_decode(traversal_json) {
+                    ExpectSingleTag => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(tag) => Ok(SingleTag(tag))
-                        }
+                        } */,
+                    _ => Err(VagueExpectation)
                 }
             }
         }

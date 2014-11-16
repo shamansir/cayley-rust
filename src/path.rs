@@ -104,13 +104,13 @@ impl<'ts> ToString for Vertex<'ts> {
 
     fn to_string(&self) -> String {
         match *self {
-            Vertex(start, traversals, _final) => {
+            Vertex(ref start, traversals, _final) => {
                 let mut result = String::with_capacity(15);
-                result.push_str(match start {
-                    AnyNode => "g.V()",
-                    Node(name) => format!("g.V(\"{:s}\")", name).as_slice(),
-                    Nodes(names) => format!("g.V(\"{:s}\")", names.connect("\",\"")).as_slice()
-                });
+                result.push_str(match *start {
+                    AnyNode => "g.V()".to_string(), // FIXME: double-conversion here?
+                    Node(name) => format!("g.V(\"{:s}\")", name),
+                    Nodes(ref names) => format!("g.V(\"{:s}\")", names.connect("\",\""))
+                }.as_slice());
                 result
             }
         }
