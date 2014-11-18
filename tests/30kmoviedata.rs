@@ -109,14 +109,14 @@ fn main() {
                 }
             }
 
-            let mut film_to_actor = Morphism::start("fta");
-                    film_to_actor.OutP(Predicate("/film/film/starring"))
-                                 .OutP(Predicate("/film/performance/actor"));
-            match graph.find(Vertex::start(AnyNode)
-                                    .Has(Predicate("name"), Node("Casablanca"))
-                                    .Follow(&mut film_to_actor)
-                                    .OutP(Predicate("name"))
-                                    .All()) {
+            let film_to_actor = morphism!("fta" ->
+                                          OutP(Predicate("/film/film/starring")) ->
+                                          OutP(Predicate("/film/performance/actor")));
+            match graph.find(vertex!(AnyNode
+                                     -> Has(Predicate("name"), Node("Casablanca"))
+                                     -> Follow(film_to_actor)
+                                     -> OutP(Predicate("name"))
+                                     => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
