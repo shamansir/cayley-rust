@@ -39,27 +39,15 @@ pub struct Graph {
 }
 
 /// A wrapper for a single item Cayley returned in response for a query
-///
+
 /// This is a subject to change, since I'd prefer here would be `&str`
 /// items inside, but it's quite hard to achieve this with `json::Decoder`
-pub struct Node(pub HashMap<String, String>);
-
-pub struct Nodes(Vec<Node>);
-
-pub struct Tag(String);
-
-pub struct Tags(Vec<String>);
-
-pub struct NodeNames(Vec<String>);
-
-//pub struct Nodes(pub Vec<GraphNode>);
-
 pub enum QueryObject {
-    SingleNode(Node), // Query.ToValue()
-    NodeSequence(Nodes), // Query.All(), Query.GetLimit(n)
-    NameSequence(NodeNames), // Query.ToArray()
-    TagSequence(Tags), // Query.TagArray()
-    SingleTag(Tag) // Query.TagValue()
+    SingleNode(HashMap<String, String>), // Query.ToValue()
+    NodeSequence(Vec<HashMap<String, String>>), // Query.All(), Query.GetLimit(n)
+    NameSequence(Vec<String>), // Query.ToArray()
+    TagSequence(Vec<String>), // Query.TagArray()
+    SingleTag(String) // Query.TagValue()
 }
 
 pub struct PathObject<'po>(&'po str, Path+'po);
@@ -192,8 +180,12 @@ impl Graph {
 
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for Node {
-    fn decode(decoder: &mut S) -> Result<Node, E> {
+/* impl<S: Decoder<E>, E> Decodable<S, E> for QueryObject {
+
+} */
+
+impl<S: Decoder<E>, E> Decodable<S, E> for SingleNode {
+    fn decode(decoder: &mut S) -> Result<SingleNode, E> {
         decoder.read_map(|decoder, len| {
             let mut data_map: HashMap<String, String> = HashMap::new();
             for i in range(0u, len) {
@@ -204,20 +196,20 @@ impl<S: Decoder<E>, E> Decodable<S, E> for Node {
                                     Ok(val) => val, Err(err) => return Err(err)
                                 });
             }
-            Ok(Node(data_map))
+            Ok(SingleNode(data_map))
         })
     }
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for Nodes {
-    fn decode(decoder: &mut S) -> Result<Nodes, E> {
+impl<S: Decoder<E>, E> Decodable<S, E> for NodeSequence {
+    fn decode(decoder: &mut S) -> Result<NodeSequence, E> {
         decoder.read_struct("__unused__", 0, |decoder| {
             decoder.read_struct_field("result", 0, |decoder| {
                 decoder.read_option(|decoder, has_value| {
                     match has_value {
-                        false => Ok(Nodes(Vec::new())),
+                        false => Ok(NodeSequence(Vec::new())),
                         true => decoder.read_seq(|decoder, len| {
-                            let mut nodes: Vec<Node> = Vec::with_capacity(len);
+                            let mut nodes: Vec<SingleNode> = Vec::with_capacity(len);
                             for i in range(0u, len) {
                                 nodes.push(match decoder.read_seq_elt(i,
                                                 |decoder| { Decodable::decode(decoder) }) {
@@ -225,7 +217,7 @@ impl<S: Decoder<E>, E> Decodable<S, E> for Nodes {
                                     Err(err) => return Err(err)
                                 });
                             };
-                            Ok(Nodes(nodes))
+                            Ok(NodeSequence(nodes))
                         })
                     }
                 })
