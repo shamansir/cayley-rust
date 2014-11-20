@@ -111,6 +111,11 @@ impl Graph {
     /// ```
     pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<QueryObject> {
         println!("Executing query: {:s}", query);
+        match expectation {
+            ExpectSingleNode | ExpectNameSequence | ExpectTagSequence | ExpectSingleTag =>
+                Err(ExpectationNotSupported(expectation))
+            _ => {}
+        }
         match self.perform_request(query) {
             Ok(body) => Graph::decode_traversal(body, expectation),
             Err(error) => Err(error)
@@ -150,7 +155,12 @@ impl Graph {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(traversal_json) => {
-                match expectation {
+                match json_decode(traversal_json) {
+                    Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
+                    Ok(node) => Ok(NodeSequence(node))
+                }
+
+                /* match expectation {
                     ExpectationUnknown => Err(VagueExpectation),
                     ExpectSingleNode => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
@@ -159,7 +169,7 @@ impl Graph {
                     ExpectNodeSequence => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(nodes) => Ok(NodeSequence(nodes))
-                        } /*,
+                        },
                     ExpectNameSequence => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(names) => Ok(NameSequence(names))
@@ -171,20 +181,16 @@ impl Graph {
                     ExpectSingleTag => match json_decode(traversal_json) {
                             Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                             Ok(tag) => Ok(SingleTag(tag))
-                        } */,
+                        },
                     _ => Err(VagueExpectation)
-                }
+                }  */
             }
         }
     }
 
 }
 
-/* impl<S: Decoder<E>, E> Decodable<S, E> for QueryObject {
-
-} */
-
-impl<S: Decoder<E>, E> Decodable<S, E> for SingleNode {
+/* impl<S: Decoder<E>, E> Decodable<S, E> for SingleNode {
     fn decode(decoder: &mut S) -> Result<SingleNode, E> {
         decoder.read_map(|decoder, len| {
             let mut data_map: HashMap<String, String> = HashMap::new();
@@ -202,6 +208,7 @@ impl<S: Decoder<E>, E> Decodable<S, E> for SingleNode {
 }
 
 impl<S: Decoder<E>, E> Decodable<S, E> for NodeSequence {
+
     fn decode(decoder: &mut S) -> Result<NodeSequence, E> {
         decoder.read_struct("__unused__", 0, |decoder| {
             decoder.read_struct_field("result", 0, |decoder| {
@@ -224,9 +231,45 @@ impl<S: Decoder<E>, E> Decodable<S, E> for NodeSequence {
             })
         })
     }
-}
-
-/* impl<S: Decoder<E>, E> Decodable<S, E> for QueryObject {
-    fn decode(decoder: &mut S) -> Result<QueryObject, E> {
-    }
 } */
+
+impl<S: Decoder<E>, E> Decodable<S, E> for QueryObject {
+
+    fn decode_node(decoder: &mut S) -> Result<QueryObject, E> {
+        decoder.read_map(|decoder, len| {
+            let mut data_map: HashMap<String, String> = HashMap::new();
+            for i in range(0u, len) {
+                data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
+                                    Ok(key) => key, Err(err) => return Err(err)
+                                },
+                                match decoder.read_map_elt_val(i, |decoder| { decoder.read_str() }) {
+                                    Ok(val) => val, Err(err) => return Err(err)
+                                });
+            }
+            Ok(SingleNode(data_map))
+        })
+    }
+
+    fn decode(decoder: &mut S) -> Result<QueryObject, E> {
+        decoder.read_struct("__unused__", 0, |decoder| {
+            decoder.read_struct_field("result", 0, |decoder| {
+                decoder.read_option(|decoder, has_value| {
+                    match has_value {
+                        false => Ok(NodeSequence(Vec::new())),
+                        true => decoder.read_seq(|decoder, len| {
+                            let mut nodes: Vec<SingleNode> = Vec::with_capacity(len);
+                            for i in range(0u, len) {
+                                nodes.push(match decoder.read_seq_elt(i,
+                                                |decoder| { ::decode_node(decoder) }) {
+                                    Ok(node) => node,
+                                    Err(err) => return Err(err)
+                                });
+                            };
+                            Ok(NodeSequence(nodes))
+                        })
+                    }
+                })
+            })
+        })
+    }
+}

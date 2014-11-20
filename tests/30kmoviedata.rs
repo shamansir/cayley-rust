@@ -127,6 +127,8 @@ fn main() {
 
         }
 
+        // TODO: ensure ToValue(), ToArray(), TagValue(), TagArray() do fail
+
     }
 
     // graph.write([ { subject: "Subject Node",

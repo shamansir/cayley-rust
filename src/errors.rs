@@ -13,6 +13,7 @@ pub enum GraphRequestError {
     ResponseParseFailed,
     QueryNotFinalized,
     QueryCompilationFailed,
+    ExpectationNotSupported(Expectation),
     VagueExpectation
 }
 
@@ -39,6 +40,7 @@ impl Show for GraphRequestError {
             ResponseParseFailed => fmt.pad("Response parsing failed"),
             QueryNotFinalized => fmt.pad("Query is not finalized"),
             QueryCompilationFailed => fmt.pad("Query can not be compiled"),
+            ExpectationNotSupported(_) => fmt.pad("Finals like ToValue(), ToArray(), TagValue(), TagArray() are currently not supported in Cayley DB for HTTP queries and they return nothing."),
             VagueExpectation => fmt.pad("Driver has no knowledge of what to expect in response from Cayley"),
         }
     }
