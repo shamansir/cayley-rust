@@ -88,7 +88,7 @@ pub trait Query: Path {
 
 // ================================ Morphism ================================ //
 
-pub struct Morphism<'m>(&'m str, &'m[Traversal<'m>]);
+pub struct Morphism<'m>(pub &'m str, pub &'m[Traversal<'m>]);
 
 impl<'ts> ToString for Morphism<'ts> {
 
@@ -100,7 +100,7 @@ impl<'p> Path for Morphism<'p> { }
 
 // ================================ Vertex ================================== //
 
-pub struct Vertex<'v>(NodeSelector<'v>, &'v[Traversal<'v>], Final);
+pub struct Vertex<'v>(pub NodeSelector<'v>, pub &'v[Traversal<'v>], pub Final);
 
 impl<'ts> ToString for Vertex<'ts> {
 
