@@ -18,7 +18,8 @@ use path::{ Expectation,
 use errors::{ GraphResult,
               InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
               DecodingFailed, ResponseParseFailed,
-              QueryNotFinalized, QueryCompilationFailed, VagueExpectation };
+              QueryNotFinalized, QueryCompilationFailed,
+              ExpectationNotSupported, VagueExpectation };
 
 /// Provides access to currently running Cayley database, among with
 /// an ability to run queries there, and to write there your data
@@ -113,12 +114,11 @@ impl Graph {
         println!("Executing query: {:s}", query);
         match expectation {
             ExpectSingleNode | ExpectNameSequence | ExpectTagSequence | ExpectSingleTag =>
-                Err(ExpectationNotSupported(expectation))
-            _ => {}
-        }
-        match self.perform_request(query) {
-            Ok(body) => Graph::decode_traversal(body, expectation),
-            Err(error) => Err(error)
+                Err(ExpectationNotSupported(expectation)),
+            _ => match self.perform_request(query) {
+                Ok(body) => Graph::decode_traversal(body, expectation),
+                Err(error) => Err(error)
+            }
         }
     }
 
@@ -190,86 +190,47 @@ impl Graph {
 
 }
 
-/* impl<S: Decoder<E>, E> Decodable<S, E> for SingleNode {
-    fn decode(decoder: &mut S) -> Result<SingleNode, E> {
-        decoder.read_map(|decoder, len| {
-            let mut data_map: HashMap<String, String> = HashMap::new();
-            for i in range(0u, len) {
-                data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
-                                    Ok(key) => key, Err(err) => return Err(err)
-                                },
-                                match decoder.read_map_elt_val(i, |decoder| { decoder.read_str() }) {
-                                    Ok(val) => val, Err(err) => return Err(err)
-                                });
-            }
-            Ok(SingleNode(data_map))
-        })
+impl<S: Decoder<E>, E> Decodable<S, E> for QueryObject {
+
+    fn decode(decoder: &mut S) -> Result<QueryObject, E> {
+        decode_nodes(decoder)
     }
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for NodeSequence {
-
-    fn decode(decoder: &mut S) -> Result<NodeSequence, E> {
-        decoder.read_struct("__unused__", 0, |decoder| {
-            decoder.read_struct_field("result", 0, |decoder| {
-                decoder.read_option(|decoder, has_value| {
-                    match has_value {
-                        false => Ok(NodeSequence(Vec::new())),
-                        true => decoder.read_seq(|decoder, len| {
-                            let mut nodes: Vec<SingleNode> = Vec::with_capacity(len);
-                            for i in range(0u, len) {
-                                nodes.push(match decoder.read_seq_elt(i,
-                                                |decoder| { Decodable::decode(decoder) }) {
-                                    Ok(node) => node,
-                                    Err(err) => return Err(err)
-                                });
-                            };
-                            Ok(NodeSequence(nodes))
-                        })
-                    }
-                })
+fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<QueryObject, E> {
+    decoder.read_struct("__unused__", 0, |decoder| {
+        decoder.read_struct_field("result", 0, |decoder| {
+            decoder.read_option(|decoder, has_value| {
+                match has_value {
+                    false => Ok(NodeSequence(Vec::new())),
+                    true => decoder.read_seq(|decoder, len| {
+                        let mut nodes: Vec<HashMap<String, String>> = Vec::with_capacity(len);
+                        for i in range(0u, len) {
+                            nodes.push(match decoder.read_seq_elt(i,
+                                            |decoder| { decode_node(decoder) }) {
+                                Ok(node) => node,
+                                Err(err) => return Err(err)
+                            });
+                        };
+                        Ok(NodeSequence(nodes))
+                    })
+                }
             })
         })
-    }
-} */
+    })
+}
 
-impl<S: Decoder<E>, E> Decodable<S, E> for QueryObject {
-
-    fn decode_node(decoder: &mut S) -> Result<QueryObject, E> {
-        decoder.read_map(|decoder, len| {
-            let mut data_map: HashMap<String, String> = HashMap::new();
-            for i in range(0u, len) {
-                data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
-                                    Ok(key) => key, Err(err) => return Err(err)
-                                },
-                                match decoder.read_map_elt_val(i, |decoder| { decoder.read_str() }) {
-                                    Ok(val) => val, Err(err) => return Err(err)
-                                });
-            }
-            Ok(SingleNode(data_map))
-        })
-    }
-
-    fn decode(decoder: &mut S) -> Result<QueryObject, E> {
-        decoder.read_struct("__unused__", 0, |decoder| {
-            decoder.read_struct_field("result", 0, |decoder| {
-                decoder.read_option(|decoder, has_value| {
-                    match has_value {
-                        false => Ok(NodeSequence(Vec::new())),
-                        true => decoder.read_seq(|decoder, len| {
-                            let mut nodes: Vec<SingleNode> = Vec::with_capacity(len);
-                            for i in range(0u, len) {
-                                nodes.push(match decoder.read_seq_elt(i,
-                                                |decoder| { ::decode_node(decoder) }) {
-                                    Ok(node) => node,
-                                    Err(err) => return Err(err)
-                                });
-                            };
-                            Ok(NodeSequence(nodes))
-                        })
-                    }
-                })
-            })
-        })
-    }
+fn decode_node<S: Decoder<E>, E>(decoder: &mut S) -> Result<HashMap<String, String>, E> {
+    decoder.read_map(|decoder, len| {
+        let mut data_map: HashMap<String, String> = HashMap::new();
+        for i in range(0u, len) {
+            data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
+                Ok(key) => key, Err(err) => return Err(err)
+                },
+                match decoder.read_map_elt_val(i, |decoder| { decoder.read_str() }) {
+                    Ok(val) => val, Err(err) => return Err(err)
+                });
+        }
+        Ok(data_map)
+    })
 }

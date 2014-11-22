@@ -1,8 +1,11 @@
 use url::ParseError;
 use std::io::IoError;
 use hyper::HttpError;
-use std::fmt::{Show, Formatter, FormatError};
 use serialize::json::DecoderError;
+
+use std::fmt::{Show, Formatter, FormatError};
+
+use path::Expectation;
 
 pub enum GraphRequestError {
     InvalidUrl(ParseError, String),
