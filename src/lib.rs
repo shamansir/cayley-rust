@@ -102,7 +102,7 @@ extern crate url;
 #[doc(no_inline)]
 extern crate serialize;
 
-pub use graph::{Graph, SingleNode, NodeSequence};
+pub use graph::{Graph, NodeSequence};
 pub use graph::{V1, DefaultVersion};
 
 pub mod errors;

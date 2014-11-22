@@ -43,15 +43,15 @@ pub struct Graph {
 
 /// This is a subject to change, since I'd prefer here would be `&str`
 /// items inside, but it's quite hard to achieve this with `json::Decoder`
-pub enum QueryObject {
+/* pub enum QueryObject {
     SingleNode(HashMap<String, String>), // Query.ToValue()
     NodeSequence(Vec<HashMap<String, String>>), // Query.All(), Query.GetLimit(n)
     NameSequence(Vec<String>), // Query.ToArray()
     TagSequence(Vec<String>), // Query.TagArray()
     SingleTag(String) // Query.TagValue()
-}
+} */
 
-pub struct PathObject<'po>(&'po str, Path+'po);
+pub struct NodeSequence(pub Vec<HashMap<String, String>>);
 
 /// Cayley API Version, planned to default to the latest, if it will ever change
 pub enum CayleyAPIVersion { V1, DefaultVersion }
@@ -90,7 +90,7 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
-    pub fn find(&self, query: &Query) -> GraphResult<QueryObject> {
+    pub fn find(&self, query: &Query) -> GraphResult<NodeSequence> {
         match query.compile() {
             Some((compiled, expectation)) => self.exec(compiled, expectation),
             None => Err(QueryCompilationFailed)
@@ -110,7 +110,7 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
     /// ```
-    pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<QueryObject> {
+    pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<NodeSequence> {
         println!("Executing query: {:s}", query);
         match expectation {
             ExpectSingleNode | ExpectNameSequence | ExpectTagSequence | ExpectSingleTag =>
@@ -151,7 +151,7 @@ impl Graph {
     }
 
     // extract JSON nodes from response
-    fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<QueryObject> {
+    fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<NodeSequence> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(traversal_json) => {
@@ -159,45 +159,20 @@ impl Graph {
                     Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                     Ok(node) => Ok(NodeSequence(node))
                 }
-
-                /* match expectation {
-                    ExpectationUnknown => Err(VagueExpectation),
-                    ExpectSingleNode => match json_decode(traversal_json) {
-                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
-                            Ok(node) => Ok(SingleNode(node))
-                        },
-                    ExpectNodeSequence => match json_decode(traversal_json) {
-                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
-                            Ok(nodes) => Ok(NodeSequence(nodes))
-                        },
-                    ExpectNameSequence => match json_decode(traversal_json) {
-                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
-                            Ok(names) => Ok(NameSequence(names))
-                        },
-                    ExpectTagSequence => match json_decode(traversal_json) {
-                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
-                            Ok(tags) => Ok(TagSequence(tags))
-                        },
-                    ExpectSingleTag => match json_decode(traversal_json) {
-                            Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
-                            Ok(tag) => Ok(SingleTag(tag))
-                        },
-                    _ => Err(VagueExpectation)
-                }  */
             }
         }
     }
 
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for QueryObject {
+impl<S: Decoder<E>, E> Decodable<S, E> for NodeSequence {
 
-    fn decode(decoder: &mut S) -> Result<QueryObject, E> {
+    fn decode(decoder: &mut S) -> Result<NodeSequence, E> {
         decode_nodes(decoder)
     }
 }
 
-fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<QueryObject, E> {
+fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<NodeSequence, E> {
     decoder.read_struct("__unused__", 0, |decoder| {
         decoder.read_struct_field("result", 0, |decoder| {
             decoder.read_option(|decoder, has_value| {
