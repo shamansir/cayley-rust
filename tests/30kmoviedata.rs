@@ -4,8 +4,7 @@
 #[phase(plugin, link)] extern crate cayley;
 
 use cayley::graph::{Graph, V1};
-use cayley::graph::Node as GraphNode;
-use cayley::graph::Nodes as GraphNodes;
+use cayley::graph::NodeSequence as GraphNodes;
 
 use cayley::path::*;
 
@@ -51,7 +50,7 @@ fn main() {
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
-                        Some(&GraphNode(ref humphrey)) => {
+                        Some(humphrey) => {
                             assert_eq!(humphrey["id".to_string()].as_slice(), "Humphrey Bogart");
                         },
                         None => panic!("first node was not found")
@@ -68,7 +67,7 @@ fn main() {
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
-                        Some(&GraphNode(ref humphrey)) => {
+                        Some(humphrey) => {
                             assert_eq!(humphrey["id".to_string()].as_slice(), "/en/humphrey_bogart");
                             // was: ":/en/humphrey_bogart"
                         },
@@ -86,7 +85,7 @@ fn main() {
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
-                        Some(&GraphNode(ref casablanca)) => {
+                        Some(casablanca) => {
                             assert_eq!(casablanca["id".to_string()].as_slice(), "/en/casablanca_1942");
                             // was: ":/en/casablanca_1942"
                         },

@@ -4,12 +4,12 @@
 
 use cayley::{Graph, V1};
 
-use cayley::graph::Node;
+/* use cayley::graph::Node;
 use cayley::graph::Nodes;
 
 use cayley::path::{Vertex, Query};
 use cayley::path::All;
-use cayley::selector::AnyNode;
+use cayley::selector::AnyNode; */
 
 #[test]
 fn main() {
@@ -21,7 +21,7 @@ fn main() {
 
     };
 
-    match graph.find(vertex!(AnyNode => All)) {
+    /* match graph.find(vertex!(AnyNode => All)) {
 
         Err(error) => panic!(error.to_string()),
         Ok(Nodes(nodes)) => {
@@ -35,6 +35,6 @@ fn main() {
             }
         }
 
-    };
+    }; */
 
 }

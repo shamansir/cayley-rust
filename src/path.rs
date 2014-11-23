@@ -12,7 +12,7 @@ use selector::Query as FromQuery;
 #[macro_export]
 macro_rules! vertex(
     [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
-        &Vertex($e1, &[$($e2,)*], $e3)
+        &Vertex($e1, box [$($e2,)*], $e3)
     )
 )
 /* macro_rules! enum_macro(
@@ -24,7 +24,7 @@ macro_rules! vertex(
 #[macro_export]
 macro_rules! morphism(
     [ $e1:expr $(-> $e2:expr)* ] => (
-        &Morphism($e1, &[$($e2,)*])
+        &Morphism($e1, box [$($e2,)*])
     )
 )
 
@@ -88,7 +88,7 @@ pub trait Query: Path {
 
 // ================================ Morphism ================================ //
 
-pub struct Morphism<'m>(pub &'m str, pub &'m[Traversal<'m>]);
+pub struct Morphism<'m>(pub &'m str, pub Box<[Traversal<'m>]>);
 
 impl<'ts> ToString for Morphism<'ts> {
 
@@ -100,7 +100,7 @@ impl<'p> Path for Morphism<'p> { }
 
 // ================================ Vertex ================================== //
 
-pub struct Vertex<'v>(pub NodeSelector<'v>, pub &'v[Traversal<'v>], pub Final);
+pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final);
 
 impl<'ts> ToString for Vertex<'ts> {
 
