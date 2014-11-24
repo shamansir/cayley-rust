@@ -1,12 +1,15 @@
 [package]
 name = "cayley"
-version = "0.0.1"
+version = "0.0.2"
+description = "A driver for Google Cayley Graph Database."
+readme = "README.md"
+documentation = "http://shamansir.github.io/cayley-rust/cayley/index.html"
+repository = "https://github.com/shamansir/cayley-rust"
 authors = ["Ulric Wilfred <shaman.sir@gmail.com>"]
 
 [lib]
 name = "cayley"
 doc = true
 
-[dependencies.hyper]
-git = "https://github.com/hyperium/hyper"
-doc = false
+[dependencies]
+hyper = "*"
