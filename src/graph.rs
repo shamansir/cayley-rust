@@ -11,8 +11,10 @@ use hyper::header::common::ContentLength;
 
 use path::{Query, Path};
 
-use path::Expectation::{ ExpectationUnknown, ExpectSingleNode, ExpectSingleTag,
-                         ExpectNodeSequence, ExpectNameSequence, ExpectTagSequence };
+use path::Expectation;
+use path::Expectation::{ Unknown,
+                         SingleNode, SingleTag,
+                         NodeSequence, NameSequence, TagSequence };
 
 use errors::GraphResult;
 use errors::RequestError::{ InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
@@ -50,10 +52,10 @@ pub struct Graph {
     SingleTag(String) // Query.TagValue()
 } */
 
-pub struct NodeSequence(pub Vec<HashMap<String, String>>);
+pub struct Nodes(pub Vec<HashMap<String, String>>);
 
 /// Cayley API Version, planned to default to the latest, if it will ever change
-pub enum CayleyAPIVersion { V1, DefaultVersion }
+pub enum APIVersion { V1, DefaultVersion }
 
 impl Graph {
 
@@ -61,14 +63,16 @@ impl Graph {
 
     /// Create a Graph which connects to the latest API at `localhost:64210`
     pub fn default() -> GraphResult<Graph> {
-        Graph::new("localhost", 64210, DefaultVersion)
+        Graph::new("localhost", 64210, APIVersion::DefaultVersion)
     }
 
     // ---------------------------------- new ----------------------------------
 
     /// Create a Graph which connects to the host you specified manually
-    pub fn new(host: &str, port: int, version: CayleyAPIVersion) -> GraphResult<Graph> {
-        let version_str = match version { V1 | DefaultVersion => "v1" };
+    pub fn new(host: &str, port: int, version: APIVersion) -> GraphResult<Graph> {
+        let version_str = match version {
+            APIVersion::V1 | APIVersion::DefaultVersion => "v1" /* FIXME: APIVersion:: shouldn't be required */
+        };
         let url = format!("http://{host}:{port}/api/{version}/query/gremlin",
                           host = host, port = port, version = version_str);
         Ok(Graph{ url: url })
@@ -89,7 +93,7 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
-    pub fn find(&self, query: &Query) -> GraphResult<NodeSequence> {
+    pub fn find(&self, query: &Query) -> GraphResult<Nodes> {
         match query.compile() {
             Some((compiled, expectation)) => self.exec(compiled, expectation),
             None => Err(QueryCompilationFailed)
@@ -109,10 +113,10 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
     /// ```
-    pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<NodeSequence> {
+    pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<Nodes> {
         println!("Executing query: {}", query);
         match expectation {
-            ExpectSingleNode | ExpectNameSequence | ExpectTagSequence | ExpectSingleTag =>
+            SingleNode | NameSequence | TagSequence | SingleTag =>
                 Err(ExpectationNotSupported(expectation)),
             _ => match self.perform_request(query) {
                 Ok(body) => Graph::decode_traversal(body, expectation),
@@ -150,13 +154,13 @@ impl Graph {
     }
 
     // extract JSON nodes from response
-    fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<NodeSequence> {
+    fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<Nodes> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(traversal_json) => {
                 match json_decode(traversal_json) {
                     Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
-                    Ok(node) => Ok(NodeSequence(node))
+                    Ok(node) => Ok(Nodes(node))
                 }
             }
         }
@@ -164,19 +168,19 @@ impl Graph {
 
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for NodeSequence {
+impl<S: Decoder<E>, E> Decodable<S, E> for Nodes {
 
-    fn decode(decoder: &mut S) -> Result<NodeSequence, E> {
+    fn decode(decoder: &mut S) -> Result<Nodes, E> {
         decode_nodes(decoder)
     }
 }
 
-fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<NodeSequence, E> {
+fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<Nodes, E> {
     decoder.read_struct("__unused__", 0, |decoder| {
         decoder.read_struct_field("result", 0, |decoder| {
             decoder.read_option(|decoder, has_value| {
                 match has_value {
-                    false => Ok(NodeSequence(Vec::new())),
+                    false => Ok(Nodes(Vec::new())),
                     true => decoder.read_seq(|decoder, len| {
                         let mut nodes: Vec<HashMap<String, String>> = Vec::with_capacity(len);
                         for i in range(0u, len) {
@@ -186,7 +190,7 @@ fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<NodeSequence, E> {
                                 Err(err) => return Err(err)
                             });
                         };
-                        Ok(NodeSequence(nodes))
+                        Ok(Nodes(nodes))
                     })
                 }
             })

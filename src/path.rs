@@ -69,12 +69,12 @@ pub enum Final {
 }
 
 pub enum Expectation {
-    ExpectationUnknown,
-    ExpectSingleNode,
-    ExpectNodeSequence,
-    ExpectNameSequence,
-    ExpectTagSequence,
-    ExpectSingleTag
+    Unknown,
+    SingleNode,
+    NodeSequence,
+    NameSequence,
+    TagSequence,
+    SingleTag
 }
 
 // ================================ Path & Query ============================ //
@@ -107,7 +107,7 @@ impl<'ts> ToString for Vertex<'ts> {
 
     fn to_string(&self) -> String {
         match *self {
-            Vertex(ref start, traversals, _final) => {
+            Vertex(ref start, ref traversals, ref _final) => {
                 let mut result = String::with_capacity(15);
                 result.push_str(match *start {
                     AnyNode => "g.V()".to_string(), // FIXME: double-conversion here?
@@ -129,12 +129,13 @@ impl<'q> Query for Vertex<'q> {
         Some((self.to_string(), match *self {
             Vertex(_, _, _final) => {
                 match _final {
-                    All => ExpectNodeSequence,
-                    GetLimit(_) => ExpectNodeSequence,
-                    ToArray => ExpectNameSequence,
-                    ToValue => ExpectSingleNode,
-                    TagArray => ExpectTagSequence,
-                    TagValue => ExpectSingleTag
+                    /* FIXME: both Final:: and Expectation:: shouldn't be required */
+                    Final::All         => Expectation::NodeSequence,
+                    Final::GetLimit(_) => Expectation::NodeSequence,
+                    Final::ToArray     => Expectation::NameSequence,
+                    Final::ToValue     => Expectation::SingleNode,
+                    Final::TagArray    => Expectation::TagSequence,
+                    Final::TagValue    => Expectation::SingleTag
                 }
             }
         }))

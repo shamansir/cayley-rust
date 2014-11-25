@@ -102,9 +102,10 @@ extern crate url;
 #[doc(no_inline)]
 extern crate serialize;
 
-pub use graph::{Graph, NodeSequence};
-pub use graph::CayleyAPIVersion as APIVersion;
+pub use graph::{Graph, Nodes};
+pub use graph::APIVersion;
 
+pub use errors::GraphResult as Result;
 pub use errors::RequestError as Error;
 
 pub mod errors;

@@ -4,7 +4,7 @@ use hyper::HttpError;
 use serialize::json::DecoderError;
 
 use std::fmt::{Show, Formatter};
-use std::fmt::Error as FormatError;
+use std::fmt::Result as FormatResult;
 
 use path::Expectation;
 
@@ -21,33 +21,37 @@ pub enum RequestError {
     VagueExpectation
 }
 
+// pub type Result = result::Result<(), Error>;
+
 impl Show for RequestError {
 
     #[allow(unused_must_use)]
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
+    fn fmt(&self, f: &mut Formatter) -> FormatResult {
         match *self {
-            InvalidUrl(ref perr, ref url) => {
-                write!(fmt, "Url(\"{}\"): ", url.as_slice());
-                perr.fmt(fmt) },
-            MalformedRequest(ref herr, ref url) => {
-                write!(fmt, "Url(\"{}\"): ", url.as_slice());
-                herr.fmt(fmt) },
-            RequestIoFailed(ref ioerr, ref path) => {
-                write!(fmt, "Path(\"{}\"): ", path.as_slice());
-                ioerr.fmt(fmt) },
-            RequestFailed(ref herr, ref path) => {
-                write!(fmt, "Path(\"{}\"): ", path.as_slice());
-                herr.fmt(fmt) },
-            DecodingFailed(ref derr, ref src) => {
-                write!(fmt, "Source(\"{}\"): ", src.as_slice());
-                derr.fmt(fmt) },
-            ResponseParseFailed => fmt.pad("Response parsing failed"),
-            QueryNotFinalized => fmt.pad("Query is not finalized"),
-            QueryCompilationFailed => fmt.pad("Query can not be compiled"),
-            ExpectationNotSupported(_) => fmt.pad("Finals like ToValue(), ToArray(), TagValue(), TagArray() are currently not supported in Cayley DB for HTTP queries and they return nothing."),
-            VagueExpectation => fmt.pad("Driver has no knowledge of what to expect in response from Cayley"),
+            RequestError::InvalidUrl(ref perr, ref url) => {
+                write!(f, "Url(\"{}\"): ", url.as_slice());
+                perr.fmt(f) },
+            RequestError::MalformedRequest(ref herr, ref url) => {
+                write!(f, "Url(\"{}\"): ", url.as_slice());
+                herr.fmt(f) },
+            RequestError::RequestIoFailed(ref ioerr, ref path) => {
+                write!(f, "Path(\"{}\"): ", path.as_slice());
+                ioerr.fmt(f) },
+            RequestError::RequestFailed(ref herr, ref path) => {
+                write!(f, "Path(\"{}\"): ", path.as_slice());
+                herr.fmt(f) },
+            RequestError::DecodingFailed(ref derr, ref src) => {
+                write!(f, "Source(\"{}\"): ", src.as_slice());
+                derr.fmt(f) },
+            RequestError::ResponseParseFailed => "Response parsing failed".fmt(f),
+            RequestError::QueryNotFinalized => "Query is not finalized".fmt(f),
+            RequestError::QueryCompilationFailed => "Query can not be compiled".fmt(f),
+            RequestError::ExpectationNotSupported(_) =>
+                          "Finals like ToValue(), ToArray(), TagValue(), TagArray() are currently not supported in Cayley DB for HTTP queries and they return nothing.".fmt(f),
+            RequestError::VagueExpectation =>
+                          "Driver has no knowledge of what to expect in response from Cayley".fmt(f),
         }
     }
 }
 
-pub type GraphResult<T> = Result<T, GraphRequestError>;
+pub type GraphResult<T> = Result<T, RequestError>;
