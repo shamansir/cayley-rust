@@ -110,8 +110,8 @@ impl<'ts> ToString for Vertex<'ts> {
                 let mut result = String::with_capacity(15);
                 result.push_str(match *start {
                     AnyNode => "g.V()".to_string(), // FIXME: double-conversion here?
-                    Node(name) => format!("g.V(\"{:s}\")", name),
-                    Nodes(ref names) => format!("g.V(\"{:s}\")", names.connect("\",\""))
+                    Node(name) => format!("g.V(\"{0}\")", name),
+                    Nodes(ref names) => format!("g.V(\"{0}\")", names.connect("\",\""))
                 }.as_slice());
                 result
             }
@@ -147,21 +147,21 @@ fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> Stri
     match (predicates, tags) {
 
         (AnyPredicate, AnyTag) => "".to_string(),
-        (AnyPredicate, Tag(tag)) => format!("null,\"{:s}\"", tag),
-        (AnyPredicate, Tags(tags)) => format!("null,[\"{:s}\"]", tags.connect("\",\"")),
+        (AnyPredicate, Tag(tag)) => format!("null,\"{0}\"", tag),
+        (AnyPredicate, Tags(tags)) => format!("null,[\"{0}\"]", tags.connect("\",\"")),
 
-        (Predicate(predicate), AnyTag) => format!("\"{:s}\"", predicate),
+        (Predicate(predicate), AnyTag) => format!("\"{0}\"", predicate),
         (Predicate(predicate), Tag(tag)) =>
-            format!("\"{:s}\",\"{:s}\"", predicate, tag),
+            format!("\"{0}\",\"{1}\"", predicate, tag),
         (Predicate(predicate), Tags(tags)) =>
-            format!("\"{:s}\",[\"{:s}\"]", predicate, tags.connect("\",\"")),
+            format!("\"{0}\",[\"{1}\"]", predicate, tags.connect("\",\"")),
 
         (Predicates(predicates), AnyTag) =>
-            format!("[\"{:s}\"]", predicates.connect("\",\"")),
+            format!("[\"{0}\"]", predicates.connect("\",\"")),
         (Predicates(predicates), Tag(tag)) =>
-            format!("[\"{:s}\"],\"{:s}\"", predicates.connect("\",\""), tag),
+            format!("[\"{0}\"],\"{1}\"", predicates.connect("\",\""), tag),
         (Predicates(predicates), Tags(tags)) =>
-            format!("[\"{:s}\"],[\"{:s}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
+            format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
 
         (FromQuery(query), AnyTag) =>
             match query.compile() {
@@ -169,14 +169,14 @@ fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> Stri
                 None => "null".to_string()
             },
         (FromQuery(query), Tag(tag)) =>
-            format!("{:s}, \"{:s}\"",
+            format!("{0}, \"{1}\"",
                     match query.compile() {
                         Some((compiled, _)) => compiled,
                         None => "null".to_string()
                     },
                     tag),
         (FromQuery(query), Tags(tags)) =>
-            format!("{:s}, [\"{:s}\"]",
+            format!("{0}, [\"{1}\"]",
                     match query.compile() {
                         Some((compiled, _)) => compiled,
                         None => "null".to_string()
@@ -190,21 +190,21 @@ fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> S
     match (predicates, nodes) {
 
         (AnyPredicate, AnyNode) => "".to_string(),
-        (AnyPredicate, Node(node)) => format!("null,\"{:s}\"", node),
-        (AnyPredicate, Nodes(nodes)) => format!("null,[\"{:s}\"]", nodes.connect("\",\"")),
+        (AnyPredicate, Node(node)) => format!("null,\"{0}\"", node),
+        (AnyPredicate, Nodes(nodes)) => format!("null,[\"{0}\"]", nodes.connect("\",\"")),
 
-        (Predicate(predicate), AnyNode) => format!("\"{:s}\"", predicate),
+        (Predicate(predicate), AnyNode) => format!("\"{0}\"", predicate),
         (Predicate(predicate), Node(tag)) =>
-            format!("\"{:s}\",\"{:s}\"", predicate, tag),
+            format!("\"{0}\",\"{1}\"", predicate, tag),
         (Predicate(predicate), Nodes(nodes)) =>
-            format!("\"{:s}\",[\"{:s}\"]", predicate, nodes.connect("\",\"")),
+            format!("\"{0}\",[\"{1}\"]", predicate, nodes.connect("\",\"")),
 
         (Predicates(predicates), AnyNode) =>
-            format!("[\"{:s}\"]", predicates.connect("\",\"")),
+            format!("[\"{0}\"]", predicates.connect("\",\"")),
         (Predicates(predicates), Node(node)) =>
-            format!("[\"{:s}\"],\"{:s}\"", predicates.connect("\",\""), node),
+            format!("[\"{0}\"],\"{1}\"", predicates.connect("\",\""), node),
         (Predicates(predicates), Nodes(nodes)) =>
-            format!("[\"{:s}\"],[\"{:s}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
+            format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
 
         (FromQuery(query), AnyNode) =>
             match query.compile() {
@@ -212,14 +212,14 @@ fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> S
                 None => "null".to_string()
             },
         (FromQuery(query), Node(node)) =>
-            format!("{:s},\"{:s}\"",
+            format!("{0},\"{1}\"",
                     match query.compile() {
                         Some((compiled, _)) => compiled,
                         None => "null".to_string()
                     },
                     node),
         (FromQuery(query), Nodes(nodes)) =>
-            format!("{:s},[\"{:s}\"]",
+            format!("{0},[\"{1}\"]",
                     match query.compile() {
                         Some((compiled, _)) => compiled,
                         None => "null".to_string()
@@ -228,52 +228,3 @@ fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> S
 
     }
 }
-
-/*
-
-#![feature(macro_rules)]
-
-enum EnumOne {
-    Var11,
-    Var12,
-    Var13
-}
-
-enum EnumTwo {
-    Var21,
-    Var22,
-    Var23
-}
-
-macro_rules! enum_macro(
-    [ $($e1:ident)->+ => $e2:ident ] => (
-        vec!($($e1,)+), $e2
-    )
-)
-
-
-fn with_enums(e1: Vec<EnumOne>, e2: EnumTwo) { }
-
-fn main() {
-    with_enums(enum_macro![Var11 -> Var12 => Var22 ]);
-}
-
-*/
-
-/*
-pub enum Test<'t> {
-    TestVal(|int|:'t -> int),
-    AnotherVal
-}
-
-fn ret_val<'t>() -> Test<'t> {
-    TestVal(|x| { x * 2 })
-}
-
-fn main() {
-    match ret_val() {
-        TestVal(cl) => { println!("{:i}", cl(5)) },
-        AnotherVal => {}
-    }
-}
- */

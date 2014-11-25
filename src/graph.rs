@@ -70,8 +70,8 @@ impl Graph {
     /// Create a Graph which connects to the host you specified manually
     pub fn new(host: &str, port: int, version: CayleyAPIVersion) -> GraphResult<Graph> {
         let version_str = match version { V1 | DefaultVersion => "v1" };
-        let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
-                          host, port, version_str);
+        let url = format!("http://{host}:{port}/api/{version}/query/gremlin",
+                          host = host, port = port, version = version_str);
         Ok(Graph{ url: url })
     }
 
@@ -111,7 +111,7 @@ impl Graph {
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
     /// ```
     pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<NodeSequence> {
-        println!("Executing query: {:s}", query);
+        println!("Executing query: {}", query);
         match expectation {
             ExpectSingleNode | ExpectNameSequence | ExpectTagSequence | ExpectSingleTag =>
                 Err(ExpectationNotSupported(expectation)),
