@@ -1,13 +1,14 @@
 #![macro_escape]
 
-use std::fmt::{Show, Formatter, FormatError};
+use std::fmt::{Show, Formatter};
+use std::fmt::Error as FormatError;
 
 use selector::{NodeSelector, TagSelector, PredicateSelector};
 
-use selector::{AnyNode, Node, Nodes};
-use selector::{AnyTag, Tag, Tags};
-use selector::{AnyPredicate, Predicate, Predicates};
-use selector::Query as FromQuery;
+use selector::NodeSelector::{AnyNode, Node, Nodes};
+use selector::TagSelector::{AnyTag, Tag, Tags};
+use selector::PredicateSelector::{AnyPredicate, Predicate, Predicates};
+use selector::PredicateSelector::Query as FromQuery;
 
 #[macro_export]
 macro_rules! vertex(

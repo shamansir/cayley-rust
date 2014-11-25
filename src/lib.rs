@@ -103,7 +103,7 @@ extern crate url;
 extern crate serialize;
 
 pub use graph::{Graph, NodeSequence};
-pub use graph::{V1, DefaultVersion};
+pub use graph::CayleyAPIVersion as APIVersion;
 
 pub mod errors;
 pub mod selector;

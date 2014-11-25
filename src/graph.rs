@@ -11,15 +11,14 @@ use hyper::header::common::ContentLength;
 
 use path::{Query, Path};
 
-use path::{ Expectation,
-            ExpectationUnknown, ExpectSingleNode, ExpectSingleTag,
-            ExpectNodeSequence, ExpectNameSequence, ExpectTagSequence };
+use path::Expectation::{ ExpectationUnknown, ExpectSingleNode, ExpectSingleTag,
+                         ExpectNodeSequence, ExpectNameSequence, ExpectTagSequence };
 
-use errors::{ GraphResult,
-              InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
-              DecodingFailed, ResponseParseFailed,
-              QueryNotFinalized, QueryCompilationFailed,
-              ExpectationNotSupported, VagueExpectation };
+use errors::GraphResult;
+use errors::GraphRequestError::{ InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
+                                 DecodingFailed, ResponseParseFailed,
+                                 QueryNotFinalized, QueryCompilationFailed,
+                                 ExpectationNotSupported, VagueExpectation };
 
 /// Provides access to currently running Cayley database, among with
 /// an ability to run queries there, and to write there your data

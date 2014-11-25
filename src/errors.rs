@@ -3,7 +3,8 @@ use std::io::IoError;
 use hyper::HttpError;
 use serialize::json::DecoderError;
 
-use std::fmt::{Show, Formatter, FormatError};
+use std::fmt::{Show, Formatter};
+use std::fmt::Error as FormatError;
 
 use path::Expectation;
 
