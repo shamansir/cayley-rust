@@ -8,7 +8,7 @@ use std::fmt::Error as FormatError;
 
 use path::Expectation;
 
-pub enum GraphRequestError {
+pub enum RequestError {
     InvalidUrl(ParseError, String),
     MalformedRequest(HttpError, String),
     RequestIoFailed(IoError, String),
@@ -21,7 +21,7 @@ pub enum GraphRequestError {
     VagueExpectation
 }
 
-impl Show for GraphRequestError {
+impl Show for RequestError {
 
     #[allow(unused_must_use)]
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {

@@ -105,6 +105,8 @@ extern crate serialize;
 pub use graph::{Graph, NodeSequence};
 pub use graph::CayleyAPIVersion as APIVersion;
 
+pub use errors::RequestError as Error;
+
 pub mod errors;
 pub mod selector;
 pub mod path;
