@@ -111,8 +111,17 @@ impl<'ts> ToString for Vertex<'ts> {
                 }.as_slice());
                 for traversal in traversals.iter() {
                     result.push_str(match *traversal {
-                        Traversal::In(ref predicates, ref tags) => format!("In({})", predicates_and_tags(predicates, tags)),
-                        _ => "Boo".to_string()
+                        /* FIXME: Traversal:: shouldn't be required */
+                        Traversal::Out(ref predicates, ref tags)  => format!(".Out({})",   predicates_and_tags(predicates, tags)),
+                        Traversal::OutP(ref predicates)           => format!(".Out({})",   predicates_and_tags(predicates, &AnyTag)),
+                        Traversal::OutT(ref tags)                 => format!(".Out({})",   predicates_and_tags(&AnyPredicate, tags)),
+                        Traversal::In(ref predicates, ref tags)   => format!(".In({})",    predicates_and_tags(predicates, tags)),
+                        Traversal::InP(ref predicates)            => format!(".In({})",    predicates_and_tags(predicates, &AnyTag)),
+                        Traversal::InT(ref tags)                  => format!(".In({})",    predicates_and_tags(&AnyPredicate, tags)),
+                        Traversal::Both(ref predicates, ref tags) => format!(".Both({})",  predicates_and_tags(predicates, tags)),
+                        Traversal::BothP(ref predicates)          => format!(".Both({})",  predicates_and_tags(predicates, &AnyTag)),
+                        Traversal::BothT(ref tags)                => format!(".Both({})",  predicates_and_tags(&AnyPredicate, tags)),
+                        _ => "<*>".to_string()
                     }.as_slice());
                 };
                 result.push_str(match _final {
