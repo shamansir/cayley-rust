@@ -166,7 +166,7 @@ impl Graph {
                 debug!("start decoding \n===\n{}\n===\n", traversal_json);
                 match json_decode(traversal_json) {
                     Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
-                    Ok(nodes) => Ok(Nodes(nodes))
+                    Ok(nodes) => Ok(nodes)
                 }
             }
         }
