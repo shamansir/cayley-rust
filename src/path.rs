@@ -109,10 +109,20 @@ impl<'ts> ToString for Vertex<'ts> {
                     Node(name) => format!("g.V(\"{0}\")", name),
                     Nodes(ref names) => format!("g.V(\"{0}\")", names.connect("\",\""))
                 }.as_slice());
+                for traversal in traversals.iter() {
+                    result.push_str(match *traversal {
+                        Traversal::In(ref predicates, ref tags) => format!("In({})", predicates_and_tags(predicates, tags)),
+                        _ => "Boo".to_string()
+                    }.as_slice());
+                };
                 result.push_str(match _final {
                     /* FIXME: Final:: shouldn't be required */
                     Final::All => ".All()".to_string(),
-                    _ => "".to_string()
+                    Final::GetLimit(n) => format!(".GetLimit({})", n),
+                    Final::ToArray => ".ToArray()".to_string(),
+                    Final::ToValue => ".ToValue()".to_string(),
+                    Final::TagArray => ".TagArray()".to_string(),
+                    Final::TagValue => ".TagValue()".to_string()
                 }.as_slice());
                 result
             }
@@ -130,12 +140,12 @@ impl<'q> Query for Vertex<'q> {
             Vertex(_, _, _final) => {
                 match _final {
                     /* FIXME: both Final:: and Expectation:: shouldn't be required */
-                    Final::All         => Expectation::NodeSequence,
-                    Final::GetLimit(_) => Expectation::NodeSequence,
-                    Final::ToArray     => Expectation::NameSequence,
-                    Final::ToValue     => Expectation::SingleNode,
-                    Final::TagArray    => Expectation::TagSequence,
-                    Final::TagValue    => Expectation::SingleTag
+                    Final::All          => Expectation::NodeSequence,
+                    Final::GetLimit(..) => Expectation::NodeSequence,
+                    Final::ToArray      => Expectation::NameSequence,
+                    Final::ToValue      => Expectation::SingleNode,
+                    Final::TagArray     => Expectation::TagSequence,
+                    Final::TagValue     => Expectation::SingleTag
                 }
             }
         }))
@@ -145,39 +155,39 @@ impl<'q> Query for Vertex<'q> {
 
 // ================================ utils =================================== //
 
-fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> String {
+fn predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector) -> String {
     match (predicates, tags) {
 
-        (AnyPredicate, AnyTag) => "".to_string(),
-        (AnyPredicate, Tag(tag)) => format!("null,\"{0}\"", tag),
-        (AnyPredicate, Tags(tags)) => format!("null,[\"{0}\"]", tags.connect("\",\"")),
+        (&AnyPredicate, &AnyTag) => "".to_string(),
+        (&AnyPredicate, &Tag(tag)) => format!("null,\"{0}\"", tag),
+        (&AnyPredicate, &Tags(ref tags)) => format!("null,[\"{0}\"]", tags.connect("\",\"")),
 
-        (Predicate(predicate), AnyTag) => format!("\"{0}\"", predicate),
-        (Predicate(predicate), Tag(tag)) =>
+        (&Predicate(predicate), &AnyTag) => format!("\"{0}\"", predicate),
+        (&Predicate(predicate), &Tag(tag)) =>
             format!("\"{0}\",\"{1}\"", predicate, tag),
-        (Predicate(predicate), Tags(tags)) =>
+        (&Predicate(predicate), &Tags(ref tags)) =>
             format!("\"{0}\",[\"{1}\"]", predicate, tags.connect("\",\"")),
 
-        (Predicates(predicates), AnyTag) =>
+        (&Predicates(ref predicates), &AnyTag) =>
             format!("[\"{0}\"]", predicates.connect("\",\"")),
-        (Predicates(predicates), Tag(tag)) =>
+        (&Predicates(ref predicates), &Tag(tag)) =>
             format!("[\"{0}\"],\"{1}\"", predicates.connect("\",\""), tag),
-        (Predicates(predicates), Tags(tags)) =>
+        (&Predicates(ref predicates), &Tags(ref tags)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
 
-        (FromQuery(query), AnyTag) =>
+        (&FromQuery(query), &AnyTag) =>
             match query.compile() {
                 Some((compiled, _)) => compiled,
                 None => "null".to_string()
             },
-        (FromQuery(query), Tag(tag)) =>
+        (&FromQuery(query), &Tag(tag)) =>
             format!("{0}, \"{1}\"",
                     match query.compile() {
                         Some((compiled, _)) => compiled,
                         None => "null".to_string()
                     },
                     tag),
-        (FromQuery(query), Tags(tags)) =>
+        (&FromQuery(query), &Tags(ref tags)) =>
             format!("{0}, [\"{1}\"]",
                     match query.compile() {
                         Some((compiled, _)) => compiled,

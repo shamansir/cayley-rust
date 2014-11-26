@@ -4,7 +4,7 @@
 #[phase(plugin, link)] extern crate cayley;
 
 use cayley::graph::{Graph, V1};
-use cayley::graph::NodeSequence as GraphNodes;
+use cayley::graph::Nodes as GraphNodes;
 
 use cayley::path::*;
 
