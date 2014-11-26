@@ -163,7 +163,7 @@ impl Graph {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(traversal_json) => {
-                debug!("start decoding \n===\n{}\n===\n", traversal_json);
+                debug!("start decoding \n===\n{:.300}\n...\n===\n", traversal_json);
                 match json_decode(traversal_json) {
                     Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
                     Ok(nodes) => Ok(nodes)

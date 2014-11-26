@@ -16,11 +16,6 @@ macro_rules! vertex(
         &Vertex($e1, box [$($e2,)*], $e3)
     )
 )
-/* macro_rules! enum_macro(
-    [ $($e1:ident)->+ => $e2:ident ] => (
-        vec!($($e1,)+), $e2
-    )
-) */
 
 #[macro_export]
 macro_rules! morphism(
@@ -43,7 +38,7 @@ pub enum Traversal<'t> {
     Is(NodeSelector<'t>),
     Has(PredicateSelector<'t>, NodeSelector<'t>),
     // Tagging
-    // Tag(TagSelector<'t>): TagSelector has the same name
+    Tag(TagSelector<'t>),
     As(TagSelector<'t>),
     Back(TagSelector<'t>),
     Save(PredicateSelector<'t>, TagSelector<'t>),
@@ -107,12 +102,17 @@ impl<'ts> ToString for Vertex<'ts> {
 
     fn to_string(&self) -> String {
         match *self {
-            Vertex(ref start, ref traversals, ref _final) => {
+            Vertex(ref start, ref traversals, _final) => {
                 let mut result = String::with_capacity(15);
                 result.push_str(match *start {
                     AnyNode => "g.V()".to_string(), // FIXME: double-conversion here?
                     Node(name) => format!("g.V(\"{0}\")", name),
                     Nodes(ref names) => format!("g.V(\"{0}\")", names.connect("\",\""))
+                }.as_slice());
+                result.push_str(match _final {
+                    /* FIXME: Final:: shouldn't be required */
+                    Final::All => ".All()".to_string(),
+                    _ => "".to_string()
                 }.as_slice());
                 result
             }
