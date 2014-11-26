@@ -1,3 +1,5 @@
+extern crate log;
+
 use std::str;
 
 use serialize::{Decoder, Decodable};
@@ -114,7 +116,7 @@ impl Graph {
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
     /// ```
     pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<Nodes> {
-        println!("Executing query: {}", query);
+        debug!("Executing query: {}", query);
         match expectation {
             SingleNode | NameSequence | TagSequence | SingleTag =>
                 Err(ExpectationNotSupported(expectation)),
@@ -145,7 +147,10 @@ impl Graph {
                     Err(error) => return Err(RequestFailed(error, body)),
                     Ok(mut response) => match response.read_to_end() {
                         Err(error) => Err(RequestIoFailed(error, body)),
-                        Ok(response_body) => Ok(response_body)
+                        Ok(response_body) => {
+                            debug!("Request to {} succeeded", self.url);
+                            Ok(response_body)
+                        }
                     }
                 }
             }
@@ -158,9 +163,10 @@ impl Graph {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
             Some(traversal_json) => {
+                debug!("start decoding \n===\n{}\n===\n", traversal_json);
                 match json_decode(traversal_json) {
                     Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
-                    Ok(node) => Ok(Nodes(node))
+                    Ok(nodes) => Ok(Nodes(nodes))
                 }
             }
         }

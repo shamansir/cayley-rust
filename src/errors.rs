@@ -29,19 +29,19 @@ impl Show for RequestError {
     fn fmt(&self, f: &mut Formatter) -> FormatResult {
         match *self {
             RequestError::InvalidUrl(ref perr, ref url) => {
-                write!(f, "Url(\"{}\"): ", url.as_slice());
+                write!(f, "Invalid URL, Url(\"{}\"): ", url.as_slice());
                 perr.fmt(f) },
             RequestError::MalformedRequest(ref herr, ref url) => {
-                write!(f, "Url(\"{}\"): ", url.as_slice());
+                write!(f, "Malformed Request, Url(\"{}\"): ", url.as_slice());
                 herr.fmt(f) },
             RequestError::RequestIoFailed(ref ioerr, ref path) => {
-                write!(f, "Path(\"{}\"): ", path.as_slice());
+                write!(f, "Request I/O Failed, Path(\"{}\"): ", path.as_slice());
                 ioerr.fmt(f) },
             RequestError::RequestFailed(ref herr, ref path) => {
-                write!(f, "Path(\"{}\"): ", path.as_slice());
+                write!(f, "Request Failed, Path(\"{}\"): ", path.as_slice());
                 herr.fmt(f) },
             RequestError::DecodingFailed(ref derr, ref src) => {
-                write!(f, "Source(\"{}\"): ", src.as_slice());
+                write!(f, "Decoding Failed, Source(\"{}\"): ", src.as_slice());
                 derr.fmt(f) },
             RequestError::ResponseParseFailed => "Response parsing failed".fmt(f),
             RequestError::QueryNotFinalized => "Query is not finalized".fmt(f),

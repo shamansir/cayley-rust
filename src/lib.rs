@@ -92,6 +92,7 @@
 //! about every mentioned structure.
 
 #![feature(macro_rules)]
+#![feature(phase)]
 
 #[doc(no_inline)]
 extern crate hyper;
@@ -101,6 +102,8 @@ extern crate url;
 
 #[doc(no_inline)]
 extern crate serialize;
+
+#[phase(plugin, link)] extern crate log;
 
 pub use graph::{Graph, Nodes};
 pub use graph::APIVersion;
