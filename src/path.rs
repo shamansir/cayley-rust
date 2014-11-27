@@ -112,15 +112,32 @@ impl<'ts> ToString for Vertex<'ts> {
                 for traversal in traversals.iter() {
                     result.push_str(match *traversal {
                         /* FIXME: Traversal:: shouldn't be required */
-                        Traversal::Out(ref predicates, ref tags)  => format!(".Out({})",   predicates_and_tags(predicates, tags)),
-                        Traversal::OutP(ref predicates)           => format!(".Out({})",   predicates_and_tags(predicates, &AnyTag)),
-                        Traversal::OutT(ref tags)                 => format!(".Out({})",   predicates_and_tags(&AnyPredicate, tags)),
-                        Traversal::In(ref predicates, ref tags)   => format!(".In({})",    predicates_and_tags(predicates, tags)),
-                        Traversal::InP(ref predicates)            => format!(".In({})",    predicates_and_tags(predicates, &AnyTag)),
-                        Traversal::InT(ref tags)                  => format!(".In({})",    predicates_and_tags(&AnyPredicate, tags)),
-                        Traversal::Both(ref predicates, ref tags) => format!(".Both({})",  predicates_and_tags(predicates, tags)),
-                        Traversal::BothP(ref predicates)          => format!(".Both({})",  predicates_and_tags(predicates, &AnyTag)),
-                        Traversal::BothT(ref tags)                => format!(".Both({})",  predicates_and_tags(&AnyPredicate, tags)),
+                        Traversal::Out(ref predicates, ref tags)   => format!(".Out({})",   predicates_and_tags(predicates, tags)),
+                        Traversal::OutP(ref predicates)            => format!(".Out({})",   predicates_and_tags(predicates, &AnyTag)),
+                        Traversal::OutT(ref tags)                  => format!(".Out({})",   predicates_and_tags(&AnyPredicate, tags)),
+                        Traversal::In(ref predicates, ref tags)    => format!(".In({})",    predicates_and_tags(predicates, tags)),
+                        Traversal::InP(ref predicates)             => format!(".In({})",    predicates_and_tags(predicates, &AnyTag)),
+                        Traversal::InT(ref tags)                   => format!(".In({})",    predicates_and_tags(&AnyPredicate, tags)),
+                        Traversal::Both(ref predicates, ref tags)  => format!(".Both({})",  predicates_and_tags(predicates, tags)),
+                        Traversal::BothP(ref predicates)           => format!(".Both({})",  predicates_and_tags(predicates, &AnyTag)),
+                        Traversal::BothT(ref tags)                 => format!(".Both({})",  predicates_and_tags(&AnyPredicate, tags)),
+                        Traversal::Has(ref predicates, ref nodes)  => format!(".Has({})",   predicates_and_nodes(predicates, nodes)),
+                        Traversal::Save(ref predicates, ref nodes) => format!(".Save({})",  predicates_and_nodes(predicates, nodes)),
+                        Traversal::Is(ref nodes)                   => match nodes {
+                                                                          &AnyNode => ".Is()".to_string(),
+                                                                          &Node(name) => format!(".Is(\"{}\")", name),
+                                                                          &Nodes(ref names) => format!(".Is(\"{}\")", names.connect(","))
+                                                                      },
+                        Traversal::Tag(ref tags) | Traversal::As(ref tags) => match tags {
+                                                                          &AnyTag => ".Tag()".to_string(),
+                                                                          &Tag(name) => format!(".Tag(\"{}\")", name),
+                                                                          &Tags(ref names) => format!(".Tag(\"{}\")", names.connect(","))
+                                                                      },
+                        Traversal::Back(ref tags)                  => match tags {
+                                                                          &AnyTag => ".Back()".to_string(),
+                                                                          &Tag(name) => format!(".Back(\"{}\")", name),
+                                                                          &Tags(ref names) => format!(".Back(\"{}\")", names.connect(","))
+                                                                      },
                         _ => "<*>".to_string()
                     }.as_slice());
                 };
@@ -207,39 +224,39 @@ fn predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector) -> St
     }
 }
 
-fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> String {
+fn predicates_and_nodes(predicates: &PredicateSelector, nodes: &NodeSelector) -> String {
     match (predicates, nodes) {
 
-        (AnyPredicate, AnyNode) => "".to_string(),
-        (AnyPredicate, Node(node)) => format!("null,\"{0}\"", node),
-        (AnyPredicate, Nodes(nodes)) => format!("null,[\"{0}\"]", nodes.connect("\",\"")),
+        (&AnyPredicate, &AnyNode) => "".to_string(),
+        (&AnyPredicate, &Node(node)) => format!("null,\"{0}\"", node),
+        (&AnyPredicate, &Nodes(ref nodes)) => format!("null,[\"{0}\"]", nodes.connect("\",\"")),
 
-        (Predicate(predicate), AnyNode) => format!("\"{0}\"", predicate),
-        (Predicate(predicate), Node(tag)) =>
+        (&Predicate(predicate), &AnyNode) => format!("\"{0}\"", predicate),
+        (&Predicate(predicate), &Node(tag)) =>
             format!("\"{0}\",\"{1}\"", predicate, tag),
-        (Predicate(predicate), Nodes(nodes)) =>
+        (&Predicate(predicate), &Nodes(ref nodes)) =>
             format!("\"{0}\",[\"{1}\"]", predicate, nodes.connect("\",\"")),
 
-        (Predicates(predicates), AnyNode) =>
+        (&Predicates(ref predicates), &AnyNode) =>
             format!("[\"{0}\"]", predicates.connect("\",\"")),
-        (Predicates(predicates), Node(node)) =>
+        (&Predicates(ref predicates), &Node(node)) =>
             format!("[\"{0}\"],\"{1}\"", predicates.connect("\",\""), node),
-        (Predicates(predicates), Nodes(nodes)) =>
+        (&Predicates(ref predicates), &Nodes(ref nodes)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
 
-        (FromQuery(query), AnyNode) =>
+        (&FromQuery(query), &AnyNode) =>
             match query.compile() {
                 Some((compiled, _)) => compiled,
                 None => "null".to_string()
             },
-        (FromQuery(query), Node(node)) =>
+        (&FromQuery(query), &Node(node)) =>
             format!("{0},\"{1}\"",
                     match query.compile() {
                         Some((compiled, _)) => compiled,
                         None => "null".to_string()
                     },
                     node),
-        (FromQuery(query), Nodes(nodes)) =>
+        (&FromQuery(query), &Nodes(ref nodes)) =>
             format!("{0},[\"{1}\"]",
                     match query.compile() {
                         Some((compiled, _)) => compiled,
