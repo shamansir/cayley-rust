@@ -48,8 +48,8 @@ pub enum Traversal<'t> {
     Union(&'t Query+'t),
     Or(&'t Query+'t),
     // Morphisms
-    Follow(&'t Path+'t),
-    FollowR(&'t Path+'t)
+    Follow(&'t Reuse+'t),
+    FollowR(&'t Reuse+'t)
 }
 
 pub enum Final {
@@ -82,17 +82,49 @@ pub trait Query: Path {
 
 }
 
+pub trait Reuse: Path {
+
+    fn get_name(&self) -> &str;
+
+    fn compile(&self) -> Option<String>;
+
+}
+
 // ================================ Morphism ================================ //
 
 pub struct Morphism<'m>(pub &'m str, pub Box<[Traversal<'m>]>);
 
 impl<'ts> ToString for Morphism<'ts> {
 
-    fn to_string(&self) -> String { String::new() }
+    fn to_string(&self) -> String {
+        // FIXME: cache the result
+        match *self {
+            Morphism(name, ref traversals) => {
+                name.to_string() + ":" + parse_traversals(traversals)
+            }
+        }
+    }
 
 }
 
 impl<'p> Path for Morphism<'p> { }
+
+impl<'r> Reuse for Morphism<'r> {
+
+    fn get_name(&self) -> &str {
+        match *self {
+            Morphism(name, _) => name
+        }
+    }
+
+    fn compile(&self) -> Option<String> {
+        // FIXME: cache the result
+        match *self {
+            Morphism(_, ref traversals) => Some(parse_traversals(traversals))
+        }
+    }
+
+}
 
 // ================================ Vertex ================================== //
 
@@ -101,71 +133,30 @@ pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final)
 impl<'ts> ToString for Vertex<'ts> {
 
     fn to_string(&self) -> String {
+        // FIXME: cache the result
         match *self {
             Vertex(ref start, ref traversals, _final) => {
-                let mut result = String::with_capacity(15);
-                result.push_str(match *start {
-                    AnyNode => "g.V()".to_string(), // FIXME: double-conversion here?
-                    Node(name) => format!("g.V(\"{0}\")", name),
-                    Nodes(ref names) => format!("g.V(\"{0}\")", names.connect("\",\""))
-                }.as_slice());
+                let mut result = String::new();
                 for traversal in traversals.iter() {
-                    result.push_str(match *traversal {
-                        /* FIXME: Traversal:: shouldn't be required */
-                        // Basic Traversals ================================================================================================
-                        Traversal::Out(ref predicates, ref tags)   => format!(".Out({})",  predicates_and_tags(predicates, tags)),
-                        Traversal::OutP(ref predicates)            => format!(".Out({})",  predicates_and_tags(predicates, &AnyTag)),
-                        Traversal::OutT(ref tags)                  => format!(".Out({})",  predicates_and_tags(&AnyPredicate, tags)),
-                        Traversal::In(ref predicates, ref tags)    => format!(".In({})",   predicates_and_tags(predicates, tags)),
-                        Traversal::InP(ref predicates)             => format!(".In({})",   predicates_and_tags(predicates, &AnyTag)),
-                        Traversal::InT(ref tags)                   => format!(".In({})",   predicates_and_tags(&AnyPredicate, tags)),
-                        Traversal::Both(ref predicates, ref tags)  => format!(".Both({})", predicates_and_tags(predicates, tags)),
-                        Traversal::BothP(ref predicates)           => format!(".Both({})", predicates_and_tags(predicates, &AnyTag)),
-                        Traversal::BothT(ref tags)                 => format!(".Both({})", predicates_and_tags(&AnyPredicate, tags)),
-                        Traversal::Is(ref nodes)                   => match nodes {
-                                                                          &AnyNode => ".Is()".to_string(),
-                                                                          &Node(name) => format!(".Is(\"{}\")", name),
-                                                                          &Nodes(ref names) => format!(".Is(\"{}\")", names.connect(","))
-                                                                      },
-                        Traversal::Has(ref predicates, ref nodes)  => format!(".Has({})", predicates_and_nodes(predicates, nodes)),
-                        // Tagging =========================================================================================================
-                        Traversal::Tag(ref tags) |
-                        Traversal::As(ref tags)                    => match tags {
-                                                                          &AnyTag => ".Tag()".to_string(),
-                                                                          &Tag(name) => format!(".Tag(\"{}\")", name),
-                                                                          &Tags(ref names) => format!(".Tag(\"{}\")", names.connect(","))
-                                                                      },
-                        Traversal::Back(ref tags)                  => match tags {
-                                                                          &AnyTag => ".Back()".to_string(),
-                                                                          &Tag(name) => format!(".Back(\"{}\")", name),
-                                                                          &Tags(ref names) => format!(".Back(\"{}\")", names.connect(","))
-                                                                      },
-                        Traversal::Save(ref predicates, ref tags)  => format!(".Save({})", predicates_and_tags(predicates, tags)),
-                        // Joining =========================================================================================================
-                        Traversal::Intersect(query) |
-                        Traversal::And(query)                      => match query.compile() {
-                                                                          Some((query_str, _)) => format!(".And({})", query.to_string()),
-                                                                          None => panic!("Traversal passed to .Intersect failed to compile")
-                                                                      },
-                        Traversal::Union(query) |
-                        Traversal::Or(query)                       => match query.compile() {
-                                                                          Some((query_str, _)) => format!(".And({})", query.to_string()),
-                                                                          None => panic!("Traversal passed to .Intersect failed to compile")
-                                                                      },
-                        // Morphisms =======================================================================================================
-                        Traversal::Follow(path)                    => format!(".Follow({})",  path.to_string()),
-                        Traversal::FollowR(path)                   => format!(".FollowR({})",  path.to_string())
-                    }.as_slice());
-                };
-                result.push_str(match _final {
-                    /* FIXME: Final:: shouldn't be required */
-                    Final::All => ".All()".to_string(),
-                    Final::GetLimit(n) => format!(".GetLimit({})", n),
-                    Final::ToArray => ".ToArray()".to_string(),
-                    Final::ToValue => ".ToValue()".to_string(),
-                    Final::TagArray => ".TagArray()".to_string(),
-                    Final::TagValue => ".TagValue()".to_string()
-                }.as_slice());
+                    match *traversal {
+                        Traversal::Follow(reuse) | Traversal::FollowR(reuse) => {
+                            match reuse.compile() {
+                                Some(reusable) => {
+                                    result.push_str("var ");
+                                    result.push_str(reuse.get_name());
+                                    result.push_str("=");
+                                    result.push_str(reusable.as_slice());
+                                    result.push_str(";");
+                                },
+                                None => panic!("Reusable passed to .Follow or .FollowR failed to compile")
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                result.push_str(parse_start(start).as_slice());
+                result.push_str(parse_traversals(traversals).as_slice());
+                result.push_str(parse_final(_final).as_slice());
                 result
             }
         }
@@ -195,9 +186,82 @@ impl<'q> Query for Vertex<'q> {
 
 }
 
-// ================================ utils =================================== //
+// ================================ parsing ================================= //
 
-fn predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector) -> String {
+fn parse_start(start: &NodeSelector) -> String {
+    match *start {
+        AnyNode => "g.V()".to_string(),
+        Node(name) => format!("g.V(\"{0}\")", name),
+        Nodes(ref names) => format!("g.V(\"{0}\")", names.connect("\",\""))
+    }
+}
+
+fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
+    let mut result = String::new();
+    for traversal in traversals.iter() {
+        result.push_str(match *traversal {
+            /* FIXME: Traversal:: shouldn't be required */
+            // Basic Traversals ================================================================================================
+            Traversal::Out(ref predicates, ref tags)   => format!(".Out({})",  parse_predicates_and_tags(predicates, tags)),
+            Traversal::OutP(ref predicates)            => format!(".Out({})",  parse_predicates_and_tags(predicates, &AnyTag)),
+            Traversal::OutT(ref tags)                  => format!(".Out({})",  parse_predicates_and_tags(&AnyPredicate, tags)),
+            Traversal::In(ref predicates, ref tags)    => format!(".In({})",   parse_predicates_and_tags(predicates, tags)),
+            Traversal::InP(ref predicates)             => format!(".In({})",   parse_predicates_and_tags(predicates, &AnyTag)),
+            Traversal::InT(ref tags)                   => format!(".In({})",   parse_predicates_and_tags(&AnyPredicate, tags)),
+            Traversal::Both(ref predicates, ref tags)  => format!(".Both({})", parse_predicates_and_tags(predicates, tags)),
+            Traversal::BothP(ref predicates)           => format!(".Both({})", parse_predicates_and_tags(predicates, &AnyTag)),
+            Traversal::BothT(ref tags)                 => format!(".Both({})", parse_predicates_and_tags(&AnyPredicate, tags)),
+            Traversal::Is(ref nodes)                   => match nodes {
+                                                              &AnyNode => ".Is()".to_string(),
+                                                              &Node(name) => format!(".Is(\"{}\")", name),
+                                                              &Nodes(ref names) => format!(".Is(\"{}\")", names.connect(","))
+                                                          },
+            Traversal::Has(ref predicates, ref nodes)  => format!(".Has({})", parse_predicates_and_nodes(predicates, nodes)),
+            // Tagging =========================================================================================================
+            Traversal::Tag(ref tags) |
+            Traversal::As(ref tags)                    => match tags {
+                                                              &AnyTag => ".Tag()".to_string(),
+                                                              &Tag(name) => format!(".Tag(\"{}\")", name),
+                                                              &Tags(ref names) => format!(".Tag(\"{}\")", names.connect(","))
+                                                          },
+            Traversal::Back(ref tags)                  => match tags {
+                                                              &AnyTag => ".Back()".to_string(),
+                                                              &Tag(name) => format!(".Back(\"{}\")", name),
+                                                              &Tags(ref names) => format!(".Back(\"{}\")", names.connect(","))
+                                                          },
+            Traversal::Save(ref predicates, ref tags)  => format!(".Save({})", parse_predicates_and_tags(predicates, tags)),
+            // Joining =========================================================================================================
+            Traversal::Intersect(query) |
+            Traversal::And(query)                      => match query.compile() {
+                                                              Some((query_str, _)) => format!(".And({})", query.to_string()),
+                                                              None => panic!("Traversal passed to .Intersect or .And failed to compile")
+                                                          },
+            Traversal::Union(query) |
+            Traversal::Or(query)                       => match query.compile() {
+                                                              Some((query_str, _)) => format!(".And({})", query.to_string()),
+                                                              None => panic!("Traversal passed to .Union or .Or failed to compile")
+                                                          },
+            // Morphisms =======================================================================================================
+            Traversal::Follow(reusable)                => format!(".Follow({})", reusable.get_name()),
+            Traversal::FollowR(reusable)               => format!(".FollowR({})", reusable.get_name())
+        }.as_slice());
+    }
+    result
+}
+
+fn parse_final(_final: Final) -> String {
+    match _final {
+        /* FIXME: Final:: shouldn't be required */
+        Final::All => ".All()".to_string(),
+        Final::GetLimit(n) => format!(".GetLimit({})", n),
+        Final::ToArray => ".ToArray()".to_string(),
+        Final::ToValue => ".ToValue()".to_string(),
+        Final::TagArray => ".TagArray()".to_string(),
+        Final::TagValue => ".TagValue()".to_string()
+    }
+}
+
+fn parse_predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector) -> String {
     match (predicates, tags) {
 
         (&AnyPredicate, &AnyTag) => "".to_string(),
@@ -240,7 +304,7 @@ fn predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector) -> St
     }
 }
 
-fn predicates_and_nodes(predicates: &PredicateSelector, nodes: &NodeSelector) -> String {
+fn parse_predicates_and_nodes(predicates: &PredicateSelector, nodes: &NodeSelector) -> String {
     match (predicates, nodes) {
 
         (&AnyPredicate, &AnyNode) => "".to_string(),
