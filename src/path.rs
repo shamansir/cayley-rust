@@ -305,25 +305,11 @@ fn parse_predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector)
         (&Predicates(ref predicates), &Tags(ref tags)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
 
-        (&FromQuery(query), &AnyTag) =>
-            match query.compile() {
-                Some((compiled, _)) => compiled,
-                None => "null".to_string()
-            },
+        (&FromQuery(query), &AnyTag) => query.query,
         (&FromQuery(query), &Tag(tag)) =>
-            format!("{0}, \"{1}\"",
-                    match query.compile() {
-                        Some((compiled, _)) => compiled,
-                        None => "null".to_string()
-                    },
-                    tag),
+            format!("{0}, \"{1}\"", query.query, tag),
         (&FromQuery(query), &Tags(ref tags)) =>
-            format!("{0}, [\"{1}\"]",
-                    match query.compile() {
-                        Some((compiled, _)) => compiled,
-                        None => "null".to_string()
-                    },
-                    tags.connect("\",\""))
+            format!("{0}, [\"{1}\"]", query.query, tags.connect("\",\""))
 
     }
 }
@@ -348,25 +334,11 @@ fn parse_predicates_and_nodes(predicates: &PredicateSelector, nodes: &NodeSelect
         (&Predicates(ref predicates), &Nodes(ref nodes)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
 
-        (&FromQuery(query), &AnyNode) =>
-            match query.compile() {
-                Some((compiled, _)) => compiled,
-                None => "null".to_string()
-            },
+        (&FromQuery(query), &AnyNode) => query.query,
         (&FromQuery(query), &Node(node)) =>
-            format!("{0},\"{1}\"",
-                    match query.compile() {
-                        Some((compiled, _)) => compiled,
-                        None => "null".to_string()
-                    },
-                    node),
+            format!("{0},\"{1}\"", query.query, node),
         (&FromQuery(query), &Nodes(ref nodes)) =>
-            format!("{0},[\"{1}\"]",
-                    match query.compile() {
-                        Some((compiled, _)) => compiled,
-                        None => "null".to_string()
-                    },
-                    nodes.connect("\",\""))
+            format!("{0},[\"{1}\"]", query.query, nodes.connect("\",\""))
 
     }
 }
