@@ -13,14 +13,18 @@ use selector::PredicateSelector::Query as FromQuery;
 #[macro_export]
 macro_rules! vertex(
     [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
-        &Vertex($e1, box [$($e2,)*], $e3)
+        match Vertex($e1, box [$($e2,)*], $e3)::compile() {
+            Some(v) => v, None => panic!("Vertex query failed to compile!")
+        }
     )
 )
 
 #[macro_export]
 macro_rules! morphism(
     [ $e1:expr $(-> $e2:expr)* ] => (
-        &Morphism($e1, box [$($e2,)*])
+        match Morphism($e1, box [$($e2,)*])::compile() {
+            Some(m) => m, None => panic!("Morphism path failed to compile!")
+        }
     )
 )
 
@@ -43,13 +47,13 @@ pub enum Traversal<'t> {
     Back(TagSelector<'t>),
     Save(PredicateSelector<'t>, TagSelector<'t>),
     // Joining
-    Intersect(&'t Query+'t),
-    And(&'t Query+'t),
-    Union(&'t Query+'t),
-    Or(&'t Query+'t),
+    Intersect(&'t CompiledQuery),
+    And(&'t CompiledQuery),
+    Union(&'t CompiledQuery),
+    Or(&'t CompiledQuery),
     // Morphisms
-    Follow(&'t Reuse+'t),
-    FollowR(&'t Reuse+'t)
+    Follow(&'t CompiledReuse),
+    FollowR(&'t CompiledReuse)
 }
 
 pub enum Final {
@@ -74,11 +78,11 @@ pub enum Expectation {
 
 // ================================ Path & Query ============================ //
 
-trait Path: ToString { }
+trait Path: ToString { } // FIXME: add compile(&self) -> CompiledPath?
 
 trait Query: Path {
 
-    fn compile(&self) -> Option<(String, Expectation)>;
+    fn compile(&self) -> Option<(String, Expectation)>; // FIXME: change to return CompiledQuery?
 
 }
 
@@ -86,7 +90,7 @@ trait Reuse: Path {
 
     fn get_name(&self) -> &str;
 
-    fn compile(&self) -> Option<(&str, String)>;
+    fn compile(&self) -> Option<(&str, String)>; // FIXME: change to return CompiledReuse?
 
 }
 
@@ -187,17 +191,10 @@ impl<'q> Query for Vertex<'q> {
                 let mut result = String::new();
                 for traversal in traversals.iter() {
                     match *traversal {
-                        Traversal::Follow(reuse) | Traversal::FollowR(reuse) => {
-                            match reuse.compile() {
-                                Some((name, path)) => {
-                                    result.push_str("var ");
-                                    result.push_str(name);
-                                    result.push_str("=");
-                                    result.push_str(path.as_slice());
-                                    result.push_str(";");
-                                },
-                                None => panic!("Reusable passed to .Follow or .FollowR failed to compile")
-                            }
+                        Traversal::Follow(reusable) | Traversal::FollowR(reusable) => {
+                            result.push_str(format!("var {name} = {path};",
+                                                    name = reusable.name,
+                                                    path = reusable.path).as_slice());
                         }
                         _ => {}
                     }
@@ -265,18 +262,12 @@ fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
             Traversal::Save(ref predicates, ref tags)  => format!(".Save({})", parse_predicates_and_tags(predicates, tags)),
             // Joining =========================================================================================================
             Traversal::Intersect(query) |
-            Traversal::And(query)                      => match query.compile() {
-                                                              Some((query_str, _)) => format!(".And({})", query.to_string()),
-                                                              None => panic!("Traversal passed to .Intersect or .And failed to compile")
-                                                          },
+            Traversal::And(query)                      => format!(".And({})", query.query),
             Traversal::Union(query) |
-            Traversal::Or(query)                       => match query.compile() {
-                                                              Some((query_str, _)) => format!(".And({})", query.to_string()),
-                                                              None => panic!("Traversal passed to .Union or .Or failed to compile")
-                                                          },
+            Traversal::Or(query)                       => format!(".Or({})", query.query),
             // Morphisms =======================================================================================================
-            Traversal::Follow(reusable)                => format!(".Follow({})", reusable.get_name()),
-            Traversal::FollowR(reusable)               => format!(".FollowR({})", reusable.get_name())
+            Traversal::Follow(reusable)                => format!(".Follow({})", reusable.name),
+            Traversal::FollowR(reusable)               => format!(".FollowR({})", reusable.name)
         }.as_slice());
     }
     result
