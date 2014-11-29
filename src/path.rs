@@ -13,7 +13,7 @@ use selector::PredicateSelector::Query as FromQuery;
 #[macro_export]
 macro_rules! vertex(
     [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
-        match Vertex($e1, box [$($e2,)*], $e3)::compile() {
+        match Vertex::compile($e1, box [$($e2,)*], $e3) {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     )
@@ -22,7 +22,7 @@ macro_rules! vertex(
 #[macro_export]
 macro_rules! morphism(
     [ $e1:expr $(-> $e2:expr)* ] => (
-        match Morphism($e1, box [$($e2,)*])::compile() {
+        match Morphism::compile($e1, box [$($e2,)*]) {
             Some(m) => m, None => panic!("Morphism path failed to compile!")
         }
     )
@@ -95,17 +95,17 @@ trait Reuse: Path {
 }
 
 pub struct CompiledPath {
-    path: String
+    pub path: String
 }
 
 pub struct CompiledQuery {
-    query: String,
-    expectation: Expectation
+    pub query: String,
+    pub expectation: Expectation
 }
 
 pub struct CompiledReuse {
-    name: String,
-    path: String
+    pub name: String,
+    pub path: String
 }
 
 // ================================ Morphism ================================ //
@@ -114,7 +114,7 @@ pub struct Morphism<'m>(pub &'m str, pub Box<[Traversal<'m>]>);
 
 impl<'m> Morphism<'m> {
 
-    fn compile<'a>(name: &'a str, traversals: Box<[Traversal<'a>]>) -> Option<CompiledReuse> {
+    pub fn compile<'a>(name: &'a str, traversals: Box<[Traversal<'a>]>) -> Option<CompiledReuse> {
         match Morphism(name, traversals).compile() {
             Some((name, path)) => Some(CompiledReuse { name: name.to_string(), path: path }),
             None => None
@@ -160,7 +160,7 @@ pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final)
 
 impl<'v> Vertex<'v> {
 
-    fn compile<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>, _final: Final) -> Option<CompiledQuery> {
+    pub fn compile<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>, _final: Final) -> Option<CompiledQuery> {
         match Vertex(start, traversals, _final).compile() {
             Some((query, expectation)) => Some(CompiledQuery { query: query, expectation: expectation }),
             None => None
@@ -305,7 +305,7 @@ fn parse_predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector)
         (&Predicates(ref predicates), &Tags(ref tags)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
 
-        (&FromQuery(query), &AnyTag) => query.query,
+        (&FromQuery(query), &AnyTag) => query.query.clone(),
         (&FromQuery(query), &Tag(tag)) =>
             format!("{0}, \"{1}\"", query.query, tag),
         (&FromQuery(query), &Tags(ref tags)) =>
@@ -334,7 +334,7 @@ fn parse_predicates_and_nodes(predicates: &PredicateSelector, nodes: &NodeSelect
         (&Predicates(ref predicates), &Nodes(ref nodes)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
 
-        (&FromQuery(query), &AnyNode) => query.query,
+        (&FromQuery(query), &AnyNode) => query.query.clone(),
         (&FromQuery(query), &Node(node)) =>
             format!("{0},\"{1}\"", query.query, node),
         (&FromQuery(query), &Nodes(ref nodes)) =>

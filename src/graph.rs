@@ -11,7 +11,7 @@ use hyper::Url;
 use hyper::client::Request;
 use hyper::header::common::ContentLength;
 
-use path::{Query, Path};
+use path::{CompiledQuery, CompiledReuse};
 
 use path::Expectation;
 use path::Expectation::{ Unknown,
@@ -95,11 +95,8 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
-    pub fn find(&self, query: &Query) -> GraphResult<Nodes> {
-        match query.compile() {
-            Some((compiled, expectation)) => self.exec(compiled, expectation),
-            None => Err(QueryCompilationFailed)
-        }
+    pub fn find(&self, query: CompiledQuery) -> GraphResult<Nodes> {
+        self.exec(query.query, query.expectation)
     }
 
     // ---------------------------------- exec ---------------------------------
