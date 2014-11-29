@@ -41,7 +41,7 @@ impl Show for RequestError {
                 write!(f, "Request Failed, Path(\"{}\"), Cause:  ", path.as_slice());
                 herr.fmt(f) },
             RequestError::DecodingFailed(ref derr, ref src) => {
-                write!(f, "Decoding Failed, Source(\"{:.300}\"...), Cause: ", src.as_slice());
+                write!(f, "Decoding Failed, Source(\"{:.200}\"...), Cause: ", src.as_slice());
                 derr.fmt(f) },
             RequestError::ResponseParseFailed => "Response parsing failed".fmt(f),
             RequestError::QueryNotFinalized => "Query is not finalized".fmt(f),

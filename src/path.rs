@@ -116,7 +116,8 @@ impl<'m> Morphism<'m> {
 
     pub fn compile<'a>(name: &'a str, traversals: Box<[Traversal<'a>]>) -> Option<CompiledReuse> {
         match Morphism(name, traversals).compile() {
-            Some((name, path)) => Some(CompiledReuse { name: name.to_string(), path: path }),
+            Some((name, path)) => Some(CompiledReuse {
+                                           name: name.to_string(), path: path }),
             None => None
         }
     }
@@ -148,7 +149,8 @@ impl<'r> Reuse for Morphism<'r> {
 
     fn compile(&self) -> Option<(&str, String)> {
         match *self {
-            Morphism(name, ref traversals) => Some((name, parse_traversals(traversals)))
+            Morphism(name, ref traversals) =>
+                Some((name, "g.M()".to_string() + parse_traversals(traversals)))
         }
     }
 
@@ -162,7 +164,8 @@ impl<'v> Vertex<'v> {
 
     pub fn compile<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>, _final: Final) -> Option<CompiledQuery> {
         match Vertex(start, traversals, _final).compile() {
-            Some((query, expectation)) => Some(CompiledQuery { query: query, expectation: expectation }),
+            Some((query, expectation)) => Some(CompiledQuery {
+                                                   query: query, expectation: expectation }),
             None => None
         }
     }

@@ -113,7 +113,7 @@ fn main() {
                                           OutP(Predicate("/film/performance/actor")));
             match graph.find(vertex!(AnyNode
                                      -> Has(Predicate("name"), Node("Casablanca"))
-                                     -> Follow(film_to_actor)
+                                     -> Follow(&film_to_actor)
                                      -> OutP(Predicate("name"))
                                      => All)) {
 
