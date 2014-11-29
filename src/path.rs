@@ -74,34 +74,59 @@ pub enum Expectation {
 
 // ================================ Path & Query ============================ //
 
-pub trait Path: ToString { }
+trait Path: ToString { }
 
-pub trait Query: Path {
+trait Query: Path {
 
     fn compile(&self) -> Option<(String, Expectation)>;
 
 }
 
-pub trait Reuse: Path {
+trait Reuse: Path {
 
     fn get_name(&self) -> &str;
 
-    fn compile(&self) -> Option<String>;
+    fn compile(&self) -> Option<(&str, String)>;
 
+}
+
+pub struct CompiledPath {
+    path: String
+}
+
+pub struct CompiledQuery {
+    query: String,
+    expectation: Expectation
+}
+
+pub struct CompiledReuse {
+    name: String,
+    path: String
 }
 
 // ================================ Morphism ================================ //
 
 pub struct Morphism<'m>(pub &'m str, pub Box<[Traversal<'m>]>);
 
+impl<'m> Morphism<'m> {
+
+    fn compile<'a>(name: &'a str, traversals: Box<[Traversal<'a>]>) -> Option<CompiledReuse> {
+        match Morphism(name, traversals).compile() {
+            Some((name, path)) => Some(CompiledReuse { name: name.to_string(), path: path }),
+            None => None
+        }
+    }
+
+}
+
 impl<'ts> ToString for Morphism<'ts> {
 
     fn to_string(&self) -> String {
-        // FIXME: cache the result
-        match *self {
-            Morphism(name, ref traversals) => {
-                name.to_string() + ":" + parse_traversals(traversals)
-            }
+        match self.compile() {
+            Some((name, path)) => {
+                name.to_string() + ":" + path
+            },
+            None => "<Morphism: Incorrect>".to_string()
         }
     }
 
@@ -117,10 +142,9 @@ impl<'r> Reuse for Morphism<'r> {
         }
     }
 
-    fn compile(&self) -> Option<String> {
-        // FIXME: cache the result
+    fn compile(&self) -> Option<(&str, String)> {
         match *self {
-            Morphism(_, ref traversals) => Some(parse_traversals(traversals))
+            Morphism(name, ref traversals) => Some((name, parse_traversals(traversals)))
         }
     }
 
@@ -130,10 +154,34 @@ impl<'r> Reuse for Morphism<'r> {
 
 pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final);
 
+impl<'v> Vertex<'v> {
+
+    fn compile<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>, _final: Final) -> Option<CompiledQuery> {
+        match Vertex(start, traversals, _final).compile() {
+            Some((query, expectation)) => Some(CompiledQuery { query: query, expectation: expectation }),
+            None => None
+        }
+    }
+
+}
+
 impl<'ts> ToString for Vertex<'ts> {
 
     fn to_string(&self) -> String {
-        // FIXME: cache the result
+        match self.compile() {
+            Some((query, _)) => query,
+            None => "<Vertex: Incorrect>".to_string()
+        }
+
+    }
+
+}
+
+impl<'p> Path for Vertex<'p> { }
+
+impl<'q> Query for Vertex<'q> {
+
+    fn compile(&self) -> Option<(String, Expectation)> {
         match *self {
             Vertex(ref start, ref traversals, _final) => {
                 let mut result = String::new();
@@ -141,11 +189,11 @@ impl<'ts> ToString for Vertex<'ts> {
                     match *traversal {
                         Traversal::Follow(reuse) | Traversal::FollowR(reuse) => {
                             match reuse.compile() {
-                                Some(reusable) => {
+                                Some((name, path)) => {
                                     result.push_str("var ");
-                                    result.push_str(reuse.get_name());
+                                    result.push_str(name);
                                     result.push_str("=");
-                                    result.push_str(reusable.as_slice());
+                                    result.push_str(path.as_slice());
                                     result.push_str(";");
                                 },
                                 None => panic!("Reusable passed to .Follow or .FollowR failed to compile")
@@ -157,31 +205,16 @@ impl<'ts> ToString for Vertex<'ts> {
                 result.push_str(parse_start(start).as_slice());
                 result.push_str(parse_traversals(traversals).as_slice());
                 result.push_str(parse_final(_final).as_slice());
-                result
-            }
-        }
-    }
-
-}
-
-impl<'p> Path for Vertex<'p> { }
-
-impl<'q> Query for Vertex<'q> {
-
-    fn compile(&self) -> Option<(String, Expectation)> {
-        Some((self.to_string(), match *self {
-            Vertex(_, _, _final) => {
-                match _final {
-                    /* FIXME: both Final:: and Expectation:: shouldn't be required */
+                Some((result, match _final {
                     Final::All          => Expectation::NodeSequence,
                     Final::GetLimit(..) => Expectation::NodeSequence,
                     Final::ToArray      => Expectation::NameSequence,
                     Final::ToValue      => Expectation::SingleNode,
                     Final::TagArray     => Expectation::TagSequence,
                     Final::TagValue     => Expectation::SingleTag
-                }
+                }))
             }
-        }))
+        }
     }
 
 }
