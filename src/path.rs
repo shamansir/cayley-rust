@@ -18,12 +18,12 @@ macro_rules! vertex(
         }
     );
     [ $e1:expr $(-> $e2:expr)+ ] => (
-        match Vertex::compile_as_path($e1, box [$($e2,)*]) {
+        match Vertex::compile_path($e1, box [$($e2,)*]) {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     );
     [ $e1:expr ] => (
-        match Vertex::compile_as_path($e1, box []) {
+        match Vertex::compile_path($e1, box []) {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     )
@@ -34,6 +34,15 @@ macro_rules! morphism(
     [ $e1:expr $(-> $e2:expr)+ ] => (
         match Morphism::compile($e1, box [$($e2,)*]) {
             Some(m) => m, None => panic!("Morphism path failed to compile!")
+        }
+    )
+)
+
+#[macro_export]
+macro_rules! path(
+    [ $e1:expr $(-> $e2:expr)* ] => (
+        match Traversals::compile(box [$e1, $($e2,)*]) {
+            Some(m) => m, None => panic!("Traversals path failed to compile!")
         }
     )
 )
@@ -91,13 +100,13 @@ pub enum Expectation {
 
 trait Path: ToString {
 
-    // fn compile(&self) -> Option<String>;
+    fn compile_path(&self) -> Option<String>;
 
 }
 
 trait Query: Path {
 
-    fn compile(&self) -> Option<(String, Expectation)>;
+    fn compile_query(&self) -> Option<(String, Expectation)>;
 
 }
 
@@ -105,22 +114,83 @@ trait Reuse: Path {
 
     fn get_name(&self) -> &str;
 
-    fn compile(&self) -> Option<(&str, String)>;
+    fn compile_reuse(&self) -> Option<(&str, String)>;
 
 }
 
+/// Stores part of a path, i.e. `.Out("foo").Intersect(bar).Has("buz")`
+pub struct PartialPath {
+    pub value: String
+}
+
+/// Stores non-finalized path, i.e. `g.V().Out("foo").Intersect(bar).Has("buz")`
 pub struct CompiledPath {
     pub value: String
 }
 
+/// Stores a query, i.e. `g.V().Out("foo").Intersect(bar).Has("buz").GetLimit(10)`
 pub struct CompiledQuery {
     pub value: String,
     pub expectation: Expectation
 }
 
+/// Stores a named path, i.e. `g.M().Out("foo").Intersect(bar).Has("buz")` named as `"out_int_has"`
 pub struct CompiledReuse {
     pub name: String,
     pub value: String
+}
+
+impl Add<PartialPath, PartialPath> for PartialPath {
+
+    fn add(&self, _rhs: &PartialPath) -> PartialPath {
+        PartialPath { value: self.value + _rhs.value }
+    }
+
+}
+
+impl Add<PartialPath, CompiledPath> for CompiledPath {
+
+    fn add(&self, _rhs: &PartialPath) -> CompiledPath {
+        CompiledPath { value: self.value + _rhs.value }
+    }
+
+}
+
+// ================================ Traversals ============================= //
+
+pub struct Traversals<'ps>(pub Box<[Traversal<'ps>]>);
+
+impl<'ps> Traversals<'ps> {
+
+    pub fn compile<'a>(traversals: Box<[Traversal<'a>]>) -> Option<PartialPath> {
+        match Traversals(traversals).compile_path() {
+            Some(path) => Some(PartialPath { value: path }),
+            None => None
+        }
+    }
+
+}
+
+impl<'p> Path for Traversals<'p> {
+
+    fn compile_path(&self) -> Option<String> {
+        match *self {
+            Traversals(ref traversals) =>
+                Some(parse_traversals(traversals))
+        }
+    }
+
+}
+
+impl<'ts> ToString for Traversals<'ts> {
+
+    fn to_string(&self) -> String {
+        match self.compile_path() {
+            Some(path) => path,
+            None => "<Traversals: Incorrect>".to_string()
+        }
+    }
+
 }
 
 // ================================ Morphism ================================ //
@@ -130,7 +200,7 @@ pub struct Morphism<'m>(pub &'m str, pub Box<[Traversal<'m>]>);
 impl<'m> Morphism<'m> {
 
     pub fn compile<'a>(name: &'a str, traversals: Box<[Traversal<'a>]>) -> Option<CompiledReuse> {
-        match Morphism(name, traversals).compile() {
+        match Morphism(name, traversals).compile_reuse() {
             Some((name, path)) => Some(CompiledReuse {
                                            name: name.to_string(), value: path }),
             None => None
@@ -142,7 +212,7 @@ impl<'m> Morphism<'m> {
 impl<'ts> ToString for Morphism<'ts> {
 
     fn to_string(&self) -> String {
-        match self.compile() {
+        match self.compile_reuse() {
             Some((name, path)) => {
                 name.to_string() + ":" + path
             },
@@ -152,7 +222,16 @@ impl<'ts> ToString for Morphism<'ts> {
 
 }
 
-impl<'p> Path for Morphism<'p> { }
+impl<'p> Path for Morphism<'p> {
+
+    fn compile_path(&self) -> Option<String> {
+        match *self {
+            Morphism(_, ref traversals) =>
+                Some(parse_traversals(traversals))
+        }
+    }
+
+}
 
 impl<'r> Reuse for Morphism<'r> {
 
@@ -162,7 +241,7 @@ impl<'r> Reuse for Morphism<'r> {
         }
     }
 
-    fn compile(&self) -> Option<(&str, String)> {
+    fn compile_reuse(&self) -> Option<(&str, String)> {
         match *self {
             Morphism(name, ref traversals) =>
                 Some((name, "g.M()".to_string() + parse_traversals(traversals)))
@@ -178,16 +257,16 @@ pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final)
 impl<'v> Vertex<'v> {
 
     pub fn compile<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>, _final: Final) -> Option<CompiledQuery> {
-        match Vertex(start, traversals, _final).compile() {
+        match Vertex(start, traversals, _final).compile_query() {
             Some((query, expectation)) => Some(CompiledQuery {
                                                    value: query, expectation: expectation }),
             None => None
         }
     }
 
-    pub fn compile_as_path<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>) -> Option<CompiledPath> {
-        match Vertex(start, traversals, Final::Undefined).compile() {
-            Some((path, _)) => Some(CompiledPath { value: path }),
+    pub fn compile_path<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>) -> Option<CompiledPath> {
+        match Vertex(start, traversals, Final::Undefined).compile_path() {
+            Some(path) => Some(CompiledPath { value: path }),
             None => None
         }
     }
@@ -197,7 +276,7 @@ impl<'v> Vertex<'v> {
 impl<'ts> ToString for Vertex<'ts> {
 
     fn to_string(&self) -> String {
-        match self.compile() {
+        match self.compile_query() {
             Some((query, _)) => query,
             None => "<Vertex: Incorrect>".to_string()
         }
@@ -206,11 +285,20 @@ impl<'ts> ToString for Vertex<'ts> {
 
 }
 
-impl<'p> Path for Vertex<'p> { }
+impl<'p> Path for Vertex<'p> {
+
+    fn compile_path(&self) -> Option<String> {
+        match *self {
+            Vertex(_, ref traversals, _) =>
+                Some(parse_traversals(traversals))
+        }
+    }
+
+}
 
 impl<'q> Query for Vertex<'q> {
 
-    fn compile(&self) -> Option<(String, Expectation)> {
+    fn compile_query(&self) -> Option<(String, Expectation)> {
         match *self {
             Vertex(ref start, ref traversals, _final) => {
                 let mut result = String::new();
