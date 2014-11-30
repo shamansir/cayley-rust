@@ -20,28 +20,29 @@ fn main() {
 
     // Vertices without Final can be compiled, but not executed
 
-    path_eq!(vertex!(AnyNode), "g.V()");
+    path_eq!(vertex![ AnyNode ], "g.V()");
 
-    path_eq!(vertex!(Node("foo")), "g.V(\"foo\")");
+    path_eq!(vertex![ Node("foo") ], "g.V(\"foo\")");
 
-    path_eq!(vertex!(Nodes(vec!("foo", "bar"))), "g.V(\"foo\",\"bar\")");
+    path_eq!(vertex![ Nodes(vec!("foo", "bar")) ], "g.V(\"foo\",\"bar\")");
 
-    path_eq!(vertex!(AnyNode => All), "g.V().All()");
+    path_eq!(vertex![ AnyNode => All ], "g.V().All()");
 
-    path_eq!(vertex!(Node("foo") => All), "g.V(\"foo\").All()");
+    path_eq!(vertex![ Node("foo") => All ], "g.V(\"foo\").All()");
 
-    path_eq!(vertex!(Nodes(vec!("foo", "bar")) => All), "g.V(\"foo\",\"bar\").All()");
+    path_eq!(vertex![ Nodes(vec!("foo", "bar")) => All ], "g.V(\"foo\",\"bar\").All()");
 
-    path_eq!(vertex!(Nodes(vec!("foo", "bar")) -> Is(Node("foo")) => All),
+    path_eq!(vertex![ Nodes(vec!("foo", "bar")) -> Is(Node("foo")) => All ],
              "g.V(\"foo\",\"bar\").Is(\"foo\").All()");
 
     // == Morphism ==
 
-    path_eq!(morphism!("foobar" -> Out(Predicate("foo"), AnyTag) -> Out(Predicate("bar"), AnyTag)),
+    path_eq!(morphism![ "foobar" -> Out(Predicate("foo"), AnyTag)
+                                 -> Out(Predicate("bar"), AnyTag) ],
              "g.M().Out(\"foo\").Out(\"bar\")");
 
-    path_eq!(morphism!("foobar" -> Out(Predicate("foo"), Tags(vec!("tag1", "tag2")))
-                       -> Out(Predicate("bar"), Tag("tag0"))),
+    path_eq!(morphism![ "foobar" -> Out(Predicate("foo"), Tags(vec!("tag1", "tag2")))
+                                 -> Out(Predicate("bar"), Tag("tag0")) ],
              "g.M().Out(\"foo\",[\"tag1\",\"tag2\"]).Out(\"bar\",\"tag0\")");
 
     /* TODO: test saving */
@@ -52,27 +53,27 @@ fn main() {
 
     // == Basic Traversals ==
 
-    /* // path.Out
+    // path.Out
 
-    path_eq!(V::start(Node("C")).Out(Predicate("follows"), AnyTag),
+    path_eq!(vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ],
              "g.V(\"C\").Out(\"follows\")");
 
-    path_eq!(V::start(Node("A")).Out(Predicate("follows"), AnyTag)
-                                .Out(Predicate("follows"), AnyTag),
+    path_eq!(vertex![ Node("A") -> Out(Predicate("follows"), AnyTag)
+                                -> Out(Predicate("follows"), AnyTag) ],
              "g.V(\"A\").Out(\"follows\").Out(\"follows\")");
 
-    path_eq!(V::start(Node("D")).Out(AnyPredicate, AnyTag),
+    path_eq!(vertex![ Node("D") -> Out(AnyPredicate, AnyTag) ],
              "g.V(\"D\").Out()");
 
-    path_eq!(V::start(Node("D")).Out(Predicates(vec!("follows", "status")), AnyTag),
+    path_eq!(vertex![ Node("D") -> Out(Predicates(vec!("follows", "status")), AnyTag) ],
              "g.V(\"D\").Out([\"follows\",\"status\"])");
 
-    path_eq!(V::start(Node("D")).Out(Query(&V::start(Node("status"))), Tag("pred")),
+    path_eq!(vertex![ Node("D") -> Out(Path(&vertex![ Node("status") ]), Tag("pred")) ],
              "g.V(\"D\").Out(g.V(\"status\"), \"pred\")");
 
     // path.In
 
-    path_eq!(V::start(Node("cool_person")).In(Predicate("status"), AnyTag),
+    /* path_eq!(V::start(Node("cool_person")).In(Predicate("status"), AnyTag),
              "g.V(\"cool_person\").In(\"status\")");
 
     path_eq!(V::start(Node("B")).In(Predicate("follows"), AnyTag),

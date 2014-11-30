@@ -8,7 +8,7 @@ use selector::{NodeSelector, TagSelector, PredicateSelector};
 use selector::NodeSelector::{AnyNode, Node, Nodes};
 use selector::TagSelector::{AnyTag, Tag, Tags};
 use selector::PredicateSelector::{AnyPredicate, Predicate, Predicates};
-use selector::PredicateSelector::Query as FromQuery;
+use selector::PredicateSelector::Path as FromPath;
 
 #[macro_export]
 macro_rules! vertex(
@@ -335,11 +335,11 @@ fn parse_predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector)
         (&Predicates(ref predicates), &Tags(ref tags)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
 
-        (&FromQuery(query), &AnyTag) => query.value.clone(),
-        (&FromQuery(query), &Tag(tag)) =>
-            format!("{0}, \"{1}\"", query.value, tag),
-        (&FromQuery(query), &Tags(ref tags)) =>
-            format!("{0}, [\"{1}\"]", query.value, tags.connect("\",\""))
+        (&FromPath(path), &AnyTag) => path.value.clone(),
+        (&FromPath(path), &Tag(tag)) =>
+            format!("{0}, \"{1}\"", path.value, tag),
+        (&FromPath(path), &Tags(ref tags)) =>
+            format!("{0}, [\"{1}\"]", path.value, tags.connect("\",\""))
 
     }
 }
@@ -364,11 +364,11 @@ fn parse_predicates_and_nodes(predicates: &PredicateSelector, nodes: &NodeSelect
         (&Predicates(ref predicates), &Nodes(ref nodes)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
 
-        (&FromQuery(query), &AnyNode) => query.value.clone(),
-        (&FromQuery(query), &Node(node)) =>
-            format!("{0},\"{1}\"", query.value, node),
-        (&FromQuery(query), &Nodes(ref nodes)) =>
-            format!("{0},[\"{1}\"]", query.value, nodes.connect("\",\""))
+        (&FromPath(path), &AnyNode) => path.value.clone(),
+        (&FromPath(path), &Node(node)) =>
+            format!("{0},\"{1}\"", path.value, node),
+        (&FromPath(path), &Nodes(ref nodes)) =>
+            format!("{0},[\"{1}\"]", path.value, nodes.connect("\",\""))
 
     }
 }
