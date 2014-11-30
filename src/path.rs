@@ -397,7 +397,7 @@ fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
             Traversal::Is(ref nodes)                   => match nodes {
                                                               &AnyNode => ".Is()".to_string(),
                                                               &Node(name) => format!(".Is(\"{}\")", name),
-                                                              &Nodes(ref names) => format!(".Is(\"{}\")", names.connect(","))
+                                                              &Nodes(ref names) => format!(".Is(\"{}\")", names.connect("\",\""))
                                                           },
             Traversal::Has(ref predicates, ref nodes)  => format!(".Has({})", parse_predicates_and_nodes(predicates, nodes)),
             // Tagging =========================================================================================================
@@ -405,12 +405,12 @@ fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
             Traversal::As(ref tags)                    => match tags {
                                                               &AnyTag => ".As()".to_string(),
                                                               &Tag(name) => format!(".As(\"{}\")", name),
-                                                              &Tags(ref names) => format!(".As(\"{}\")", names.connect(","))
+                                                              &Tags(ref names) => format!(".As(\"{}\")", names.connect("\",\""))
                                                           },
             Traversal::Back(ref tags)                  => match tags {
                                                               &AnyTag => ".Back()".to_string(),
                                                               &Tag(name) => format!(".Back(\"{}\")", name),
-                                                              &Tags(ref names) => format!(".Back(\"{}\")", names.connect(","))
+                                                              &Tags(ref names) => format!(".Back(\"{}\")", names.connect("\",\""))
                                                           },
             Traversal::Save(ref predicates, ref tags)  => format!(".Save({})", parse_predicates_and_tags(predicates, tags)),
             // Joining =========================================================================================================

@@ -90,10 +90,10 @@ fn test_path_out() {
     let use_twice = vertex![ Node("status") -> OutP(Predicate("foo")) ];
 
     path_eq!(vertex![ Node("E") -> Out(Route(&use_twice), Tag("next")) ],
-             "g.V(\"D\").Out(g.V(\"status\"), \"next\")");
+             "g.V(\"E\").Out(g.V(\"status\").Out(\"foo\"), \"next\")");
 
     path_eq!(vertex![ Node("E") -> Out(Route(&use_twice), Tag("prev")) ],
-             "g.V(\"D\").Out(g.V(\"status\"), \"prev\")");
+             "g.V(\"E\").Out(g.V(\"status\").Out(\"foo\"), \"prev\")");
 
 }
 
