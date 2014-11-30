@@ -84,15 +84,15 @@ fn test_path_out() {
     path_eq!(vertex![ Node("D") -> Out(Predicates(vec!("follows", "status")), AnyTag) ],
              "g.V(\"D\").Out([\"follows\",\"status\"])");
 
-    path_eq!(vertex![ Node("D") -> Out(Path(&vertex![ Node("status") ]), Tag("pred")) ],
+    path_eq!(vertex![ Node("D") -> Out(Route(&vertex![ Node("status") ]), Tag("pred")) ],
              "g.V(\"D\").Out(g.V(\"status\"), \"pred\")");
 
     let use_twice = vertex![ Node("status") -> OutP(Predicate("foo")) ];
 
-    path_eq!(vertex![ Node("E") -> Out(Path(&use_twice), Tag("next")) ],
+    path_eq!(vertex![ Node("E") -> Out(Route(&use_twice), Tag("next")) ],
              "g.V(\"D\").Out(g.V(\"status\"), \"next\")");
 
-    path_eq!(vertex![ Node("E") -> Out(Path(&use_twice), Tag("prev")) ],
+    path_eq!(vertex![ Node("E") -> Out(Route(&use_twice), Tag("prev")) ],
              "g.V(\"D\").Out(g.V(\"status\"), \"prev\")");
 
 }
@@ -208,9 +208,9 @@ fn test_path_intersect_and() {
     let cFollows = vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ];
     let dFollows = vertex![ Node("D") -> Out(Predicate("follows"), AnyTag) ];
 
-    path_eq!(cFollows.Intersect(&dFollows),
+    path_eq!(cFollows + path![ Intersect(&dFollows) ],
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows.And(&dFollows),
+    path_eq!(cFollows + path![ And(&dFollows) ],
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
 
 }
@@ -223,9 +223,9 @@ fn test_path_union_or() {
     let cFollows = vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ];
     let dFollows = vertex![ Node("D") -> Out(Predicate("follows"), AnyTag) ];
 
-    path_eq!(cFollows.Union(&dFollows),
+    path_eq!(cFollows + path![ Union(&dFollows) ],
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows.Or(&dFollows),
+    path_eq!(cFollows + path![ Or(&dFollows) ],
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
 
 }
@@ -271,6 +271,32 @@ fn test_query_finals() {
 
     path_eq!(vertex![ Node("foo") -> Out(Predicate("follows"), AnyTag) => GetLimit(5) ],
              "g.V(\"foo\").Out(\"follows\").GetLimit(5)");
+
+}
+
+// == Other ==
+
+#[test]
+fn test_inclusive_vertices() {
+
+    let v_1 = vertex![ AnyNode -> Out(Predicate("follows"), AnyTag)
+                               -> In(Predicate("follows"), AnyTag) ];
+    let v_2 = vertex![ Node("bar") -> Has(Predicate("status"), Node("cool_person"))
+                                   -> And(&v_1) ];
+    path_eq!(vertex![ Node("foo") -> Union(&v_2) => All ],
+             "g.V(\"foo\").Or(g.V(\"bar\").Has(\"status\",\"cool_person\").And(g.V().Out(\"follows\").In(\"follows\")))")
+
+}
+
+#[test]
+fn test_inclusive_moprphisms() {
+
+    let m_1 = morphism![ "m1" -> Out(Predicate("follows"), AnyTag)
+                              -> Out(Predicate("follows"), AnyTag) ];
+    let m_2 = morphism![ "m2" -> Has(Predicate("status"), Node("cool_person"))
+                              -> FollowR(&m_1) ];
+    path_eq!(vertex![ Node("foo") -> Follow(&m_2) => All ],
+             "var m1 = g.M().Out(\"follows\").Out(\"follows\");var m2 = g.M().Has(\"status\",\"cool_person\").FollowR(m1);g.V(\"foo\").Follow(m2)")
 
 }
 

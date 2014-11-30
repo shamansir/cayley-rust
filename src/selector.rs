@@ -10,7 +10,7 @@ pub enum PredicateSelector<'ps> {
     AnyPredicate,
     Predicate(&'ps str),
     Predicates(Vec<&'ps str>),
-    Path(&'ps path::CompiledPath)
+    Route(&'ps path::CompiledRoute)
 }
 
 pub enum TagSelector<'ts> {

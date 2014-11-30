@@ -8,7 +8,7 @@ use selector::{NodeSelector, TagSelector, PredicateSelector};
 use selector::NodeSelector::{AnyNode, Node, Nodes};
 use selector::TagSelector::{AnyTag, Tag, Tags};
 use selector::PredicateSelector::{AnyPredicate, Predicate, Predicates};
-use selector::PredicateSelector::Path as FromPath;
+use selector::PredicateSelector::Route as FromRoute;
 
 #[macro_export]
 macro_rules! vertex(
@@ -18,12 +18,12 @@ macro_rules! vertex(
         }
     );
     [ $e1:expr $(-> $e2:expr)+ ] => (
-        match Vertex::compile_path($e1, box [$($e2,)*]) {
+        match Vertex::compile_route($e1, box [$($e2,)*]) {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     );
     [ $e1:expr ] => (
-        match Vertex::compile_path($e1, box []) {
+        match Vertex::compile_route($e1, box []) {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     )
@@ -66,10 +66,10 @@ pub enum Traversal<'t> {
     Back(TagSelector<'t>),
     Save(PredicateSelector<'t>, TagSelector<'t>),
     // Joining
-    Intersect(&'t CompiledQuery),
-    And(&'t CompiledQuery),
-    Union(&'t CompiledQuery),
-    Or(&'t CompiledQuery),
+    Intersect(&'t CompiledRoute),
+    And(&'t CompiledRoute),
+    Union(&'t CompiledRoute),
+    Or(&'t CompiledRoute),
     // Morphisms
     Follow(&'t CompiledReuse),
     FollowR(&'t CompiledReuse)
@@ -98,19 +98,31 @@ pub enum Expectation {
 
 // ================================ Path, Query & Reuse ===================== //
 
+/// Represents a navigational part of a path, i.e. `.Out("foo").Intersect(bar).Has("buz")`
 trait Path: ToString {
 
     fn compile_path(&self) -> Option<String>;
 
 }
 
-trait Query: Path {
+/// Represents a non-finalized path together with initial pivot, i.e.
+/// `g.V().Out("foo").Intersect(bar).Has("buz")` or
+/// `g.M().Out("foo").Intersect(bar).Has("buz")`
+trait Route: Path {
+
+    fn compile_route(&self) -> Option<String>;
+
+}
+
+/// Represents a query, i.e. `g.V().Out("foo").Intersect(bar).Has("buz").GetLimit(10)`
+trait Query: Route {
 
     fn compile_query(&self) -> Option<(String, Expectation)>;
 
 }
 
-trait Reuse: Path {
+/// Represents a named path, i.e. `out_int_has = g.M().Out("foo").Intersect(bar).Has("buz")`
+trait Reuse: Route {
 
     fn get_name(&self) -> &str;
 
@@ -118,13 +130,15 @@ trait Reuse: Path {
 
 }
 
-/// Stores part of a path, i.e. `.Out("foo").Intersect(bar).Has("buz")`
-pub struct PartialPath {
+/// Stores a navigational part of a path, i.e. `.Out("foo").Intersect(bar).Has("buz")`
+pub struct CompiledPath {
     pub value: String
 }
 
-/// Stores non-finalized path, i.e. `g.V().Out("foo").Intersect(bar).Has("buz")`
-pub struct CompiledPath {
+/// Stores a non-finalized path together with initial pivot, i.e.
+/// `g.V().Out("foo").Intersect(bar).Has("buz")` or
+/// `g.M().Out("foo").Intersect(bar).Has("buz")`
+pub struct CompiledRoute {
     pub value: String
 }
 
@@ -134,24 +148,24 @@ pub struct CompiledQuery {
     pub expectation: Expectation
 }
 
-/// Stores a named path, i.e. `g.M().Out("foo").Intersect(bar).Has("buz")` named as `"out_int_has"`
+/// Stores a named path, i.e. `out_int_has = g.M().Out("foo").Intersect(bar).Has("buz")`
 pub struct CompiledReuse {
     pub name: String,
     pub value: String
 }
 
-impl Add<PartialPath, PartialPath> for PartialPath {
+impl Add<CompiledPath, CompiledPath> for CompiledPath {
 
-    fn add(&self, _rhs: &PartialPath) -> PartialPath {
-        PartialPath { value: self.value + _rhs.value }
+    fn add(&self, _rhs: &CompiledPath) -> CompiledPath {
+        CompiledPath { value: self.value + _rhs.value }
     }
 
 }
 
-impl Add<PartialPath, CompiledPath> for CompiledPath {
+impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
 
-    fn add(&self, _rhs: &PartialPath) -> CompiledPath {
-        CompiledPath { value: self.value + _rhs.value }
+    fn add(&self, _rhs: &CompiledPath) -> CompiledRoute {
+        CompiledRoute { value: self.value + _rhs.value }
     }
 
 }
@@ -162,21 +176,10 @@ pub struct Traversals<'ps>(pub Box<[Traversal<'ps>]>);
 
 impl<'ps> Traversals<'ps> {
 
-    pub fn compile<'a>(traversals: Box<[Traversal<'a>]>) -> Option<PartialPath> {
+    pub fn compile<'a>(traversals: Box<[Traversal<'a>]>) -> Option<CompiledPath> {
         match Traversals(traversals).compile_path() {
-            Some(path) => Some(PartialPath { value: path }),
+            Some(path) => Some(CompiledPath { value: path }),
             None => None
-        }
-    }
-
-}
-
-impl<'p> Path for Traversals<'p> {
-
-    fn compile_path(&self) -> Option<String> {
-        match *self {
-            Traversals(ref traversals) =>
-                Some(parse_traversals(traversals))
         }
     }
 
@@ -188,6 +191,17 @@ impl<'ts> ToString for Traversals<'ts> {
         match self.compile_path() {
             Some(path) => path,
             None => "<Traversals: Incorrect>".to_string()
+        }
+    }
+
+}
+
+impl<'p> Path for Traversals<'p> {
+
+    fn compile_path(&self) -> Option<String> {
+        match *self {
+            Traversals(ref traversals) =>
+                Some(parse_traversals(traversals))
         }
     }
 
@@ -233,6 +247,17 @@ impl<'p> Path for Morphism<'p> {
 
 }
 
+impl<'p> Route for Morphism<'p> {
+
+    fn compile_route(&self) -> Option<String> {
+        match *self {
+            Morphism(_, ref traversals) =>
+                Some("g.M()".to_string() + parse_traversals(traversals))
+        }
+    }
+
+}
+
 impl<'r> Reuse for Morphism<'r> {
 
     fn get_name(&self) -> &str {
@@ -264,9 +289,9 @@ impl<'v> Vertex<'v> {
         }
     }
 
-    pub fn compile_path<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>) -> Option<CompiledPath> {
-        match Vertex(start, traversals, Final::Undefined).compile_path() {
-            Some(path) => Some(CompiledPath { value: path }),
+    pub fn compile_route<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>) -> Option<CompiledRoute> {
+        match Vertex(start, traversals, Final::Undefined).compile_route() {
+            Some(route) => Some(CompiledRoute { value: route }),
             None => None
         }
     }
@@ -291,6 +316,17 @@ impl<'p> Path for Vertex<'p> {
         match *self {
             Vertex(_, ref traversals, _) =>
                 Some(parse_traversals(traversals))
+        }
+    }
+
+}
+
+impl<'p> Route for Vertex<'p> {
+
+    fn compile_route(&self) -> Option<String> {
+        match *self {
+            Vertex(ref start, ref traversals, _) =>
+                Some(parse_start(start) + parse_traversals(traversals))
         }
     }
 
@@ -367,9 +403,9 @@ fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
             // Tagging =========================================================================================================
             Traversal::Tag(ref tags) |
             Traversal::As(ref tags)                    => match tags {
-                                                              &AnyTag => ".Tag()".to_string(),
-                                                              &Tag(name) => format!(".Tag(\"{}\")", name),
-                                                              &Tags(ref names) => format!(".Tag(\"{}\")", names.connect(","))
+                                                              &AnyTag => ".As()".to_string(),
+                                                              &Tag(name) => format!(".As(\"{}\")", name),
+                                                              &Tags(ref names) => format!(".As(\"{}\")", names.connect(","))
                                                           },
             Traversal::Back(ref tags)                  => match tags {
                                                               &AnyTag => ".Back()".to_string(),
@@ -423,11 +459,11 @@ fn parse_predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector)
         (&Predicates(ref predicates), &Tags(ref tags)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
 
-        (&FromPath(path), &AnyTag) => path.value.clone(),
-        (&FromPath(path), &Tag(tag)) =>
-            format!("{0}, \"{1}\"", path.value, tag),
-        (&FromPath(path), &Tags(ref tags)) =>
-            format!("{0}, [\"{1}\"]", path.value, tags.connect("\",\""))
+        (&FromRoute(route), &AnyTag) => route.value.clone(),
+        (&FromRoute(route), &Tag(tag)) =>
+            format!("{0}, \"{1}\"", route.value, tag),
+        (&FromRoute(route), &Tags(ref tags)) =>
+            format!("{0}, [\"{1}\"]", route.value, tags.connect("\",\""))
 
     }
 }
@@ -452,11 +488,11 @@ fn parse_predicates_and_nodes(predicates: &PredicateSelector, nodes: &NodeSelect
         (&Predicates(ref predicates), &Nodes(ref nodes)) =>
             format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
 
-        (&FromPath(path), &AnyNode) => path.value.clone(),
-        (&FromPath(path), &Node(node)) =>
-            format!("{0},\"{1}\"", path.value, node),
-        (&FromPath(path), &Nodes(ref nodes)) =>
-            format!("{0},[\"{1}\"]", path.value, nodes.connect("\",\""))
+        (&FromRoute(route), &AnyNode) => route.value.clone(),
+        (&FromRoute(route), &Node(node)) =>
+            format!("{0},\"{1}\"", route.value, node),
+        (&FromRoute(route), &Nodes(ref nodes)) =>
+            format!("{0},[\"{1}\"]", route.value, nodes.connect("\",\""))
 
     }
 }
