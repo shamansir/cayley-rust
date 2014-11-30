@@ -1,76 +1,47 @@
-#![feature(macro_rules)]
+#![feature(globs)]
+#![feature(phase, macro_rules)]
 
-extern crate cayley;
+#[phase(plugin, link)] extern crate cayley;
 
-use cayley::path::Vertex as V;
-use cayley::path::Morphism as M;
+use cayley::path::*;
 
-/*
-use cayley::path::Compile; // required to use .compile() method
-use cayley::path::Path; // required to be able to use Path methods such as .In, .Out, ...
-use cayley::path::Query; // required to be able to use Query methods such as .All, .GetLimit, ...
-
-use cayley::selector::{AnyNode, Node, Nodes};
-use cayley::selector::{AnyTag, Tag, Tags};
-use cayley::selector::{AnyPredicate, Predicate, Predicates, Query}; */
+use cayley::selector::*;
 
 #[test]
 fn main() {
 
-    /* macro_rules! path_eq(
-        ($src:expr, $res:expr) => (
-            assert_eq!($src.compile(), Some($res.to_string()));
-        );
-    )
-
-    macro_rules! path_fail(
-        ($src:expr, $msg:ident) => (
-            match $src.compile() {
-                Some(_) => panic!($msg),
-                None => ()
-            };
-        );
+    macro_rules! path_eq(
+        ($src:expr, $res:expr) => ( assert_eq!($src.value, $res.to_string()); );
     )
 
     // Examples from: https://github.com/google/cayley/blob/master/docs/GremlinAPI.md
 
     // == Vertex ==
 
-    // can be compiled, but not executed
-    path_eq!(V::start(AnyNode), "g.V()");
+    // Vertices without Final can be compiled, but not executed
 
-    // can be compiled, but not executed
-    path_eq!(V::start(Node("foo")), "g.V(\"foo\")");
+    path_eq!(vertex!(AnyNode), "g.V()");
 
-    // can be compiled, but not executed
-    path_eq!(V::start(Nodes(vec!("foo", "bar"))), "g.V(\"foo\",\"bar\")");
+    path_eq!(vertex!(Node("foo")), "g.V(\"foo\")");
 
-    path_eq!(V::start(AnyNode).All(), "g.V().All()");
+    path_eq!(vertex!(Nodes(vec!("foo", "bar"))), "g.V(\"foo\",\"bar\")");
 
-    path_eq!(V::start(Node("foo")).All(), "g.V(\"foo\").All()");
+    path_eq!(vertex!(AnyNode => All), "g.V().All()");
 
-    path_eq!(V::start(Nodes(vec!("foo", "bar"))).All(),
-             "g.V(\"foo\",\"bar\").All()");
+    path_eq!(vertex!(Node("foo") => All), "g.V(\"foo\").All()");
 
-    path_eq!(V::start(Nodes(vec!("foo", "bar"))).All(),
-             "g.V(\"foo\",\"bar\").All()");
+    path_eq!(vertex!(Nodes(vec!("foo", "bar")) => All), "g.V(\"foo\",\"bar\").All()");
+
+    path_eq!(vertex!(Nodes(vec!("foo", "bar")) -> Is(Node("foo")) => All),
+             "g.V(\"foo\",\"bar\").Is(\"foo\").All()");
 
     // == Morphism ==
 
-    match M::start("morph").Out(Predicate("foo"), AnyTag)
-                           .Out(Predicate("bar"), AnyTag).compile() {
-        Some(result) => {
-            assert_eq!(result, "g.M().Out(\"foo\").Out(\"bar\")".to_string())
-        }
-        None => panic!()
-    }
-
-    path_eq!(M::start("morph").Out(Predicate("foo"), AnyTag)
-                              .Out(Predicate("bar"), AnyTag),
+    path_eq!(morphism!("foobar" -> Out(Predicate("foo"), AnyTag) -> Out(Predicate("bar"), AnyTag)),
              "g.M().Out(\"foo\").Out(\"bar\")");
 
-    path_eq!(M::start("morph").Out(Predicate("foo"), Tags(vec!("tag1", "tag2")))
-                              .Out(Predicate("bar"), Tag("tag0")),
+    path_eq!(morphism!("foobar" -> Out(Predicate("foo"), Tags(vec!("tag1", "tag2")))
+                       -> Out(Predicate("bar"), Tag("tag0"))),
              "g.M().Out(\"foo\",[\"tag1\",\"tag2\"]).Out(\"bar\",\"tag0\")");
 
     /* TODO: test saving */
@@ -81,7 +52,7 @@ fn main() {
 
     // == Basic Traversals ==
 
-    // path.Out
+    /* // path.Out
 
     path_eq!(V::start(Node("C")).Out(Predicate("follows"), AnyTag),
              "g.V(\"C\").Out(\"follows\")");
@@ -207,7 +178,7 @@ fn main() {
              "g.V().Out(\"follows\").All()");
 
     path_eq!(V::start(Node("foo")).Out(Predicate("follows"), AnyTag).GetLimit(5),
-             "g.V(\"foo\").Out(\"follows\").GetLimit(5)");
+             "g.V(\"foo\").Out(\"follows\").GetLimit(5)"); */
 
     /* TODO:
 
@@ -234,7 +205,5 @@ fn main() {
     var filmToActor = g.Morphism().Out("/film/film/starring").Out("/film/performance/actor")
 
     g.V().Has("name", "Casablanca").Follow(filmToActor).Out("name").All() */
-
-    */
 
 }

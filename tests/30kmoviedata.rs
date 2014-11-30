@@ -8,9 +8,7 @@ use cayley::graph::Nodes as GraphNodes;
 
 use cayley::path::*;
 
-use cayley::selector::{AnyNode, Node};
-use cayley::selector::AnyTag;
-use cayley::selector::Predicate;
+use cayley::selector::*;
 
 #[test]
 fn main() {
