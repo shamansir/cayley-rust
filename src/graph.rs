@@ -96,7 +96,7 @@ impl Graph {
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
     pub fn find(&self, query: CompiledQuery) -> GraphResult<Nodes> {
-        self.exec(query.value, query.expectation)
+        self.exec(query.prefix + query.value, query.expectation)
     }
 
     // ---------------------------------- exec ---------------------------------

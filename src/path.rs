@@ -13,17 +13,17 @@ use selector::PredicateSelector::Route as FromRoute;
 #[macro_export]
 macro_rules! vertex(
     [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
-        match Vertex::compile($e1, box [$($e2,)*], $e3) {
+        match Vertex($e1, box [$($e2,)*], $e3).compile_query() {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     );
     [ $e1:expr $(-> $e2:expr)+ ] => (
-        match Vertex::compile_route($e1, box [$($e2,)*]) {
+        match Vertex($e1, box [$($e2,)*], Final::Undefined).compile_route() {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     );
     [ $e1:expr ] => (
-        match Vertex::compile_route($e1, box []) {
+        match Vertex($e1, box [], Final::Undefined).compile_route() {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     )
@@ -101,7 +101,7 @@ pub enum Expectation {
 /// Represents a navigational part of a path, i.e. `.Out("foo").Intersect(bar).Has("buz")`
 trait Path: ToString {
 
-    fn compile_path(&self) -> Option<String>;
+    fn compile_path(&self) -> Option<CompiledPath>;
 
 }
 
@@ -110,14 +110,14 @@ trait Path: ToString {
 /// `g.M().Out("foo").Intersect(bar).Has("buz")`
 trait Route: Path {
 
-    fn compile_route(&self) -> Option<String>;
+    fn compile_route(&self) -> Option<CompiledRoute>;
 
 }
 
 /// Represents a query, i.e. `g.V().Out("foo").Intersect(bar).Has("buz").GetLimit(10)`
 trait Query: Route {
 
-    fn compile_query(&self) -> Option<(String, Expectation)>;
+    fn compile_query(&self) -> Option<CompiledQuery>;
 
 }
 
@@ -126,12 +126,13 @@ trait Reuse: Route {
 
     fn get_name(&self) -> &str;
 
-    fn compile_reuse(&self) -> Option<(&str, String)>;
+    fn compile_reuse(&self) -> Option<CompiledReuse>;
 
 }
 
 /// Stores a navigational part of a path, i.e. `.Out("foo").Intersect(bar).Has("buz")`
 pub struct CompiledPath {
+    pub prefix: String,
     pub value: String
 }
 
@@ -139,17 +140,20 @@ pub struct CompiledPath {
 /// `g.V().Out("foo").Intersect(bar).Has("buz")` or
 /// `g.M().Out("foo").Intersect(bar).Has("buz")`
 pub struct CompiledRoute {
+    pub prefix: String,
     pub value: String
 }
 
 /// Stores a query, i.e. `g.V().Out("foo").Intersect(bar).Has("buz").GetLimit(10)`
 pub struct CompiledQuery {
+    pub prefix: String,
     pub value: String,
     pub expectation: Expectation
 }
 
 /// Stores a named path, i.e. `out_int_has = g.M().Out("foo").Intersect(bar).Has("buz")`
 pub struct CompiledReuse {
+    pub prefix: String,
     pub name: String,
     pub value: String
 }
@@ -174,17 +178,6 @@ impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
 
 pub struct Traversals<'ps>(pub Box<[Traversal<'ps>]>);
 
-impl<'ps> Traversals<'ps> {
-
-    pub fn compile<'a>(traversals: Box<[Traversal<'a>]>) -> Option<CompiledPath> {
-        match Traversals(traversals).compile_path() {
-            Some(path) => Some(CompiledPath { value: path }),
-            None => None
-        }
-    }
-
-}
-
 impl<'ts> ToString for Traversals<'ts> {
 
     fn to_string(&self) -> String {
@@ -198,10 +191,13 @@ impl<'ts> ToString for Traversals<'ts> {
 
 impl<'p> Path for Traversals<'p> {
 
-    fn compile_path(&self) -> Option<String> {
+    fn compile_path(&self) -> Option<CompiledPath> {
         match *self {
             Traversals(ref traversals) =>
-                Some(parse_traversals(traversals))
+                Some(CompiledPath {
+                    prefix: parse_prefix(traversals),
+                    value: parse_traversals(traversals)
+                })
         }
     }
 
@@ -238,21 +234,27 @@ impl<'ts> ToString for Morphism<'ts> {
 
 impl<'p> Path for Morphism<'p> {
 
-    fn compile_path(&self) -> Option<String> {
+    fn compile_path(&self) -> Option<CompiledPath> {
         match *self {
             Morphism(_, ref traversals) =>
-                Some(parse_traversals(traversals))
+                Some(CompiledPath {
+                    prefix: parse_prefix(traversals),
+                    value: parse_traversals(traversals)
+                })
         }
     }
 
 }
 
-impl<'p> Route for Morphism<'p> {
+impl<'r> Route for Morphism<'r> {
 
-    fn compile_route(&self) -> Option<String> {
+    fn compile_route(&self) -> Option<CompiledRoute> {
         match *self {
             Morphism(_, ref traversals) =>
-                Some("g.M()".to_string() + parse_traversals(traversals))
+                Some(CompiledRoute {
+                    prefix: parse_prefix(traversals),
+                    value: "g.M()".to_string() + parse_traversals(traversals)
+                })
         }
     }
 
@@ -266,10 +268,14 @@ impl<'r> Reuse for Morphism<'r> {
         }
     }
 
-    fn compile_reuse(&self) -> Option<(&str, String)> {
+    fn compile_reuse(&self) -> Option<CompiledReuse> {
         match *self {
             Morphism(name, ref traversals) =>
-                Some((name, "g.M()".to_string() + parse_traversals(traversals)))
+                Some(CompiledReuse {
+                    name: name,
+                    prefix: parse_prefix(traversals),
+                    value: "g.M()".to_string() + parse_traversals(traversals)
+                })
         }
     }
 
@@ -279,30 +285,11 @@ impl<'r> Reuse for Morphism<'r> {
 
 pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final);
 
-impl<'v> Vertex<'v> {
-
-    pub fn compile<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>, _final: Final) -> Option<CompiledQuery> {
-        match Vertex(start, traversals, _final).compile_query() {
-            Some((query, expectation)) => Some(CompiledQuery {
-                                                   value: query, expectation: expectation }),
-            None => None
-        }
-    }
-
-    pub fn compile_route<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>) -> Option<CompiledRoute> {
-        match Vertex(start, traversals, Final::Undefined).compile_route() {
-            Some(route) => Some(CompiledRoute { value: route }),
-            None => None
-        }
-    }
-
-}
-
 impl<'ts> ToString for Vertex<'ts> {
 
     fn to_string(&self) -> String {
         match self.compile_query() {
-            Some((query, _)) => query,
+            Some(query) => query.value,
             None => "<Vertex: Incorrect>".to_string()
         }
 
@@ -312,21 +299,27 @@ impl<'ts> ToString for Vertex<'ts> {
 
 impl<'p> Path for Vertex<'p> {
 
-    fn compile_path(&self) -> Option<String> {
+    fn compile_path(&self) -> Option<CompiledPath> {
         match *self {
             Vertex(_, ref traversals, _) =>
-                Some(parse_traversals(traversals))
+                Some(CompiledPath {
+                    prefix: parse_prefix(traversals),
+                    value: parse_traversals(traversals)
+                })
         }
     }
 
 }
 
-impl<'p> Route for Vertex<'p> {
+impl<'r> Route for Vertex<'r> {
 
-    fn compile_route(&self) -> Option<String> {
+    fn compile_route(&self) -> Option<CompiledRoute> {
         match *self {
             Vertex(ref start, ref traversals, _) =>
-                Some(parse_start(start) + parse_traversals(traversals))
+                Some(CompiledRoute {
+                    prefix: parse_prefix(traversals),
+                    value: parse_start(start) + parse_traversals(traversals)
+                })
         }
     }
 
@@ -334,35 +327,30 @@ impl<'p> Route for Vertex<'p> {
 
 impl<'q> Query for Vertex<'q> {
 
-    fn compile_query(&self) -> Option<(String, Expectation)> {
+    fn compile_query(&self) -> Option<CompiledQuery> {
         match *self {
             Vertex(ref start, ref traversals, _final) => {
-                let mut result = String::new();
-                for traversal in traversals.iter() {
-                    match *traversal {
-                        Traversal::Follow(reusable) | Traversal::FollowR(reusable) => {
-                            result.push_str(format!("var {name} = {path};",
-                                                    name = reusable.name,
-                                                    path = reusable.value).as_slice());
-                        }
-                        _ => {}
-                    }
-                }
-                result.push_str(parse_start(start).as_slice());
-                result.push_str(parse_traversals(traversals).as_slice());
+                let prefix = parse_prefix(traversals);
+                let mut value = String::new();
+                value.push_str(parse_start(start).as_slice());
+                value.push_str(parse_traversals(traversals).as_slice());
                 match _final {
                     Final::Undefined => {},
-                    _ => result.push_str(parse_final(_final).as_slice())
+                    _ => value.push_str(parse_final(_final).as_slice())
                 }
-                Some((result, match _final {
-                    Final::Undefined    => Expectation::Unknown,
-                    Final::All          => Expectation::NodeSequence,
-                    Final::GetLimit(..) => Expectation::NodeSequence,
-                    Final::ToArray      => Expectation::NameSequence,
-                    Final::ToValue      => Expectation::SingleNode,
-                    Final::TagArray     => Expectation::TagSequence,
-                    Final::TagValue     => Expectation::SingleTag
-                }))
+                Some(CompiledQuery {
+                    prefix: prefix,
+                    value: result,
+                    expectation: match _final {
+                        Final::Undefined    => Expectation::Unknown,
+                        Final::All          => Expectation::NodeSequence,
+                        Final::GetLimit(..) => Expectation::NodeSequence,
+                        Final::ToArray      => Expectation::NameSequence,
+                        Final::ToValue      => Expectation::SingleNode,
+                        Final::TagArray     => Expectation::TagSequence,
+                        Final::TagValue     => Expectation::SingleTag
+                    }
+                });
             }
         }
     }
@@ -370,6 +358,25 @@ impl<'q> Query for Vertex<'q> {
 }
 
 // ================================ parsing ================================= //
+
+fn parse_prefix(traversals: &Box<[Traversal]>) -> String {
+    let mut result = String::new();
+    for traversal in traversals.iter() {
+        match *traversal {
+            Traversal::Follow(reusable) | Traversal::FollowR(reusable) => {
+                result.push_str(format!("var {name} = {path};",
+                                        name = reusable.name,
+                                        path = reusable.value).as_slice());
+                result.push_str(reusable.prefix.as_slice());
+            },
+            Traversal::Intersect(query) | Traversal::And(query) | Traversal::Union(query) | Traversal::Or(query) => {
+                result.push_str(query.prefix.as_slice());
+            },
+            _ => {}
+        }
+    }
+    result
+}
 
 fn parse_start(start: &NodeSelector) -> String {
     match *start {
