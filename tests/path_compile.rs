@@ -8,7 +8,7 @@ use cayley::path::*;
 use cayley::selector::*;
 
 macro_rules! path_eq(
-    ($src:expr, $res:expr) => ( assert_eq!($src.value, $res.to_string()); );
+    ($src:expr, $res:expr) => ( assert_eq!($src.prefix + $src.value, $res.to_string()); );
 )
 
 // Examples from: https://github.com/google/cayley/blob/master/docs/GremlinAPI.md
@@ -284,6 +284,9 @@ fn test_inclusive_vertices() {
     let v_2 = vertex![ Node("bar") -> Has(Predicate("status"), Node("cool_person"))
                                    -> And(&v_1) ];
     path_eq!(vertex![ Node("foo") -> Union(&v_2) => All ],
+             "g.V(\"foo\").Or(g.V(\"bar\").Has(\"status\",\"cool_person\").And(g.V().Out(\"follows\").In(\"follows\"))).All()")
+
+    path_eq!(vertex![ Node("foo") -> Or(&v_2) ],
              "g.V(\"foo\").Or(g.V(\"bar\").Has(\"status\",\"cool_person\").And(g.V().Out(\"follows\").In(\"follows\")))")
 
 }
@@ -296,7 +299,10 @@ fn test_inclusive_moprphisms() {
     let m_2 = morphism![ "m2" -> Has(Predicate("status"), Node("cool_person"))
                               -> FollowR(&m_1) ];
     path_eq!(vertex![ Node("foo") -> Follow(&m_2) => All ],
-             "var m1 = g.M().Out(\"follows\").Out(\"follows\");var m2 = g.M().Has(\"status\",\"cool_person\").FollowR(m1);g.V(\"foo\").Follow(m2)")
+             "var m1 = g.M().Out(\"follows\").Out(\"follows\");var m2 = g.M().Has(\"status\",\"cool_person\").FollowR(m1);g.V(\"foo\").Follow(m2).All()");
+
+    path_eq!(vertex![ Node("foo") -> Follow(&m_2) ],
+             "var m1 = g.M().Out(\"follows\").Out(\"follows\");var m2 = g.M().Has(\"status\",\"cool_person\").FollowR(m1);g.V(\"foo\").Follow(m2)");
 
 }
 

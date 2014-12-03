@@ -161,7 +161,7 @@ pub struct CompiledReuse {
 impl Add<CompiledPath, CompiledPath> for CompiledPath {
 
     fn add(&self, _rhs: &CompiledPath) -> CompiledPath {
-        CompiledPath { prefix: self.prefix + _rhs.prefix, value: self.value + _rhs.value }
+        CompiledPath { prefix: _rhs.prefix + self.prefix, value: self.value + _rhs.value }
     }
 
 }
@@ -169,7 +169,7 @@ impl Add<CompiledPath, CompiledPath> for CompiledPath {
 impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
 
     fn add(&self, _rhs: &CompiledPath) -> CompiledRoute {
-        CompiledRoute { prefix: self.prefix + _rhs.prefix, value: self.value + _rhs.value }
+        CompiledRoute { prefix: _rhs.prefix + self.prefix, value: self.value + _rhs.value }
     }
 
 }
@@ -380,10 +380,10 @@ fn parse_prefix(traversals: &Box<[Traversal]>) -> String {
     for traversal in traversals.iter() {
         match *traversal {
             Traversal::Follow(reusable) | Traversal::FollowR(reusable) => {
+                result.push_str(reusable.prefix.as_slice());
                 result.push_str(format!("var {name} = {path};",
                                         name = reusable.name,
                                         path = reusable.value).as_slice());
-                result.push_str(reusable.prefix.as_slice());
             },
             Traversal::Intersect(query) | Traversal::And(query) | Traversal::Union(query) | Traversal::Or(query) => {
                 result.push_str(query.prefix.as_slice());
