@@ -13,17 +13,17 @@ use selector::PredicateSelector::Route as FromRoute;
 #[macro_export]
 macro_rules! vertex(
     [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
-        match Vertex($e1, box [$($e2,)*], $e3).compile_query() {
-            Some(v) => v, None => panic!("Vertex query failed to compile!")
+        match Vertex::compile_query($e1, box [$($e2,)*], $e3) {
+              Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     );
     [ $e1:expr $(-> $e2:expr)+ ] => (
-        match Vertex($e1, box [$($e2,)*], Final::Undefined).compile_route() {
+        match Vertex::compile_route($e1, box [$($e2,)*]) {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     );
     [ $e1:expr ] => (
-        match Vertex($e1, box [], Final::Undefined).compile_route() {
+        match Vertex::compile_route($e1, box []) {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     )
@@ -32,7 +32,7 @@ macro_rules! vertex(
 #[macro_export]
 macro_rules! morphism(
     [ $e1:expr $(-> $e2:expr)+ ] => (
-        match Morphism::compile($e1, box [$($e2,)*]) {
+        match Morphism::compile_reuse($e1, box [$($e2,)*]) {
             Some(m) => m, None => panic!("Morphism path failed to compile!")
         }
     )
@@ -41,7 +41,7 @@ macro_rules! morphism(
 #[macro_export]
 macro_rules! path(
     [ $e1:expr $(-> $e2:expr)* ] => (
-        match Traversals::compile(box [$e1, $($e2,)*]) {
+        match Traversals::compile_path(box [$e1, $($e2,)*]) {
             Some(m) => m, None => panic!("Traversals path failed to compile!")
         }
     )
@@ -161,7 +161,7 @@ pub struct CompiledReuse {
 impl Add<CompiledPath, CompiledPath> for CompiledPath {
 
     fn add(&self, _rhs: &CompiledPath) -> CompiledPath {
-        CompiledPath { value: self.value + _rhs.value }
+        CompiledPath { prefix: self.prefix + _rhs.prefix, value: self.value + _rhs.value }
     }
 
 }
@@ -169,7 +169,7 @@ impl Add<CompiledPath, CompiledPath> for CompiledPath {
 impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
 
     fn add(&self, _rhs: &CompiledPath) -> CompiledRoute {
-        CompiledRoute { value: self.value + _rhs.value }
+        CompiledRoute { prefix: self.prefix + _rhs.prefix, value: self.value + _rhs.value }
     }
 
 }
@@ -178,11 +178,19 @@ impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
 
 pub struct Traversals<'ps>(pub Box<[Traversal<'ps>]>);
 
+impl<'t> Traversals<'t> {
+
+    pub fn compile_path<'a>(traversals: Box<[Traversal<'a>]>) -> Option<CompiledPath> {
+        Traversals(traversals).compile_path()
+    }
+
+}
+
 impl<'ts> ToString for Traversals<'ts> {
 
     fn to_string(&self) -> String {
         match self.compile_path() {
-            Some(path) => path,
+            Some(path) => path.value,
             None => "<Traversals: Incorrect>".to_string()
         }
     }
@@ -209,12 +217,8 @@ pub struct Morphism<'m>(pub &'m str, pub Box<[Traversal<'m>]>);
 
 impl<'m> Morphism<'m> {
 
-    pub fn compile<'a>(name: &'a str, traversals: Box<[Traversal<'a>]>) -> Option<CompiledReuse> {
-        match Morphism(name, traversals).compile_reuse() {
-            Some((name, path)) => Some(CompiledReuse {
-                                           name: name.to_string(), value: path }),
-            None => None
-        }
+    pub fn compile_reuse<'a>(name: &'a str, traversals: Box<[Traversal<'a>]>) -> Option<CompiledReuse> {
+        Morphism(name, traversals).compile_reuse()
     }
 
 }
@@ -223,8 +227,8 @@ impl<'ts> ToString for Morphism<'ts> {
 
     fn to_string(&self) -> String {
         match self.compile_reuse() {
-            Some((name, path)) => {
-                name.to_string() + ":" + path
+            Some(reuse) => {
+                reuse.name.to_string() + ":" + reuse.value
             },
             None => "<Morphism: Incorrect>".to_string()
         }
@@ -272,7 +276,7 @@ impl<'r> Reuse for Morphism<'r> {
         match *self {
             Morphism(name, ref traversals) =>
                 Some(CompiledReuse {
-                    name: name,
+                    name: name.to_string(),
                     prefix: parse_prefix(traversals),
                     value: "g.M()".to_string() + parse_traversals(traversals)
                 })
@@ -284,6 +288,18 @@ impl<'r> Reuse for Morphism<'r> {
 // ================================ Vertex ================================== //
 
 pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final);
+
+impl<'v> Vertex<'v> {
+
+    pub fn compile_query<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>, _final: Final) -> Option<CompiledQuery> {
+        Vertex(start, traversals, _final).compile_query()
+    }
+
+    pub fn compile_route<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>) -> Option<CompiledRoute> {
+        Vertex(start, traversals, Final::Undefined).compile_route()
+    }
+
+}
 
 impl<'ts> ToString for Vertex<'ts> {
 
@@ -340,7 +356,7 @@ impl<'q> Query for Vertex<'q> {
                 }
                 Some(CompiledQuery {
                     prefix: prefix,
-                    value: result,
+                    value: value,
                     expectation: match _final {
                         Final::Undefined    => Expectation::Unknown,
                         Final::All          => Expectation::NodeSequence,
@@ -350,7 +366,7 @@ impl<'q> Query for Vertex<'q> {
                         Final::TagArray     => Expectation::TagSequence,
                         Final::TagValue     => Expectation::SingleTag
                     }
-                });
+                })
             }
         }
     }
