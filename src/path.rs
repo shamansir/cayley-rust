@@ -10,6 +10,137 @@ use selector::TagSelector::{AnyTag, Tag, Tags};
 use selector::PredicateSelector::{AnyPredicate, Predicate, Predicates};
 use selector::PredicateSelector::Route as FromRoute;
 
+///! This module is the main entry point to ask for [Nodes](../graph/struct.Nodes.html) from
+///! database using [Graph](../graph/struct.Graph.html) as an interceptor. It defines everything
+///! what may appear required to construct a query, part of a query, or to re-use some prepared one to find any data
+///! in a [Graph](../graph/struct.Graph.html).
+///!
+///! This way, module covers the [Cayley version of Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md),
+///! adapted to Rust language.
+///!
+///! ## `vertex!`
+///!
+///! To contruct a one-liner query, use `vertex!` macro:
+///!
+///! ```
+///! use cayley::graph::Graph;
+///! use cayley::path::*
+///! use cayley::selector::*;
+///!
+///! let graph = Graph::default().unwrap();
+///! graph.find(vertex![ Node("foo")
+///!                     -> As(Tags(vec!("tag-a", "tag-b")))
+///!                     -> OutP(Predicate("follows"))
+///!                     => All ]).unwrap();
+///! ```
+///!
+///! Another example:
+///!
+///! ```
+///! use cayley::graph::{Graph, Nodes};
+///!
+///! let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
+///! match graph.find(vertex![ AnyNode => All ]) {
+///!    Ok(Nodes(nodes)) => assert!(nodes.len() > 0),
+///!    Err(error) => panic!(error.to_string())
+///! };
+///! ```
+///!
+///! Notice that Finals like `All` or `GetLimit(..)` require `=>` symbol to be
+///! specified before, while traversals use `->` symbol for chaining. And actually
+///! these Finals are the only ones supported in Cayley-HTTP right now.
+///!
+///! The query above looks like this in Cayley/Gremlin syntax: `g.V().As(["tag-a","tag-b"]).Out("follows").All()`
+///!
+///! In general, `vertex!` macro syntax is:
+///!
+///! ```
+///! vertex![ <AnyNode | Node(name) | Nodes([names])>
+///!          (-> Traversal)*
+///!          (=> <All | GetLimit(n)>)? ]
+///! ```
+///!
+///! JFYI, without a macro usage, this query, expanded in pure Rust code, looks like:
+///!
+///! ```
+///! match Vertex::compile_query(AnyNode,
+///!                             box [ As(Tags(vec!("tag-a", "tag-b"))),
+///!                                   OutP(Predicate("follows")) ],
+///!                             All) => {
+///!     Some(v) => v, None => panic!("Vertex query failed to compile!")
+///! }
+///! ```
+///!
+///! Vertices may be logically-combined with other routes, but, following to the spec,
+///! included route _should not have Final_ at its end:
+///!
+///! ```
+///! let v_1 = vertex![ AnyNode -> Out(Predicate("follows"), AnyTag)
+///!                            -> In(Predicate("follows"), AnyTag) ];
+///! let v_2 = vertex![ Node("bar") -> Has(Predicate("status"), Node("cool_person"))
+///!                                -> And(&v_1) ];
+///! graph.find(vertex![ Node("foo") -> Union(&v_2) => All ]).unwrap();
+///! ```
+///!
+///! This query will be compiled to:
+///!
+///! `g.V("foo").Or(g.V("bar").Has("status","cool_person").And(g.V().Out("follows").In("follows"))).All()`
+///!
+///! ## `morphism!`
+///!
+///! Morphism helps to store named paths and reuse them later in the same HTTP request
+///! (under the hood, next HTTP request will actually "forget" them,
+///! but Cayley driver ensures to include used Morhisms in every query/request automatically).
+///! In comparison with Vertex-routes, Morphism has no starting node,
+///! it is just a named traversal sequence.
+///!
+///! ```
+///! let cool_and_follows = morphism![ "c_and_f" -> Has(Predicate("status"), Node("cool_person"))
+///!                                             -> OutP(Predicate("follows")) ];
+///! graph.find(vertex![ Node("foo") -> Follow(&cool_and_follows) => All ]).unwrap();
+///! graph.find(vertex![ AnyNode -> FollowR(&cool_and_follows) => GetLimit(10) ]).unwrap();
+///! ```
+///!
+///! These queries will be compiled to:
+///!
+///! `var c_and_f=g.M().Has("status","cool_persone").Out("Follows");g.V("foo").Follow(c_and_f).All()`
+///!
+///! and
+///!
+///! `var c_and_f=g.M().Has("status","cool_persone").Out("Follows");g.V().FollowR(c_and_f).GetLimit(10)`
+///!
+///! `morphism!` macro sytax:
+///!
+///! ```
+///! morphism![ "name" (-> Traversal)* ]
+///! ```
+///!
+///! ## `path!`
+///!
+///! `path!` macro makes it possible to join two paths (but with no Final):
+///!
+///! ```
+///! let cFollows = vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ];
+///! let dFollows = vertex![ Node("D") -> Out(Predicate("follows"), AnyTag) ];
+///!
+///! graph.find(vertex![ AnyNode -> Or(&(cFollows + path![ And(&dFollows) ])) => All ]).unwrap();
+///! graph.find(vertex![ AnyNode -> And(&(cFollows + path![ Or(&dFollows) ])) => All ]).unwrap();
+///! ```
+///!
+///! `path!` macro syntax:
+///!
+///! ```
+///! path![ (Traversal ->)* Traversal ]
+///! ```
+///!
+///! ## Notes
+///!
+///! Since there is no overloading or optional parameters in Rust, some traversals
+///! requiring two parameters, were split into three variants to ease the usage:
+///! For example, `.Out([predicate],[tag])` was split into three: `.Out(predicate, tag)`,
+///! `.OutP(predicate)`, `.OutT(tag)`. Same for `.In` and `.Both`. See [Traversal](../path/enum/Traversal.html) for
+///! full list of supported traversals.
+
 #[macro_export]
 macro_rules! vertex(
     [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
@@ -47,6 +178,7 @@ macro_rules! path(
     )
 )
 
+/// Represents a traversal part of a path. Used to contruct both Paths and Queries.
 pub enum Traversal<'t> {
     // Basic Traversals
     Out(PredicateSelector<'t>, TagSelector<'t>),
@@ -75,6 +207,7 @@ pub enum Traversal<'t> {
     FollowR(&'t CompiledReuse)
 }
 
+/// Represents a final part of a path. Used to contruct Queries.
 pub enum Final {
     Undefined,
     All,
@@ -87,6 +220,8 @@ pub enum Final {
     /* Map(|int|:'q -> int) */
 }
 
+/// This enum defines which type of a data this Query expects from Graph. Currently,
+/// Only `NodeSequence` is supported by Cayley for HTTP requests
 pub enum Expectation {
     Unknown,
     SingleNode,
@@ -176,6 +311,8 @@ impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
 
 // ================================ Traversals ============================= //
 
+/// A structure to hold [Path](../path/trait.Path.html) data before its compilation to
+/// [CompiledPath](../path/struct.CompiledPath)
 pub struct Traversals<'ps>(pub Box<[Traversal<'ps>]>);
 
 impl<'t> Traversals<'t> {
@@ -213,6 +350,8 @@ impl<'p> Path for Traversals<'p> {
 
 // ================================ Morphism ================================ //
 
+/// A structure to hold [Reuse](../path/trait.Reuse.html) data before its compilation to
+/// [CompiledReuse](../path/struct.CompiledReuse)
 pub struct Morphism<'m>(pub &'m str, pub Box<[Traversal<'m>]>);
 
 impl<'m> Morphism<'m> {
@@ -287,6 +426,8 @@ impl<'r> Reuse for Morphism<'r> {
 
 // ================================ Vertex ================================== //
 
+/// A structure to hold [Query](../path/trait.Query.html) data before its compilation to
+/// [CompiledQuery](../path/struct.CompiledQuery) or [CompiledRoute](../path/struct.CompiledRoute)
 pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final);
 
 impl<'v> Vertex<'v> {

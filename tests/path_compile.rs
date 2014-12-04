@@ -230,6 +230,10 @@ fn test_path_union_or() {
 
 }
 
+/* fn test_concatenating_paths() {
+    // TODO
+} */
+
 // == Morphisms ==
 
 /* path.Follow */
@@ -298,6 +302,7 @@ fn test_inclusive_moprphisms() {
                               -> Out(Predicate("follows"), AnyTag) ];
     let m_2 = morphism![ "m2" -> Has(Predicate("status"), Node("cool_person"))
                               -> FollowR(&m_1) ];
+
     path_eq!(vertex![ Node("foo") -> Follow(&m_2) => All ],
              "var m1 = g.M().Out(\"follows\").Out(\"follows\");var m2 = g.M().Has(\"status\",\"cool_person\").FollowR(m1);g.V(\"foo\").Follow(m2).All()");
 
