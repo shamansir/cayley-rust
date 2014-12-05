@@ -1,6 +1,7 @@
 #![feature(phase, macro_rules)]
 
-#[phase(plugin, link)] extern crate cayley;
+#[phase(plugin, link)]
+extern crate cayley;
 
 use cayley::{Graph, V1};
 

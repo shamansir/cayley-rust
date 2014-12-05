@@ -1,7 +1,8 @@
 #![feature(globs)]
 #![feature(phase, macro_rules)]
 
-#[phase(plugin, link)] extern crate cayley;
+#[phase(plugin, link)]
+extern crate cayley;
 
 use cayley::selector::NodeSelector::*;
 use cayley::selector::PredicateSelector::*;

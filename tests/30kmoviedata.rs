@@ -1,7 +1,8 @@
 #![feature(globs)]
 #![feature(phase, macro_rules)]
 
-#[phase(plugin, link)] extern crate cayley;
+#[phase(plugin, link)]
+extern crate cayley;
 
 use cayley::{Graph, V1};
 use cayley::Nodes as GraphNodes;
@@ -10,7 +11,6 @@ use cayley::selector::NodeSelector::*;
 use cayley::selector::PredicateSelector::*;
 use cayley::selector::TagSelector::*;
 
-//use cayley::path::{Path, Route, Query, Reuse};
 use cayley::path::{Vertex, Morphism};
 use cayley::path::Traversal::*;
 use cayley::path::Final::*;
