@@ -205,12 +205,12 @@ fn test_path_save() {
 #[test]
 fn test_path_intersect_and() {
 
-    let cFollows = vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ];
-    let dFollows = vertex![ Node("D") -> Out(Predicate("follows"), AnyTag) ];
+    let c_follows = vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ];
+    let d_follows = vertex![ Node("D") -> Out(Predicate("follows"), AnyTag) ];
 
-    path_eq!(cFollows + path![ Intersect(&dFollows) ],
+    path_eq!(c_follows + path![ Intersect(&d_follows) ],
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows + path![ And(&dFollows) ],
+    path_eq!(c_follows + path![ And(&d_follows) ],
              "g.V(\"C\").Out(\"follows\").And(g.V(\"D\").Out(\"follows\"))");
 
 }
@@ -220,12 +220,12 @@ fn test_path_intersect_and() {
 #[test]
 fn test_path_union_or() {
 
-    let cFollows = vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ];
-    let dFollows = vertex![ Node("D") -> Out(Predicate("follows"), AnyTag) ];
+    let c_follows = vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ];
+    let d_follows = vertex![ Node("D") -> Out(Predicate("follows"), AnyTag) ];
 
-    path_eq!(cFollows + path![ Union(&dFollows) ],
+    path_eq!(c_follows + path![ Union(&d_follows) ],
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
-    path_eq!(cFollows + path![ Or(&dFollows) ],
+    path_eq!(c_follows + path![ Or(&d_follows) ],
              "g.V(\"C\").Out(\"follows\").Or(g.V(\"D\").Out(\"follows\"))");
 
 }
@@ -241,11 +241,11 @@ fn test_path_union_or() {
 #[test]
 fn test_path_follow() {
 
-    let friendOfFriend = morphism![ "friendOfFriend" -> Out(Predicate("follows"), AnyTag)
-                                                     -> Out(Predicate("follows"), AnyTag) ];
-    path_eq!(friendOfFriend, "g.M().Out(\"follows\").Out(\"follows\")");
+    let friend_of_friend = morphism![ "friendOfFriend" -> Out(Predicate("follows"), AnyTag)
+                                                       -> Out(Predicate("follows"), AnyTag) ];
+    path_eq!(friend_of_friend, "g.M().Out(\"follows\").Out(\"follows\")");
 
-    path_eq!(vertex![ Node("C") -> Follow(&friendOfFriend)
+    path_eq!(vertex![ Node("C") -> Follow(&friend_of_friend)
                                 -> Has(Predicate("status"), Node("cool_person")) ],
              "var friendOfFriend = g.M().Out(\"follows\").Out(\"follows\");g.V(\"C\").Follow(friendOfFriend).Has(\"status\",\"cool_person\")");
 
@@ -256,11 +256,11 @@ fn test_path_follow() {
 #[test]
 fn test_path_followr() {
 
-    let friendOfFriend = morphism![ "friendOfFriend" -> Out(Predicate("follows"), AnyTag)
-                                                     -> Out(Predicate("follows"), AnyTag) ];
+    let friend_of_friend = morphism![ "friendOfFriend" -> Out(Predicate("follows"), AnyTag)
+                                                       -> Out(Predicate("follows"), AnyTag) ];
 
     path_eq!(vertex![ AnyNode -> Has(Predicate("status"), Node("cool_person"))
-                              -> FollowR(&friendOfFriend) ],
+                              -> FollowR(&friend_of_friend) ],
              "var friendOfFriend = g.M().Out(\"follows\").Out(\"follows\");g.V().Has(\"status\",\"cool_person\").FollowR(friendOfFriend)");
 
 }
@@ -336,5 +336,3 @@ g.V().Has("name","Casablanca")
 var filmToActor = g.Morphism().Out("/film/film/starring").Out("/film/performance/actor")
 
 g.V().Has("name", "Casablanca").Follow(filmToActor).Out("name").All() */
-
-fn main() { }

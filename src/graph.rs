@@ -11,18 +11,15 @@ use hyper::Url;
 use hyper::client::Request;
 use hyper::header::common::ContentLength;
 
-use path::{CompiledQuery, CompiledReuse};
+use path::CompiledQuery;
 
 use path::Expectation;
-use path::Expectation::{ Unknown,
-                         SingleNode, SingleTag,
-                         NodeSequence, NameSequence, TagSequence };
+use path::Expectation::{ SingleNode, SingleTag,
+                         NameSequence, TagSequence };
 
 use errors::GraphResult;
 use errors::RequestError::{ InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
-                            DecodingFailed, ResponseParseFailed,
-                            QueryNotFinalized, QueryCompilationFailed,
-                            ExpectationNotSupported, VagueExpectation };
+                            DecodingFailed, ResponseParseFailed, ExpectationNotSupported };
 
 /// Provides access to currently running Cayley database, among with
 /// an ability to run queries there, and to write there your data
@@ -156,6 +153,7 @@ impl Graph {
     }
 
     // extract JSON nodes from response
+    #[allow(unused_variables)]
     fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<Nodes> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
