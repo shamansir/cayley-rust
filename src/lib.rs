@@ -106,7 +106,7 @@ extern crate serialize;
 #[phase(plugin, link)] extern crate log;
 
 pub use graph::{Graph, Nodes};
-pub use graph::APIVersion;
+pub use graph::APIVersion::{V1, DefaultVersion};
 
 pub use errors::GraphResult as Result;
 pub use errors::RequestError as Error;

@@ -3,9 +3,14 @@
 
 #[phase(plugin, link)] extern crate cayley;
 
-use cayley::path::*;
+use cayley::selector::NodeSelector::*;
+use cayley::selector::PredicateSelector::*;
+use cayley::selector::TagSelector::*;
 
-use cayley::selector::*;
+//use cayley::path::{Path, Route, Query, Reuse};
+use cayley::path::{Traversals, Vertex, Morphism};
+use cayley::path::Traversal::*;
+use cayley::path::Final::*;
 
 macro_rules! path_eq(
     ($src:expr, $res:expr) => ( assert_eq!($src.prefix + $src.value, $res.to_string()); );
@@ -160,7 +165,7 @@ fn test_path_tag_as() {
     path_eq!(vertex![ AnyNode -> As(Tag("start")) -> Out(Predicate("status"), AnyTag) ],
              "g.V().As(\"start\").Out(\"status\")");
 
-    path_eq!(vertex![ AnyNode -> Traversal::Tag(Tags(vec!("foo", "bar")))
+    path_eq!(vertex![ AnyNode -> TagWith(Tags(vec!("foo", "bar")))
                               -> Out(Predicate("status"), AnyTag) ],
              "g.V().As(\"foo\",\"bar\").Out(\"status\")");
 

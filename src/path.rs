@@ -137,8 +137,9 @@ use selector::PredicateSelector::Route as FromRoute;
 /// Since there is no overloading or optional parameters in Rust, some traversals
 /// requiring two parameters, were split into three variants to ease the usage:
 /// For example, `.Out([predicate],[tag])` was split into three: `.Out(predicate, tag)`,
-/// `.OutP(predicate)`, `.OutT(tag)`. Same for `.In` and `.Both`. See [Traversal](../path/enum/Traversal.html) for
-/// full list of supported traversals.
+/// `.OutP(predicate)`, `.OutT(tag)`. Same for `.In` and `.Both`. `.Tag()` was renamed
+/// to `TagWith`, to provide a way to call it in a namespace shared with `TagSelector::Tag`.
+/// See [Traversal](../path/enum/Traversal.html) for a full list of supported traversals.
 
 #[macro_export]
 macro_rules! vertex(
@@ -192,7 +193,7 @@ pub enum Traversal<'t> {
     Is(NodeSelector<'t>),
     Has(PredicateSelector<'t>, NodeSelector<'t>),
     // Tagging
-    Tag(TagSelector<'t>),
+    TagWith(TagSelector<'t>),
     As(TagSelector<'t>),
     Back(TagSelector<'t>),
     Save(PredicateSelector<'t>, TagSelector<'t>),
@@ -564,7 +565,7 @@ fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
                                                           },
             Traversal::Has(ref predicates, ref nodes)  => format!(".Has({})", parse_predicates_and_nodes(predicates, nodes)),
             // Tagging =========================================================================================================
-            Traversal::Tag(ref tags) |
+            Traversal::TagWith(ref tags) |
             Traversal::As(ref tags)                    => match tags {
                                                               &AnyTag => ".As()".to_string(),
                                                               &Tag(name) => format!(".As(\"{}\")", name),

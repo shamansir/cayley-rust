@@ -3,12 +3,17 @@
 
 #[phase(plugin, link)] extern crate cayley;
 
-use cayley::graph::{Graph, V1};
-use cayley::graph::Nodes as GraphNodes;
+use cayley::{Graph, V1};
+use cayley::Nodes as GraphNodes;
 
-use cayley::path::*;
+use cayley::selector::NodeSelector::*;
+use cayley::selector::PredicateSelector::*;
+use cayley::selector::TagSelector::*;
 
-use cayley::selector::*;
+//use cayley::path::{Path, Route, Query, Reuse};
+use cayley::path::{Vertex, Morphism};
+use cayley::path::Traversal::*;
+use cayley::path::Final::*;
 
 #[test]
 fn main() {

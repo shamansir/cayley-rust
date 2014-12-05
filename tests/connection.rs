@@ -2,15 +2,14 @@
 
 #[phase(plugin, link)] extern crate cayley;
 
-use cayley::Graph;
-use cayley::APIVersion::V1;
+use cayley::{Graph, V1};
 
 use cayley::graph::Nodes;
 
 use cayley::path::Vertex;
 
 use cayley::path::Final::All;
-use cayley::selector::AnyNode;
+use cayley::selector::NodeSelector::AnyNode;
 
 #[test]
 fn main() {
