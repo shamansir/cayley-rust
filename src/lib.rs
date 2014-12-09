@@ -21,7 +21,7 @@
 //!
 //! Then, bind driver to your host this way:
 //!
-//! ```
+//! ```ignore
 //! use cayley::{Graph, DefaultVersion};
 //! let graph = match Graph::new("localhost", 64210, DefaultVersion) {
 //!    Err(error) => panic!(error),
@@ -39,7 +39,7 @@
 //!
 //! Query pattern looks like this:
 //!
-//! ```
+//! ```ignore
 //! use cayley::{Graph, DefaultVersion};
 //! use cayley::GraphNodes;
 //! use cayley::path::{Vertex, Query}; // Query trait import is required
@@ -59,7 +59,7 @@
 //!
 //! Morphism used this way:
 //!
-//! ```
+//! ```ignore
 //! #![allow(unused_result)]
 //! use cayley::{Graph, DefaultVersion};
 //! use cayley::path::Vertex as V;

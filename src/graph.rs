@@ -84,7 +84,7 @@ impl Graph {
     /// Since only [Vertex](../path/struct.Vertex.html) implements [Query](../path/trait.Query.html) trait
     /// following current spec, your code will look like that:
     ///
-    /// ```
+    /// ```ignore
     /// use cayley::graph::Graph;
     /// use cayley::path::{Vertex, Path, Query};
     /// use cayley::selector::{Predicate, Node};
@@ -104,7 +104,7 @@ impl Graph {
     /// the string concatenation performed with `path::` module members, this
     /// method is for you.
     ///
-    /// ```
+    /// ```ignore
     /// use cayley::Graph;
     /// let graph = Graph::default().unwrap();
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
