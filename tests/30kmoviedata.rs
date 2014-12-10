@@ -7,9 +7,9 @@ extern crate cayley;
 use cayley::{Graph, V1};
 use cayley::Nodes as GraphNodes;
 
-use cayley::selector::NodeSelector::*;
-use cayley::selector::PredicateSelector::*;
-use cayley::selector::TagSelector::*;
+use cayley::selectors::*;
+//use cayley::selector::PredicateSelector::*;
+//use cayley::selector::TagSelector::*;
 
 use cayley::path::{Vertex, Morphism};
 use cayley::path::Traversal::*;

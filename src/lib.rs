@@ -110,7 +110,14 @@ pub use graph::APIVersion::{V1, DefaultVersion};
 pub use errors::GraphResult as Result;
 pub use errors::RequestError as Error;
 
+mod selector;
+
 pub mod errors;
-pub mod selector;
 pub mod path;
 pub mod graph;
+
+pub mod selectors {
+    pub use selector::NodeSelector::*;
+    pub use selector::PredicateSelector::*;
+    pub use selector::TagSelector::*;
+}

@@ -10,9 +10,7 @@ use cayley::path::Vertex;
 use cayley::path::Traversal::*;
 use cayley::path::Final::*;
 
-use cayley::selector::NodeSelector::*;
-use cayley::selector::PredicateSelector::*;
-use cayley::selector::TagSelector::*;
+use cayley::selectors::*;
 
 #[test]
 fn main() {

@@ -4,12 +4,10 @@
 #[phase(plugin, link)]
 extern crate cayley;
 
-use cayley::selector::NodeSelector::*;
-use cayley::selector::PredicateSelector::*;
-use cayley::selector::TagSelector::*;
+use cayley::selectors::*;
 
 //use cayley::path::{Path, Route, Query, Reuse};
-use cayley::path::{Traversals, Vertex, Morphism};
+use cayley::path::{Trail, Vertex, Morphism};
 use cayley::path::Traversal::*;
 use cayley::path::Final::*;
 

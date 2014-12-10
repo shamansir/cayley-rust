@@ -25,9 +25,7 @@
 /// # use cayley::path::Traversal::*;
 /// # use cayley::path::Final::*;
 ///
-/// # use cayley::selector::NodeSelector::*;
-/// # use cayley::selector::TagSelector::*;
-/// # use cayley::selector::PredicateSelector::*;
+/// # use cayley::selectors::*;
 ///
 /// # fn main() {
 /// let graph = Graph::default().unwrap();
@@ -197,15 +195,15 @@ macro_rules! morphism(
 #[macro_export]
 macro_rules! path(
     [ $e1:expr $(-> $e2:expr)* ] => (
-        match Traversals::compile_path(box [$e1, $($e2,)*]) {
-            Some(m) => m, None => panic!("Traversals path failed to compile!")
+        match Trail::compile_path(box [$e1, $($e2,)*]) {
+            Some(m) => m, None => panic!("Trail path failed to compile!")
         }
     )
 )
 
 /// Represents a traversal part of a path. Used to contruct both Paths and Queries.
 pub enum Traversal<'t> {
-    // Basic Traversals
+    // Basic Trail
     Out(PredicateSelector<'t>, TagSelector<'t>),
     OutP(PredicateSelector<'t>),
     OutT(TagSelector<'t>),
@@ -334,36 +332,36 @@ impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
 
 }
 
-// ================================ Traversals ============================= //
+// ================================ Trail ============================= //
 
 /// A structure to hold [Path](../path/trait.Path.html) data before its compilation to
 /// [CompiledPath](../path/struct.CompiledPath)
-pub struct Traversals<'ps>(pub Box<[Traversal<'ps>]>);
+pub struct Trail<'ps>(pub Box<[Traversal<'ps>]>);
 
-impl<'t> Traversals<'t> {
+impl<'t> Trail<'t> {
 
     pub fn compile_path<'a>(traversals: Box<[Traversal<'a>]>) -> Option<CompiledPath> {
-        Traversals(traversals).compile_path()
+        Trail(traversals).compile_path()
     }
 
 }
 
-impl<'ts> ToString for Traversals<'ts> {
+impl<'ts> ToString for Trail<'ts> {
 
     fn to_string(&self) -> String {
         match self.compile_path() {
             Some(path) => path.value,
-            None => "<Traversals: Incorrect>".to_string()
+            None => "<Trail: Incorrect>".to_string()
         }
     }
 
 }
 
-impl<'p> Path for Traversals<'p> {
+impl<'p> Path for Trail<'p> {
 
     fn compile_path(&self) -> Option<CompiledPath> {
         match *self {
-            Traversals(ref traversals) =>
+            Trail(ref traversals) =>
                 Some(CompiledPath {
                     prefix: parse_prefix(traversals),
                     value: parse_traversals(traversals)
@@ -573,7 +571,7 @@ fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
     for traversal in traversals.iter() {
         result.push_str(match *traversal {
             /* FIXME: Traversal:: shouldn't be required */
-            // Basic Traversals ================================================================================================
+            // Basic Trail ================================================================================================
             Traversal::Out(ref predicates, ref tags)   => format!(".Out({})",  parse_predicates_and_tags(predicates, tags)),
             Traversal::OutP(ref predicates)            => format!(".Out({})",  parse_predicates_and_tags(predicates, &AnyTag)),
             Traversal::OutT(ref tags)                  => format!(".Out({})",  parse_predicates_and_tags(&AnyPredicate, tags)),

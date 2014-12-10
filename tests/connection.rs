@@ -10,7 +10,7 @@ use cayley::graph::Nodes;
 use cayley::path::Vertex;
 
 use cayley::path::Final::All;
-use cayley::selector::NodeSelector::AnyNode;
+use cayley::selectors::AnyNode;
 
 #[test]
 fn main() {
