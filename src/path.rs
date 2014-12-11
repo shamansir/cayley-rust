@@ -45,17 +45,18 @@
 /// # #[phase(plugin, link)]
 /// # extern crate cayley;
 ///
-/// # use cayley::{Graph, Nodes};
+/// # use cayley::{Graph, DefaultVersion};
+/// # use cayley::Nodes as GraphNodes;
 ///
 /// # use cayley::path::Vertex;
 /// # use cayley::path::Final::*;
 ///
-/// # use cayley::selector::NodeSelector::*;
+/// # use cayley::selectors::*;
 ///
 /// # fn main() {
 /// let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
 /// match graph.find(vertex![ AnyNode => All ]) {
-///    Ok(Nodes(nodes)) => assert!(nodes.len() > 0),
+///    Ok(GraphNodes(nodes)) => assert!(nodes.len() > 0),
 ///    Err(error) => panic!(error.to_string())
 /// };
 /// # }
