@@ -90,12 +90,29 @@
 /// Vertices may be logically-combined with other routes, but, following to the spec,
 /// included route _should not have Final_ at its end:
 ///
-/// ```ignore
+/// ```rust
+/// # #![feature(globs)]
+/// # #![feature(phase, macro_rules)]
+///
+/// # #[phase(plugin, link)]
+/// # extern crate cayley;
+///
+/// # use cayley::Graph;
+///
+/// # use cayley::path::Vertex;
+/// # use cayley::path::Traversal::*;
+/// # use cayley::path::Final::*;
+///
+/// # use cayley::selectors::*;
+///
+/// # fn main() {
+/// # let graph = Graph::default().unwrap();
 /// let v_1 = vertex![ AnyNode -> Out(Predicate("follows"), AnyTag)
 ///                            -> In(Predicate("follows"), AnyTag) ];
 /// let v_2 = vertex![ Node("bar") -> Has(Predicate("status"), Node("cool_person"))
 ///                                -> And(&v_1) ];
 /// graph.find(vertex![ Node("foo") -> Union(&v_2) => All ]).unwrap();
+/// # }
 /// ```
 ///
 /// This query will be compiled to:
