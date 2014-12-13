@@ -127,11 +127,28 @@
 /// In comparison with Vertex-routes, Morphism has no starting node,
 /// it is just a named traversal sequence.
 ///
-/// ```ignore
+/// ```rust
+/// # #![feature(globs)]
+/// # #![feature(phase, macro_rules)]
+///
+/// # #[phase(plugin, link)]
+/// # extern crate cayley;
+///
+/// # use cayley::Graph;
+///
+/// # use cayley::path::{Vertex, Morphism};
+/// # use cayley::path::Traversal::*;
+/// # use cayley::path::Final::*;
+///
+/// # use cayley::selectors::*;
+///
+/// # fn main() {
+/// # let graph = Graph::default().unwrap();
 /// let cool_and_follows = morphism![ "c_and_f" -> Has(Predicate("status"), Node("cool_person"))
 ///                                             -> OutP(Predicate("follows")) ];
 /// graph.find(vertex![ Node("foo") -> Follow(&cool_and_follows) => All ]).unwrap();
 /// graph.find(vertex![ AnyNode -> FollowR(&cool_and_follows) => GetLimit(10) ]).unwrap();
+/// # }
 /// ```
 ///
 /// These queries will be compiled to:
