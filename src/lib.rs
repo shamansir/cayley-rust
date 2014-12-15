@@ -111,13 +111,19 @@ pub use errors::GraphResult as Result;
 pub use errors::RequestError as Error;
 
 mod selector;
+mod path;
 
 pub mod errors;
 pub mod path;
-pub mod graph;
 
 pub mod selectors {
     pub use selector::NodeSelector::*;
     pub use selector::PredicateSelector::*;
     pub use selector::TagSelector::*;
+}
+
+pub mod paths {
+    pub use path::{Trail, Vertex, Morphism};
+    pub use path::Traversal::*;
+    pub use path::Final::*;
 }
