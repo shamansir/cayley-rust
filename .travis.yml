@@ -1,14 +1,18 @@
 language: rust
+
 os:
   - linux
   - osx
+
 env:
   global:
     - LD_LIBRARY_PATH: /usr/local/lib
     - secure: fsf5KepniX9X9/RCpMLnNz9zlxtEl8AoA0XSbJxntVsBt5pWDz/Tr8tLkpCeeiktBcjuRsCMcShE1qtIB8mpulx5IWTKUJX9ITXwZ2rb8zYbY0/BaYwD2vbPm1IRgXchKmAiWdbqXYNBlqbSUkEoWQYJ6ex3aptfg+mGwVA5xR8=
+
 before_install:
   - wget https://github.com/google/cayley/releases/download/v0.4.0/cayley_0.4.0_linux_amd64.tar.gz
   - tar -xvzf cayley_0.4.0_linux_amd64.tar.gz
+
 before_script:
   - cd ./cayley_0.4.0_linux_amd64/
   - ./cayley http --dbpath=./30kmoviedata.nq.gz &
@@ -17,11 +21,22 @@ before_script:
   - rustc -v
   - cargo -V
   - rm -rf ./doc
+
 script:
   - cargo build -v
   - cargo test -v
   - cargo doc
-after_script:
+
+after_success:
   - ln -sf ./target/doc ./doc
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
   - ls ./doc
+
+# after_success: |
+#     [ $TRAVIS_BRANCH = master ] &&
+#     [ $TRAVIS_PULL_REQUEST = false ] &&
+#     cargo doc &&
+#     echo '<meta http-equiv=refresh content=0;url=hyper/index.html>' > target/doc/index.html &&
+#     sudo pip install ghp-import &&
+#     ghp-import -n target/doc &&
+#     git push -fq https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages

@@ -1,503 +1,406 @@
-use selector::{NodeSelector, TagSelector, PredicateSelector};
+#![macro_escape]
 
-use selector::{AnyNode, Node, Nodes};
-use selector::{AnyTag, Tag, Tags};
-use selector::{AnyPredicate, Predicate, Predicates};
-use selector::Query as FromQuery;
-
-/// An interface to a [Path](../path/trait.Path.html) with the ability to be executed as a [Query](../path/trait.Query.html) to a database.
-/// The main entry point to ask for [GraphNodes](../graph/struct.GraphNodes.html) from database using [Graph](../graph/struct.Graph.html) as an interceptor.
+/// This module is the main entry point to ask for [Nodes](../graph/struct.Nodes.html) from
+/// database using [Graph](../graph/struct.Graph.html) as an interceptor. It defines everything
+/// what may appear required to construct a query, part of a query, or to re-use some prepared one to find any data
+/// in a [Graph](../graph/struct.Graph.html).
 ///
-/// To query for anything you might describe with Path from database, use this pattern:
-/// `graph.find(Vertex::start(<NodeSelector>).<PathMethod>().<PathMethod>(<method_arg>).....<QueryMethod>())`.
+/// This way, module covers the [Cayley version of Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md),
+/// adapted to Rust language.
 ///
-/// Example:
+/// ## `vertex!`
 ///
-/// ```
-/// use cayley::graph::Graph;
-/// use cayley::path::{Vertex, Path, Query}; // Query and Path trait imports are required
-/// use cayley::selector::{Tags, AnyNode, Predicate};
+/// To contruct a one-liner query, use `vertex!` macro:
 ///
+/// ```rust
+/// # #![feature(globs)]
+/// # #![feature(phase, macro_rules)]
+///
+/// # #[phase(plugin, link)]
+/// # extern crate cayley;
+///
+/// # use cayley::Graph;
+///
+/// # use cayley::path::Vertex;
+/// # use cayley::path::Traversal::*;
+/// # use cayley::path::Final::*;
+///
+/// # use cayley::selectors::*;
+///
+/// # fn main() {
 /// let graph = Graph::default().unwrap();
-/// graph.find(Vertex::start(AnyNode)
-///                   .As(Tags(vec!("tag-a", "tag-b")))
-///                   .OutP(Predicate("follows"))
-///                   .All()).unwrap();
+/// graph.find(vertex![ Node("foo")
+///                     -> As(Tags(vec!("tag-a", "tag-b")))
+///                     -> OutP(Predicate("follows"))
+///                     => All ]).unwrap();
+/// # }
 /// ```
 ///
 /// Another example:
 ///
-/// ```
-/// use cayley::{Graph, DefaultVersion};
-/// use cayley::GraphNodes;
-/// use cayley::path::{Vertex, Query}; // Query trait import is required
-/// use cayley::selector::AnyNode;
+/// ```rust
+/// # #![feature(globs)]
+/// # #![feature(phase, macro_rules)]
 ///
+/// # #[phase(plugin, link)]
+/// # extern crate cayley;
+///
+/// # use cayley::{Graph, DefaultVersion};
+/// # use cayley::Nodes as GraphNodes;
+///
+/// # use cayley::path::Vertex;
+/// # use cayley::path::Final::*;
+///
+/// # use cayley::selectors::*;
+///
+/// # fn main() {
 /// let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
-/// match graph.find(Vertex::start(AnyNode).All()) {
+/// match graph.find(vertex![ AnyNode => All ]) {
 ///    Ok(GraphNodes(nodes)) => assert!(nodes.len() > 0),
 ///    Err(error) => panic!(error.to_string())
 /// };
+/// # }
 /// ```
 ///
-/// Sometimes it is wanted to separate a vertex instance from a query construction.
-/// Use `prepare` static method for this purpose, but then ensure to start a query with `From` call:
+/// Notice that Finals like `All` or `GetLimit(..)` require `=>` symbol to be
+/// specified before, while traversals use `->` symbol for chaining. And actually
+/// these Finals are the only ones supported in Cayley-HTTP right now.
 ///
+/// The query above looks like this in Cayley/Gremlin syntax: `g.V().As(["tag-a","tag-b"]).Out("follows").All()`
+///
+/// In general, `vertex!` macro syntax is:
+///
+/// ```text
+/// vertex![ <AnyNode | Node(name) | Nodes([names])>
+///          (-> Traversal)*
+///          (=> <All | GetLimit(n)>)? ]
 /// ```
-/// #![allow(unused_result)]
-/// use cayley::Graph;
-/// use cayley::path::{Vertex, Path, Query};
-/// use cayley::selector::{Node, Predicate};
 ///
-/// let graph = Graph::default().unwrap();
-/// let mut v = Vertex::prepare();
-/// // NB: Do not finalize the queries you plan to reuse!
-/// v.From(Node("C")).OutP(Predicate("follows"));
-/// let mut other_v = Vertex::prepare();
-/// other_v.From(Node("D")).Union(&v).All();
-/// graph.find(&other_v).unwrap();
+/// JFYI, without a macro usage, this query, expanded in pure Rust code, looks like:
+///
+/// ```ignore
+/// match Vertex::compile_query(AnyNode,
+///                             box [ As(Tags(vec!("tag-a", "tag-b"))),
+///                                   OutP(Predicate("follows")) ],
+///                             All) => {
+///     Some(v) => v, None => panic!("Vertex query failed to compile!")
+/// }
 /// ```
-pub struct Vertex {
-    finalized: bool,
-    path: Vec<String>,
-    includes: Option<Vec<String>>
-}
-
-/// An interface to a [Path](../path/trait.Path.html) with the ability to be saved and reused to
-/// construct other [Paths](../path/trait.Path.html), but not to query anything.
 ///
-/// Use it to prepare a Path and re-use it several times
+/// Vertices may be logically-combined with other routes, but, following to the spec,
+/// included route _should not have Final_ at its end:
 ///
+/// ```rust
+/// # #![feature(globs)]
+/// # #![feature(phase, macro_rules)]
+///
+/// # #[phase(plugin, link)]
+/// # extern crate cayley;
+///
+/// # use cayley::Graph;
+///
+/// # use cayley::path::Vertex;
+/// # use cayley::path::Traversal::*;
+/// # use cayley::path::Final::*;
+///
+/// # use cayley::selectors::*;
+///
+/// # fn main() {
+/// # let graph = Graph::default().unwrap();
+/// let v_1 = vertex![ AnyNode -> Out(Predicate("follows"), AnyTag)
+///                            -> In(Predicate("follows"), AnyTag) ];
+/// let v_2 = vertex![ Node("bar") -> Has(Predicate("status"), Node("cool_person"))
+///                                -> And(&v_1) ];
+/// graph.find(vertex![ Node("foo") -> Union(&v_2) => All ]).unwrap();
+/// # }
 /// ```
-/// #![allow(unused_result)]
-/// use cayley::{Graph, DefaultVersion};
-/// use cayley::path::Vertex as V;
-/// use cayley::path::Morphism as M;
-/// use cayley::path::{Path, Query}; // both traits imports are required
-/// use cayley::selector::{Predicate, Node};
 ///
-/// let graph = Graph::new("localhost", 64210, DefaultVersion).unwrap();
-/// let mut follows_m = M::start("foo");
-///         follows_m.OutP(Predicate("follows"));
-/// graph.find(V::start(Node("C"))
-///              .Follow(&follows_m)
-///              .Has(Predicate("status"), Node("cool_person"))
-///              .All()).unwrap();
+/// This query will be compiled to:
+///
+/// `g.V("foo").Or(g.V("bar").Has("status","cool_person").And(g.V().Out("follows").In("follows"))).All()`
+///
+/// ## `morphism!`
+///
+/// Morphism helps to store named paths and reuse them later in the same HTTP request
+/// (under the hood, next HTTP request will actually "forget" them,
+/// but Cayley driver ensures to include used Morhisms in every query/request automatically).
+/// In comparison with Vertex-routes, Morphism has no starting node,
+/// it is just a named traversal sequence.
+///
+/// ```rust
+/// # #![feature(globs)]
+/// # #![feature(phase, macro_rules)]
+///
+/// # #[phase(plugin, link)]
+/// # extern crate cayley;
+///
+/// # use cayley::Graph;
+///
+/// # use cayley::path::{Vertex, Morphism};
+/// # use cayley::path::Traversal::*;
+/// # use cayley::path::Final::*;
+///
+/// # use cayley::selectors::*;
+///
+/// # fn main() {
+/// # let graph = Graph::default().unwrap();
+/// let cool_and_follows = morphism![ "c_and_f" -> Has(Predicate("status"), Node("cool_person"))
+///                                             -> OutP(Predicate("follows")) ];
+/// graph.find(vertex![ Node("foo") -> Follow(&cool_and_follows) => All ]).unwrap();
+/// graph.find(vertex![ AnyNode -> FollowR(&cool_and_follows) => GetLimit(10) ]).unwrap();
+/// # }
 /// ```
-pub struct Morphism {
-    saved: bool,
-    name: String,
-    path: Vec<String>,
-    includes: Option<Vec<String>>
+///
+/// These queries will be compiled to:
+///
+/// `var c_and_f=g.M().Has("status","cool_persone").Out("Follows");g.V("foo").Follow(c_and_f).All()`
+///
+/// and
+///
+/// `var c_and_f=g.M().Has("status","cool_persone").Out("Follows");g.V().FollowR(c_and_f).GetLimit(10)`
+///
+/// `morphism!` macro sytax:
+///
+/// ```text
+/// morphism![ "name" (-> Traversal)* ]
+/// ```
+///
+/// ## `path!`
+///
+/// `path!` macro makes it possible to join two paths (but with no Final):
+///
+/// ```ignore
+/// let cFollows = vertex![ Node("C") -> Out(Predicate("follows"), AnyTag) ];
+/// let dFollows = vertex![ Node("D") -> Out(Predicate("follows"), AnyTag) ];
+///
+/// graph.find(vertex![ AnyNode -> Or(&(cFollows + path![ And(&dFollows) ])) => All ]).unwrap();
+/// graph.find(vertex![ AnyNode -> And(&(cFollows + path![ Or(&dFollows) ])) => All ]).unwrap();
+/// ```
+///
+/// `path!` macro syntax:
+///
+/// ```text
+/// path![ (Traversal ->)* Traversal ]
+/// ```
+///
+/// ## Notes
+///
+/// Since there is no overloading or optional parameters in Rust, some traversals
+/// requiring two parameters, were split into three variants to ease the usage:
+/// For example, `.Out([predicate],[tag])` was split into three: `.Out(predicate, tag)`,
+/// `.OutP(predicate)`, `.OutT(tag)`. Same for `.In` and `.Both`. `.Tag()` was renamed
+/// to `TagWith`, to provide a way to call it in a namespace shared with `TagSelector::Tag`.
+/// See [Traversal](../path/enum/Traversal.html) for a full list of supported traversals.
+
+use selector::{NodeSelector, TagSelector, PredicateSelector};
+
+use selector::NodeSelector::{AnyNode, Node, Nodes};
+use selector::TagSelector::{AnyTag, Tag, Tags};
+use selector::PredicateSelector::{AnyPredicate, Predicate, Predicates};
+use selector::PredicateSelector::Route as FromRoute;
+
+#[macro_export]
+macro_rules! vertex(
+    [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
+        match Vertex::compile_query($e1, box [$($e2,)*], $e3) {
+              Some(v) => v, None => panic!("Vertex query failed to compile!")
+        }
+    );
+    [ $e1:expr $(-> $e2:expr)+ ] => (
+        match Vertex::compile_route($e1, box [$($e2,)*]) {
+            Some(v) => v, None => panic!("Vertex query failed to compile!")
+        }
+    );
+    [ $e1:expr ] => (
+        match Vertex::compile_route($e1, box []) {
+            Some(v) => v, None => panic!("Vertex query failed to compile!")
+        }
+    )
+)
+
+#[macro_export]
+macro_rules! morphism(
+    [ $e1:expr $(-> $e2:expr)+ ] => (
+        match Morphism::compile_reuse($e1, box [$($e2,)*]) {
+            Some(m) => m, None => panic!("Morphism path failed to compile!")
+        }
+    )
+)
+
+#[macro_export]
+macro_rules! path(
+    [ $e1:expr $(-> $e2:expr)* ] => (
+        match Trail::compile_path(box [$e1, $($e2,)*]) {
+            Some(m) => m, None => panic!("Trail path failed to compile!")
+        }
+    )
+)
+
+/// Represents a traversal part of a path. Used to contruct both Paths and Queries.
+pub enum Traversal<'t> {
+    // Basic Trail
+    Out(PredicateSelector<'t>, TagSelector<'t>),
+    OutP(PredicateSelector<'t>),
+    OutT(TagSelector<'t>),
+    In(PredicateSelector<'t>, TagSelector<'t>),
+    InP(PredicateSelector<'t>),
+    InT(TagSelector<'t>),
+    Both(PredicateSelector<'t>, TagSelector<'t>),
+    BothP(PredicateSelector<'t>),
+    BothT(TagSelector<'t>),
+    Is(NodeSelector<'t>),
+    Has(PredicateSelector<'t>, NodeSelector<'t>),
+    // Tagging
+    TagWith(TagSelector<'t>),
+    As(TagSelector<'t>),
+    Back(TagSelector<'t>),
+    Save(PredicateSelector<'t>, TagSelector<'t>),
+    // Joining
+    Intersect(&'t CompiledRoute),
+    And(&'t CompiledRoute),
+    Union(&'t CompiledRoute),
+    Or(&'t CompiledRoute),
+    // Morphisms
+    Follow(&'t CompiledReuse),
+    FollowR(&'t CompiledReuse)
 }
 
-// ================================ Compile ================================= //
+/// Represents a final part of a path. Used to contruct Queries.
+pub enum Final {
+    Undefined,
+    All,
+    GetLimit(int),
+    ToArray,
+    ToValue,
+    TagArray,
+    TagValue
+    /* ForEach(|int|:'q -> int) */
+    /* Map(|int|:'q -> int) */
+}
 
-/// Marks any Path which is able to be compiled to a string Gremlin-compatible query
-pub trait Compile: Clone/*+ToString*/ {
+/// This enum defines which type of a data this Query expects from Graph. Currently,
+/// Only `NodeSequence` is supported by Cayley for HTTP requests
+pub enum Expectation {
+    Unknown,
+    SingleNode,
+    NodeSequence,
+    NameSequence,
+    TagSequence,
+    SingleTag
+}
 
-    fn add_str(&mut self, what: &str) -> &mut Self;
+// ================================ Path, Query & Reuse ===================== //
 
-    fn add_string(&mut self, what: String) -> &mut Self;
+/// Represents a navigational part of a path, i.e. `.Out("foo").Intersect(bar).Has("buz")`
+trait Path: ToString {
 
-    fn compile(&self) -> Option<String>;
-
-    /* fn to_string(&self) -> String {
-        match self.compile() {
-            Some(compiled) => compiled,
-            None => "[-]".to_string()
-        }
-    }
-
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), FormatError> {
-        write!(fmt, "{}", self.to_string())
-    } */
+    fn compile_path(&self) -> Option<CompiledPath>;
 
 }
 
-// ================================ Path ==================================== //
+/// Represents a non-finalized path together with initial pivot, i.e.
+/// `g.V().Out("foo").Intersect(bar).Has("buz")` or
+/// `g.M().Out("foo").Intersect(bar).Has("buz")`
+trait Route: Path {
 
-/// The trait which covers all the methods from [Gremlin API](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md)
-/// Path specification, but in a Rust way.
-///
-/// Some methods requiring two parameters like predicate and tags have a siblings to help you in the
-/// cases when you need only one, like `Out(<Predicate>, <Tag>)` has a sibling `OutP(<Predicate>)`
-/// (alias for `Out(<Predicate>, AnyTag)` and a sibling `OutT(<Tag>)` (alias for `Out(AnyPredicate, <Tag>)`.
-///
-/// The rules of conversion are like that:
-///
-/// For `.Out`, `.In`, `.Both`, `.Save` methods, using `.Out` as an example:
-///
-/// * `.Out(AnyPredicate, AnyTag)` is equivalent to Gremlin `.Out()`;
-/// * `.Out(Predicate("foo"), AnyTag)` is equivalent to Gremlin `.Out("foo")`;
-/// * `.Out(Predicate("foo"), Tag("bar"))` is equivalent to Gremlin `.Out("foo", "bar")`;
-/// * `.Out(Predicates(vec!("foo", "bar")), AnyTag)` is equivalent to Gremlin `.Out(["foo", "bar"])`;
-/// * `.Out(AnyPredicate, Tag("foo"))` is equivalent to Gremlin `.Out(null, "foo")`;
-/// * `.Out(AnyPredicate, Tags(vec!("foo", "bar")))` is equivalent to Gremlin `.Out(null, ["foo", "bar"])`;
-/// * `.Out(Predicates(vec!("foo", "bar")), Tags(vec!("bar", "foo")))` is equivalent to Gremlin `.Out(["foo", "bar"], ["bar", "foo"])`;
-///
-/// For `.OutP`, `.InP`, `.BothP` methods, using `.OutP` as an example:
-///
-/// * `.OutP(AnyPredicate)` is equivalent to Gremlin `.Out()`;
-/// * `.OutP(Predicate("foo"))` is equivalent to Gremlin `.Out("foo")`;
-/// * `.OutP(Predicates(vec!("foo", "bar")))` is equivalent to Gremlin `.Out(["foo", "bar"])`;
-///
-/// For `.OutT`, `.InT`, `.BothT` methods, using `.OutT` as an example:
-///
-/// * `.OutT(AnyTag)` is equivalent to Gremlin `.Out()`;
-/// * `.OutT(Tag("foo"))` is equivalent to Gremlin `.Out(null, "foo")`;
-/// * `.OutT(Tags(vec!("foo", "bar")))` is equivalent to Gremlin `.Out(null, ["foo", "bar"])`;
-///
-/// For `.Tag`, `.As`, `.Back` methods, using `.As` as an example:
-///
-/// * `.As(AnyTag)` is equivalent to Gremlin `.As()` (which has no sense, but allowed);
-/// * `.As(Tag("foo"))` is equivalent to Gremlin `.As("foo")`;
-/// * `.As(Tags(vec!("foo", "bar")))` is equivalent to Gremlin `.As("foo", "bar")`;
-///
-/// For `.Is` method:
-///
-/// * `.Is(AnyNode)` is equivalent to Gremlin `.Is()` (which has no sense, but allowed);
-/// * `.Is(Node("foo"))` is equivalent to Gremlin `.Is("foo")`;
-/// * `.Is(Nodes(vec!("foo", "bar")))` is equivalent to Gremlin `.Is("foo", "bar")`;
-///
-/// For `.Intersect`, `.And`, `.Union`, `.Or` methods, using `.Intersect` as example:
-///
-/// * `let some_v = Vertex(AnyNode).OutT(Tag("follows")).All();`
-///   `graph.find(Vertex::start(Node("C")).Intersect(&some_v).All());`
-///    is equivalent to Gremlin `g.V("C").Intersect(g.V.Out("follows").All()).All();`;
-///
-/// For `Follow` and `FollowR` methods:
-///
-/// * `let m = Morphism::start("foo")...;`
-///   `graph.find(Vertex::start(AnyNode).Follow(&m).All());` is equivalent to Gremlin
-///   `var foo = g.M()...; g.V().Follow(foo).All();`;
-///
-#[allow(non_snake_case)]
-pub trait Path: Compile {
+    fn compile_route(&self) -> Option<CompiledRoute>;
 
-    // ---------------------------------- Out ----------------------------------
+}
 
-    /// `.Out` Path method. Follow forwards the quads with given predicates.
-    fn Out(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
-        self.add_string(format!("Out({:s})", predicates_and_tags(predicates, tags)))
-    }
+/// Represents a query, i.e. `g.V().Out("foo").Intersect(bar).Has("buz").GetLimit(10)`
+trait Query: Route {
 
-    // ---------------------------------- OutP ---------------------------------
+    fn compile_query(&self) -> Option<CompiledQuery>;
 
-    /// `OutP`, an alias for `Out(<Predicate>, AnyTag)`
-    fn OutP(&mut self, predicates: PredicateSelector) -> &mut Self {
-        self.Out(predicates, AnyTag)
-    }
+}
 
-    // ---------------------------------- OutT ---------------------------------
+/// Represents a named path, i.e. `out_int_has = g.M().Out("foo").Intersect(bar).Has("buz")`
+trait Reuse: Route {
 
-    /// `OutT`, an alias for `Out(AnyPredicate, <Tag>)`
-    fn OutT(&mut self, tags: TagSelector) -> &mut Self {
-        self.Out(AnyPredicate, tags)
-    }
+    fn get_name(&self) -> &str;
 
-    // ---------------------------------- In -----------------------------------
+    fn compile_reuse(&self) -> Option<CompiledReuse>;
 
-    /// `.In` Path method. Follow backwards the quads with given predicates.
-    fn In(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
-        self.add_string(format!("In({:s})", predicates_and_tags(predicates, tags)))
-    }
+}
 
-    // ---------------------------------- InP ----------------------------------
+/// Stores a navigational part of a path, i.e. `.Out("foo").Intersect(bar).Has("buz")`
+pub struct CompiledPath {
+    pub prefix: String,
+    pub value: String
+}
 
-    /// `InP`, an alias for `In(<Predicate>, AnyTag)`
-    fn InP(&mut self, predicates: PredicateSelector) -> &mut Self {
-        self.In(predicates, AnyTag)
-    }
+/// Stores a non-finalized path together with initial pivot, i.e.
+/// `g.V().Out("foo").Intersect(bar).Has("buz")` or
+/// `g.M().Out("foo").Intersect(bar).Has("buz")`
+pub struct CompiledRoute {
+    pub prefix: String,
+    pub value: String
+}
 
-    // ---------------------------------- InT ----------------------------------
+/// Stores a query, i.e. `g.V().Out("foo").Intersect(bar).Has("buz").GetLimit(10)`
+pub struct CompiledQuery {
+    pub prefix: String,
+    pub value: String,
+    pub expectation: Expectation
+}
 
-    /// `InT`, an alias for `In(AnyPredicate, <Tag>)`
-    fn InT(&mut self, tags: TagSelector) -> &mut Self {
-        self.In(AnyPredicate, tags)
-    }
+/// Stores a named path, i.e. `out_int_has = g.M().Out("foo").Intersect(bar).Has("buz")`
+pub struct CompiledReuse {
+    pub prefix: String,
+    pub name: String,
+    pub value: String
+}
 
-    // ---------------------------------- Both ---------------------------------
+impl Add<CompiledPath, CompiledPath> for CompiledPath {
 
-    /// `.Both` Path method.
-    fn Both(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
-        self.add_string(format!("Both({:s})", predicates_and_tags(predicates, tags)))
-    }
-
-    // ---------------------------------- BothP --------------------------------
-
-    /// `BothP`, an alias for `Both(<Predicate>, AnyTag)`
-    fn BothP(&mut self, predicates: PredicateSelector) -> &mut Self {
-        self.Both(predicates, AnyTag)
-    }
-
-    // ---------------------------------- BothT --------------------------------
-
-    /// `BothT`, an alias for `Both(AnyPredicate, <Tag>)`
-    fn BothT(&mut self, tags: TagSelector) -> &mut Self {
-        self.Both(AnyPredicate, tags)
-    }
-
-    // ---------------------------------- Is -----------------------------------
-
-    /// `.Is` Path method. Filter all paths which are on the given node(-s).
-    fn Is(&mut self, nodes: NodeSelector) -> &mut Self {
-        self.add_string(match nodes {
-            AnyNode/*| Node("") */ => "Is()".to_string(),
-            Node(name) => format!("Is(\"{:s}\")", name),
-            Nodes(names) => format!("Is(\"{:s}\")", names.connect("\",\""))
-        })
-    }
-
-    // ---------------------------------- Has ----------------------------------
-
-    /// `.Has` Path method. Filter all paths which are on the subject, but do not follow the path.
-    fn Has(&mut self, predicates: PredicateSelector, nodes: NodeSelector) -> &mut Self {
-        self.add_string(format!("Has({:s})", predicates_and_nodes(predicates, nodes)))
-    }
-
-    // ---------------------------------- Tag ----------------------------------
-
-    /// `.Tag`, an alias for `.As`
-    fn Tag(&mut self, tags: TagSelector) -> &mut Self { self.As(tags) }
-
-    // ---------------------------------- As -----------------------------------
-
-    /// `.As` Path method. Mark items with a tag.
-    fn As(&mut self, tags: TagSelector) -> &mut Self {
-        self.add_string(match tags {
-            AnyTag/*| Node("") */ => "As()".to_string(),
-            Tag(name) => format!("As(\"{:s}\")", name),
-            Tags(names) => format!("As(\"{:s}\")", names.connect("\",\""))
-        })
-    }
-
-    // ---------------------------------- Back ---------------------------------
-
-    /// `.Back` Path method. Follow backwards the tagged quads.
-    fn Back(&mut self, tags: TagSelector) -> &mut Self {
-        self.add_string(match tags {
-            AnyTag/*| Node("") */ => "Back()".to_string(),
-            Tag(name) => format!("Back(\"{:s}\")", name),
-            Tags(names) => format!("Back(\"{:s}\")", names.connect("\",\""))
-        })
-    }
-
-    // ---------------------------------- Save ---------------------------------
-
-    /// `.Save` Path method. Save all quads with predicate into tag, without traversal.
-    fn Save(&mut self, predicates: PredicateSelector, tags: TagSelector) -> &mut Self {
-        self.add_string(format!("Save({:s})", predicates_and_tags(predicates, tags)))
-    }
-
-    // ---------------------------------- Intersect ----------------------------
-
-    /// `.Intersect`, an alias for `.And`
-    fn Intersect(&mut self, query: &Query) -> &mut Self { self.And(query) }
-
-    // ---------------------------------- And ----------------------------------
-
-    /// `.And` Path method. Intersect the results from one query with another.
-    fn And(&mut self, query: &Query) -> &mut Self {
-        /* FIXME: implicit return looking not so good here? */
-        match query.compile() {
-            Some(compiled) => { return self.add_string(format!("And({:s})", compiled)); },
-            None => { } /* FIXME: save error */
-        }
-        self
-    }
-
-    // ---------------------------------- Union --------------------------------
-
-    /// `.Union`, an alias for `.Or`
-    fn Union(&mut self, query: &Query) -> &mut Self { self.Or(query) }
-
-    // ---------------------------------- Or -----------------------------------
-
-    /// `.Or` Path method. Join the results from one query with another.
-    fn Or(&mut self, query: &Query) -> &mut Self {
-        /* FIXME: implicit return looking not so good here? */
-        match query.compile() {
-            Some(compiled) => { return self.add_string(format!("Or({:s})", compiled)); },
-            None => { } /* FIXME: save error */
-        }
-        self
-    }
-
-    // ---------------------------------- Follow -------------------------------
-
-    /// `.Follow` Path method. Applies the path chain on the `Morphism` object to the current path.
-    fn Follow(&mut self, reusable: &Reuse) -> &mut Self {
-        self.add_string(format!("Follow({:s})", reusable.get_name()))
-    }
-
-    // ---------------------------------- FollowR ------------------------------
-
-    /// `.FollowR` Path method. Applies the path chain on the `Morphism` object to the current path.
-    fn FollowR(&mut self, reusable: &Reuse) -> &mut Self {
-        self.add_string(format!("FollowR({:s})", reusable.get_name()))
+    fn add(&self, _rhs: &CompiledPath) -> CompiledPath {
+        CompiledPath { prefix: _rhs.prefix + self.prefix, value: self.value + _rhs.value }
     }
 
 }
 
-// ================================ Query =================================== //
+impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
 
-#[allow(non_snake_case)]
-pub trait Query: Path {
-
-    fn set_finalized(&mut self);
-
-    fn is_finalized(&self) -> bool;
-
-    // ---------------------------------- All ----------------------------------
-
-    /// `.All` Query method. Equivalent to Gremlin `Query.All()`.
-    /// Returns all the items found within this path.
-    fn All(&mut self) -> &mut Self { self.set_finalized(); self.add_str("All()") }
-
-    // ---------------------------------- GetAll -------------------------------
-
-    /// `.GetLimit` Query method. Equivalent to Gremlin `Query.GetLimit(<number>)`.
-    /// Returns first `<n>` items found within this path.
-    fn GetLimit(&mut self, limit: int) -> &mut Self {
-        self.set_finalized(); self.add_string(format!("GetLimit({:i})", limit))
+    fn add(&self, _rhs: &CompiledPath) -> CompiledRoute {
+        CompiledRoute { prefix: _rhs.prefix + self.prefix, value: self.value + _rhs.value }
     }
-
-    /* TODO: ToArray() */
-    /* TODO: ToValue() */
-    /* TODO: TagArray() */
-    /* TODO: TagValue() */
-    /* TODO: query.ForEach(callback), query.ForEach(limit, callback) */
 
 }
 
-// ================================ Vertex ================================== //
+// ================================ Trail ============================= //
 
-#[allow(non_snake_case)]
-impl Vertex {
+/// A structure to hold [Path](../path/trait.Path.html) data before its compilation to
+/// [CompiledPath](../path/struct.CompiledPath)
+pub struct Trail<'ps>(pub Box<[Traversal<'ps>]>);
 
-    /// Create a Vertex instance and start a query from [NodeSelector](../selector/struct.NodeSelector.html)
-    pub fn start(nodes: NodeSelector) -> Vertex {
-        let mut res = Vertex::prepare();
-        res.From(nodes);
-        res
+impl<'t> Trail<'t> {
+
+    pub fn compile_path<'a>(traversals: Box<[Traversal<'a>]>) -> Option<CompiledPath> {
+        Trail(traversals).compile_path()
     }
 
-    /// Prepare a vertex instance to specify a query later. Ensure to start a query with `.From()` method
-    /// if you use `prepare()`.
-    pub fn prepare() -> Vertex {
-        /* FIXME: calling this with no From call afterwars should fail the construction */
-        Vertex{ path: Vec::with_capacity(10), includes: None, finalized: false }
-    }
+}
 
-    /// A method for postponed query creation, intended to be used after the `prepare()` method
-    /// on the same Vertex instance.
-    pub fn From(&mut self, nodes: NodeSelector) -> &mut Vertex {
-        match self.path.is_empty() {
-            true => (),
-            false => panic!("Vertex.From should be the first method to be called after Vertex::prepare()
-                             or Vertex::start(nodes) should be used instead")
-        }
-        self.add_str("g");
-        self.add_string(match nodes {
-                Nodes(names) => format!("V(\"{:s}\")", names.connect("\",\"")),
-                Node(name) => format!("V(\"{:s}\")", name),
-                AnyNode/*| Node("") */ => "V()".to_string()
-            })
-    }
+impl<'ts> ToString for Trail<'ts> {
 
-    fn add_include(&mut self, include: &Reuse) {
-        match include.save() {
-            Some(saved) =>
-                match self.includes {
-                    Some(ref mut includes) => includes.push(saved),
-                    None => self.includes = Some(vec![saved])
-                },
-            None => { }
+    fn to_string(&self) -> String {
+        match self.compile_path() {
+            Some(path) => path.value,
+            None => "<Trail: Incorrect>".to_string()
         }
     }
 
 }
 
-impl Compile for Vertex {
+impl<'p> Path for Trail<'p> {
 
-    fn add_str(&mut self, str: &str) -> &mut Vertex {
-        self.path.push(str.to_string());
-        self
-    }
-
-    fn add_string(&mut self, str: String) -> &mut Vertex {
-        self.path.push(str);
-        self
-    }
-
-    fn compile(&self) -> Option<String> {
-        Some(
-            match self.includes {
-                None => self.path.connect("."),
-                Some(ref includes) => includes.connect(";") + ";".to_string() + self.path.connect(".")
-            })
-    }
-
-}
-
-impl Path for Vertex {
-
-    fn Follow(&mut self, reusable: &Reuse) -> &mut Vertex {
-        self.add_include(reusable);
-        //Path::Follow(self, reusable)
-        self.add_string(format!("Follow({:s})", reusable.get_name()))
-    }
-
-    fn FollowR(&mut self, reusable: &Reuse) -> &mut Vertex {
-        self.add_include(reusable);
-        //Path::FollowR(self, reusable)
-        self.add_string(format!("FollowR({:s})", reusable.get_name()))
-    }
-
-}
-
-impl Query for Vertex {
-
-    fn set_finalized(&mut self) { self.finalized = true; }
-
-    fn is_finalized(&self) -> bool { self.finalized }
-
-}
-
-impl Clone for Vertex {
-
-    fn clone(&self) -> Vertex {
-        Vertex { finalized: self.finalized,
-                 path: self.path.clone(),
-                 includes: self.includes.clone() }
-    }
-
-}
-
-// ================================ Reuse =================================== //
-
-pub trait Reuse: Compile {
-
-    /// Get a prepared name for this Reusable
-    /*pub*/ fn get_name(&self) -> &str;
-
-    fn set_saved(&mut self);
-
-    /// Was this item saved at least once in _some_ graph during this session.
-    /*pub*/ fn is_saved(&self) -> bool;
-
-    fn save(&self) -> Option<String> {
-        match self.compile() {
-            Some(compiled) => Some(format!("var {:s} = {:s}", self.get_name(), compiled)),
-            None => None
-        }
-    }
-
-    fn save_as(&self, name: &str) -> Option<String> {
-        match self.compile() {
-            Some(compiled) => Some(format!("var {:s} = {:s}", name, compiled)),
-            None => None
+    fn compile_path(&self) -> Option<CompiledPath> {
+        match *self {
+            Trail(ref traversals) =>
+                Some(CompiledPath {
+                    prefix: parse_prefix(traversals),
+                    value: parse_traversals(traversals)
+                })
         }
     }
 
@@ -505,174 +408,313 @@ pub trait Reuse: Compile {
 
 // ================================ Morphism ================================ //
 
-impl Morphism {
+/// A structure to hold [Reuse](../path/trait.Reuse.html) data before its compilation to
+/// [CompiledReuse](../path/struct.CompiledReuse)
+pub struct Morphism<'m>(pub &'m str, pub Box<[Traversal<'m>]>);
 
-    /// Create a Morphism instance with intention to store it in database under the given name
-    pub fn start(name: &str) -> Morphism {
-        let mut res = Morphism { name: name.to_string(),
-                                 path: Vec::with_capacity(10),
-                                 includes: None,
-                                 saved: false };
-        res.add_string("g.M()".to_string());
-        res
+impl<'m> Morphism<'m> {
+
+    pub fn compile_reuse<'a>(name: &'a str, traversals: Box<[Traversal<'a>]>) -> Option<CompiledReuse> {
+        Morphism(name, traversals).compile_reuse()
     }
 
-    fn add_include(&mut self, include: &Reuse) {
-        match include.save() {
-            Some(saved) =>
-                match self.includes {
-                    Some(ref mut includes) => includes.push(saved),
-                    None => self.includes = Some(vec![saved])
-                },
-            None => { }
+}
+
+impl<'ts> ToString for Morphism<'ts> {
+
+    fn to_string(&self) -> String {
+        match self.compile_reuse() {
+            Some(reuse) => {
+                reuse.name.to_string() + ":" + reuse.value
+            },
+            None => "<Morphism: Incorrect>".to_string()
         }
     }
 
 }
 
-impl Compile for Morphism {
+impl<'p> Path for Morphism<'p> {
 
-    fn add_str(&mut self, str: &str) -> &mut Morphism {
-        self.path.push(str.to_string());
-        self
-    }
-
-    fn add_string(&mut self, str: String) -> &mut Morphism {
-        self.path.push(str);
-        self
-    }
-
-    fn compile(&self) -> Option<String> {
-        Some(
-            match self.includes {
-                None => self.path.connect("."),
-                Some(ref includes) => includes.connect(";") + ";".to_string() + self.path.connect(".")
-            })
+    fn compile_path(&self) -> Option<CompiledPath> {
+        match *self {
+            Morphism(_, ref traversals) =>
+                Some(CompiledPath {
+                    prefix: parse_prefix(traversals),
+                    value: parse_traversals(traversals)
+                })
+        }
     }
 
 }
 
-impl Path for Morphism {
+impl<'r> Route for Morphism<'r> {
 
-    fn Follow(&mut self, reusable: &Reuse) -> &mut Morphism {
-        self.add_include(reusable);
-        //Path::Follow(self, reusable)
-        self.add_string(format!("Follow({:s})", reusable.get_name()))
-    }
-
-    fn FollowR(&mut self, reusable: &Reuse) -> &mut Morphism {
-        self.add_include(reusable);
-        //Path::FollowR(reusable)
-        self.add_string(format!("FollowR({:s})", reusable.get_name()))
-    }
-
-}
-
-impl Reuse for Morphism {
-
-    fn get_name(&self) -> &str { self.name.as_slice() }
-
-    fn set_saved(&mut self) { self.saved = true; }
-
-    fn is_saved(&self) -> bool { self.saved }
-
-}
-
-impl Clone for Morphism {
-
-    fn clone(&self) -> Morphism {
-        Morphism { saved: self.saved,
-                   name: self.name.clone(),
-                   path: self.path.clone(),
-                   includes: self.includes.clone() }
+    fn compile_route(&self) -> Option<CompiledRoute> {
+        match *self {
+            Morphism(_, ref traversals) =>
+                Some(CompiledRoute {
+                    prefix: parse_prefix(traversals),
+                    value: "g.M()".to_string() + parse_traversals(traversals)
+                })
+        }
     }
 
 }
 
-// ================================ utils =================================== //
+impl<'r> Reuse for Morphism<'r> {
 
-fn predicates_and_tags(predicates: PredicateSelector, tags: TagSelector) -> String {
+    fn get_name(&self) -> &str {
+        match *self {
+            Morphism(name, _) => name
+        }
+    }
+
+    fn compile_reuse(&self) -> Option<CompiledReuse> {
+        match *self {
+            Morphism(name, ref traversals) =>
+                Some(CompiledReuse {
+                    name: name.to_string(),
+                    prefix: parse_prefix(traversals),
+                    value: "g.M()".to_string() + parse_traversals(traversals)
+                })
+        }
+    }
+
+}
+
+// ================================ Vertex ================================== //
+
+/// A structure to hold [Query](../path/trait.Query.html) data before its compilation to
+/// [CompiledQuery](../path/struct.CompiledQuery) or [CompiledRoute](../path/struct.CompiledRoute)
+pub struct Vertex<'v>(pub NodeSelector<'v>, pub Box<[Traversal<'v>]>, pub Final);
+
+impl<'v> Vertex<'v> {
+
+    pub fn compile_query<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>, _final: Final) -> Option<CompiledQuery> {
+        Vertex(start, traversals, _final).compile_query()
+    }
+
+    pub fn compile_route<'a>(start: NodeSelector<'a>, traversals: Box<[Traversal<'a>]>) -> Option<CompiledRoute> {
+        Vertex(start, traversals, Final::Undefined).compile_route()
+    }
+
+}
+
+impl<'ts> ToString for Vertex<'ts> {
+
+    fn to_string(&self) -> String {
+        match self.compile_query() {
+            Some(query) => query.value,
+            None => "<Vertex: Incorrect>".to_string()
+        }
+
+    }
+
+}
+
+impl<'p> Path for Vertex<'p> {
+
+    fn compile_path(&self) -> Option<CompiledPath> {
+        match *self {
+            Vertex(_, ref traversals, _) =>
+                Some(CompiledPath {
+                    prefix: parse_prefix(traversals),
+                    value: parse_traversals(traversals)
+                })
+        }
+    }
+
+}
+
+impl<'r> Route for Vertex<'r> {
+
+    fn compile_route(&self) -> Option<CompiledRoute> {
+        match *self {
+            Vertex(ref start, ref traversals, _) =>
+                Some(CompiledRoute {
+                    prefix: parse_prefix(traversals),
+                    value: parse_start(start) + parse_traversals(traversals)
+                })
+        }
+    }
+
+}
+
+impl<'q> Query for Vertex<'q> {
+
+    fn compile_query(&self) -> Option<CompiledQuery> {
+        match *self {
+            Vertex(ref start, ref traversals, _final) => {
+                let prefix = parse_prefix(traversals);
+                let mut value = String::new();
+                value.push_str(parse_start(start).as_slice());
+                value.push_str(parse_traversals(traversals).as_slice());
+                match _final {
+                    Final::Undefined => {},
+                    _ => value.push_str(parse_final(_final).as_slice())
+                }
+                Some(CompiledQuery {
+                    prefix: prefix,
+                    value: value,
+                    expectation: match _final {
+                        Final::Undefined    => Expectation::Unknown,
+                        Final::All          => Expectation::NodeSequence,
+                        Final::GetLimit(..) => Expectation::NodeSequence,
+                        Final::ToArray      => Expectation::NameSequence,
+                        Final::ToValue      => Expectation::SingleNode,
+                        Final::TagArray     => Expectation::TagSequence,
+                        Final::TagValue     => Expectation::SingleTag
+                    }
+                })
+            }
+        }
+    }
+
+}
+
+// ================================ parsing ================================= //
+
+fn parse_prefix(traversals: &Box<[Traversal]>) -> String {
+    let mut result = String::new();
+    for traversal in traversals.iter() {
+        match *traversal {
+            Traversal::Follow(reusable) | Traversal::FollowR(reusable) => {
+                result.push_str(reusable.prefix.as_slice());
+                result.push_str(format!("var {name} = {path};",
+                                        name = reusable.name,
+                                        path = reusable.value).as_slice());
+            },
+            Traversal::Intersect(query) | Traversal::And(query) | Traversal::Union(query) | Traversal::Or(query) => {
+                result.push_str(query.prefix.as_slice());
+            },
+            _ => {}
+        }
+    }
+    result
+}
+
+fn parse_start(start: &NodeSelector) -> String {
+    match *start {
+        AnyNode => "g.V()".to_string(),
+        Node(name) => format!("g.V(\"{0}\")", name),
+        Nodes(ref names) => format!("g.V(\"{0}\")", names.connect("\",\""))
+    }
+}
+
+fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
+    let mut result = String::new();
+    for traversal in traversals.iter() {
+        result.push_str(match *traversal {
+            /* FIXME: Traversal:: shouldn't be required */
+            // Basic Trail ================================================================================================
+            Traversal::Out(ref predicates, ref tags)   => format!(".Out({})",  parse_predicates_and_tags(predicates, tags)),
+            Traversal::OutP(ref predicates)            => format!(".Out({})",  parse_predicates_and_tags(predicates, &AnyTag)),
+            Traversal::OutT(ref tags)                  => format!(".Out({})",  parse_predicates_and_tags(&AnyPredicate, tags)),
+            Traversal::In(ref predicates, ref tags)    => format!(".In({})",   parse_predicates_and_tags(predicates, tags)),
+            Traversal::InP(ref predicates)             => format!(".In({})",   parse_predicates_and_tags(predicates, &AnyTag)),
+            Traversal::InT(ref tags)                   => format!(".In({})",   parse_predicates_and_tags(&AnyPredicate, tags)),
+            Traversal::Both(ref predicates, ref tags)  => format!(".Both({})", parse_predicates_and_tags(predicates, tags)),
+            Traversal::BothP(ref predicates)           => format!(".Both({})", parse_predicates_and_tags(predicates, &AnyTag)),
+            Traversal::BothT(ref tags)                 => format!(".Both({})", parse_predicates_and_tags(&AnyPredicate, tags)),
+            Traversal::Is(ref nodes)                   => match nodes {
+                                                              &AnyNode => ".Is()".to_string(),
+                                                              &Node(name) => format!(".Is(\"{}\")", name),
+                                                              &Nodes(ref names) => format!(".Is(\"{}\")", names.connect("\",\""))
+                                                          },
+            Traversal::Has(ref predicates, ref nodes)  => format!(".Has({})", parse_predicates_and_nodes(predicates, nodes)),
+            // Tagging =========================================================================================================
+            Traversal::TagWith(ref tags) |
+            Traversal::As(ref tags)                    => match tags {
+                                                              &AnyTag => ".As()".to_string(),
+                                                              &Tag(name) => format!(".As(\"{}\")", name),
+                                                              &Tags(ref names) => format!(".As(\"{}\")", names.connect("\",\""))
+                                                          },
+            Traversal::Back(ref tags)                  => match tags {
+                                                              &AnyTag => ".Back()".to_string(),
+                                                              &Tag(name) => format!(".Back(\"{}\")", name),
+                                                              &Tags(ref names) => format!(".Back(\"{}\")", names.connect("\",\""))
+                                                          },
+            Traversal::Save(ref predicates, ref tags)  => format!(".Save({})", parse_predicates_and_tags(predicates, tags)),
+            // Joining =========================================================================================================
+            Traversal::Intersect(query) |
+            Traversal::And(query)                      => format!(".And({})", query.value),
+            Traversal::Union(query) |
+            Traversal::Or(query)                       => format!(".Or({})", query.value),
+            // Morphisms =======================================================================================================
+            Traversal::Follow(reusable)                => format!(".Follow({})", reusable.name),
+            Traversal::FollowR(reusable)               => format!(".FollowR({})", reusable.name)
+        }.as_slice());
+    }
+    result
+}
+
+fn parse_final(_final: Final) -> String {
+    match _final {
+        /* FIXME: Final:: shouldn't be required */
+        Final::Undefined => "".to_string(),
+        Final::All => ".All()".to_string(),
+        Final::GetLimit(n) => format!(".GetLimit({})", n),
+        Final::ToArray => ".ToArray()".to_string(),
+        Final::ToValue => ".ToValue()".to_string(),
+        Final::TagArray => ".TagArray()".to_string(),
+        Final::TagValue => ".TagValue()".to_string()
+    }
+}
+
+fn parse_predicates_and_tags(predicates: &PredicateSelector, tags: &TagSelector) -> String {
     match (predicates, tags) {
 
-        (AnyPredicate, AnyTag) => "".to_string(),
-        (AnyPredicate, Tag(tag)) => format!("null,\"{:s}\"", tag),
-        (AnyPredicate, Tags(tags)) => format!("null,[\"{:s}\"]", tags.connect("\",\"")),
+        (&AnyPredicate, &AnyTag) => "".to_string(),
+        (&AnyPredicate, &Tag(tag)) => format!("null,\"{0}\"", tag),
+        (&AnyPredicate, &Tags(ref tags)) => format!("null,[\"{0}\"]", tags.connect("\",\"")),
 
-        (Predicate(predicate), AnyTag) => format!("\"{:s}\"", predicate),
-        (Predicate(predicate), Tag(tag)) =>
-            format!("\"{:s}\",\"{:s}\"", predicate, tag),
-        (Predicate(predicate), Tags(tags)) =>
-            format!("\"{:s}\",[\"{:s}\"]", predicate, tags.connect("\",\"")),
+        (&Predicate(predicate), &AnyTag) => format!("\"{0}\"", predicate),
+        (&Predicate(predicate), &Tag(tag)) =>
+            format!("\"{0}\",\"{1}\"", predicate, tag),
+        (&Predicate(predicate), &Tags(ref tags)) =>
+            format!("\"{0}\",[\"{1}\"]", predicate, tags.connect("\",\"")),
 
-        (Predicates(predicates), AnyTag) =>
-            format!("[\"{:s}\"]", predicates.connect("\",\"")),
-        (Predicates(predicates), Tag(tag)) =>
-            format!("[\"{:s}\"],\"{:s}\"", predicates.connect("\",\""), tag),
-        (Predicates(predicates), Tags(tags)) =>
-            format!("[\"{:s}\"],[\"{:s}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
+        (&Predicates(ref predicates), &AnyTag) =>
+            format!("[\"{0}\"]", predicates.connect("\",\"")),
+        (&Predicates(ref predicates), &Tag(tag)) =>
+            format!("[\"{0}\"],\"{1}\"", predicates.connect("\",\""), tag),
+        (&Predicates(ref predicates), &Tags(ref tags)) =>
+            format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), tags.connect("\",\"")),
 
-        (FromQuery(query), AnyTag) =>
-            match query.compile() {
-                Some(compiled) => compiled,
-                None => "null".to_string()
-            },
-        (FromQuery(query), Tag(tag)) =>
-            format!("{:s}, \"{:s}\"",
-                    match query.compile() {
-                        Some(compiled) => compiled,
-                        None => "null".to_string()
-                    },
-                    tag),
-        (FromQuery(query), Tags(tags)) =>
-            format!("{:s}, [\"{:s}\"]",
-                    match query.compile() {
-                        Some(compiled) => compiled,
-                        None => "null".to_string()
-                    },
-                    tags.connect("\",\""))
+        (&FromRoute(route), &AnyTag) => route.value.clone(),
+        (&FromRoute(route), &Tag(tag)) =>
+            format!("{0}, \"{1}\"", route.value, tag),
+        (&FromRoute(route), &Tags(ref tags)) =>
+            format!("{0}, [\"{1}\"]", route.value, tags.connect("\",\""))
 
     }
 }
 
-fn predicates_and_nodes(predicates: PredicateSelector, nodes: NodeSelector) -> String {
+fn parse_predicates_and_nodes(predicates: &PredicateSelector, nodes: &NodeSelector) -> String {
     match (predicates, nodes) {
 
-        (AnyPredicate, AnyNode) => "".to_string(),
-        (AnyPredicate, Node(node)) => format!("null,\"{:s}\"", node),
-        (AnyPredicate, Nodes(nodes)) => format!("null,[\"{:s}\"]", nodes.connect("\",\"")),
+        (&AnyPredicate, &AnyNode) => "".to_string(),
+        (&AnyPredicate, &Node(node)) => format!("null,\"{0}\"", node),
+        (&AnyPredicate, &Nodes(ref nodes)) => format!("null,[\"{0}\"]", nodes.connect("\",\"")),
 
-        (Predicate(predicate), AnyNode) => format!("\"{:s}\"", predicate),
-        (Predicate(predicate), Node(tag)) =>
-            format!("\"{:s}\",\"{:s}\"", predicate, tag),
-        (Predicate(predicate), Nodes(nodes)) =>
-            format!("\"{:s}\",[\"{:s}\"]", predicate, nodes.connect("\",\"")),
+        (&Predicate(predicate), &AnyNode) => format!("\"{0}\"", predicate),
+        (&Predicate(predicate), &Node(tag)) =>
+            format!("\"{0}\",\"{1}\"", predicate, tag),
+        (&Predicate(predicate), &Nodes(ref nodes)) =>
+            format!("\"{0}\",[\"{1}\"]", predicate, nodes.connect("\",\"")),
 
-        (Predicates(predicates), AnyNode) =>
-            format!("[\"{:s}\"]", predicates.connect("\",\"")),
-        (Predicates(predicates), Node(node)) =>
-            format!("[\"{:s}\"],\"{:s}\"", predicates.connect("\",\""), node),
-        (Predicates(predicates), Nodes(nodes)) =>
-            format!("[\"{:s}\"],[\"{:s}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
+        (&Predicates(ref predicates), &AnyNode) =>
+            format!("[\"{0}\"]", predicates.connect("\",\"")),
+        (&Predicates(ref predicates), &Node(node)) =>
+            format!("[\"{0}\"],\"{1}\"", predicates.connect("\",\""), node),
+        (&Predicates(ref predicates), &Nodes(ref nodes)) =>
+            format!("[\"{0}\"],[\"{1}\"]", predicates.connect("\",\""), nodes.connect("\",\"")),
 
-        (FromQuery(query), AnyNode) =>
-            match query.compile() {
-                Some(compiled) => compiled,
-                None => "null".to_string()
-            },
-        (FromQuery(query), Node(node)) =>
-            format!("{:s},\"{:s}\"",
-                    match query.compile() {
-                        Some(compiled) => compiled,
-                        None => "null".to_string()
-                    },
-                    node),
-        (FromQuery(query), Nodes(nodes)) =>
-            format!("{:s},[\"{:s}\"]",
-                    match query.compile() {
-                        Some(compiled) => compiled,
-                        None => "null".to_string()
-                    },
-                    nodes.connect("\",\""))
+        (&FromRoute(route), &AnyNode) => route.value.clone(),
+        (&FromRoute(route), &Node(node)) =>
+            format!("{0},\"{1}\"", route.value, node),
+        (&FromRoute(route), &Nodes(ref nodes)) =>
+            format!("{0},[\"{1}\"]", route.value, nodes.connect("\",\""))
 
     }
 }

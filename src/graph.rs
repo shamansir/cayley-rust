@@ -1,3 +1,5 @@
+extern crate log;
+
 use std::str;
 
 use serialize::{Decoder, Decodable};
@@ -9,12 +11,15 @@ use hyper::Url;
 use hyper::client::Request;
 use hyper::header::common::ContentLength;
 
-use path::Query;
+use path::CompiledQuery;
 
-use errors::{ GraphResult,
-              InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
-              DecodingFailed, ResponseParseFailed,
-              QueryNotFinalized, QueryCompilationFailed };
+use path::Expectation;
+use path::Expectation::{ SingleNode, SingleTag,
+                         NameSequence, TagSequence };
+
+use errors::GraphResult;
+use errors::RequestError::{ InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
+                            DecodingFailed, ResponseParseFailed, ExpectationNotSupported };
 
 /// Provides access to currently running Cayley database, among with
 /// an ability to run queries there, and to write there your data
@@ -35,17 +40,21 @@ pub struct Graph {
 }
 
 /// A wrapper for a single item Cayley returned in response for a query
-///
+
 /// This is a subject to change, since I'd prefer here would be `&str`
 /// items inside, but it's quite hard to achieve this with `json::Decoder`
-/* TODO: change to MayBeOwned? */
-pub struct GraphNode(pub HashMap<String, String>);
+/* pub enum QueryObject {
+    SingleNode(HashMap<String, String>), // Query.ToValue()
+    NodeSequence(Vec<HashMap<String, String>>), // Query.All(), Query.GetLimit(n)
+    NameSequence(Vec<String>), // Query.ToArray()
+    TagSequence(Vec<String>), // Query.TagArray()
+    SingleTag(String) // Query.TagValue()
+} */
 
-/// A collection of GraphNode instances
-pub struct GraphNodes(pub Vec<GraphNode>);
+pub struct Nodes(pub Vec<HashMap<String, String>>);
 
 /// Cayley API Version, planned to default to the latest, if it will ever change
-pub enum CayleyAPIVersion { V1, DefaultVersion }
+pub enum APIVersion { V1, DefaultVersion }
 
 impl Graph {
 
@@ -53,16 +62,18 @@ impl Graph {
 
     /// Create a Graph which connects to the latest API at `localhost:64210`
     pub fn default() -> GraphResult<Graph> {
-        Graph::new("localhost", 64210, DefaultVersion)
+        Graph::new("localhost", 64210, APIVersion::DefaultVersion)
     }
 
     // ---------------------------------- new ----------------------------------
 
     /// Create a Graph which connects to the host you specified manually
-    pub fn new(host: &str, port: int, version: CayleyAPIVersion) -> GraphResult<Graph> {
-        let version_str = match version { V1 | DefaultVersion => "v1" };
-        let url = format!("http://{:s}:{:d}/api/{:s}/query/gremlin",
-                          host, port, version_str);
+    pub fn new(host: &str, port: int, version: APIVersion) -> GraphResult<Graph> {
+        let version_str = match version {
+            APIVersion::V1 | APIVersion::DefaultVersion => "v1" /* FIXME: APIVersion:: shouldn't be required */
+        };
+        let url = format!("http://{host}:{port}/api/{version}/query/gremlin",
+                          host = host, port = port, version = version_str);
         Ok(Graph{ url: url })
     }
 
@@ -73,7 +84,7 @@ impl Graph {
     /// Since only [Vertex](../path/struct.Vertex.html) implements [Query](../path/trait.Query.html) trait
     /// following current spec, your code will look like that:
     ///
-    /// ```
+    /// ```ignore
     /// use cayley::graph::Graph;
     /// use cayley::path::{Vertex, Path, Query};
     /// use cayley::selector::{Predicate, Node};
@@ -81,13 +92,8 @@ impl Graph {
     /// let graph = Graph::default().unwrap();
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
-    pub fn find(&self, query: &Query) -> GraphResult<GraphNodes> {
-        if query.is_finalized() {
-            match query.compile() {
-                Some(compiled) => self.exec(compiled),
-                None => Err(QueryCompilationFailed)
-            }
-        } else { Err(QueryNotFinalized) }
+    pub fn find(&self, query: CompiledQuery) -> GraphResult<Nodes> {
+        self.exec(query.prefix + query.value, query.expectation)
     }
 
     // ---------------------------------- exec ---------------------------------
@@ -98,16 +104,20 @@ impl Graph {
     /// the string concatenation performed with `path::` module members, this
     /// method is for you.
     ///
-    /// ```
+    /// ```ignore
     /// use cayley::Graph;
     /// let graph = Graph::default().unwrap();
     /// graph.exec("g.V(\"foo\").In(\"bar\").All()".to_string()).unwrap();
     /// ```
-    pub fn exec(&self, query: String) -> GraphResult<GraphNodes> {
-        println!("Executing query: {:s}", query);
-        match self.perform_request(query) {
-            Ok(body) => Graph::decode_nodes(body),
-            Err(error) => Err(error)
+    pub fn exec(&self, query: String, expectation: Expectation) -> GraphResult<Nodes> {
+        debug!("Executing query: {}", query);
+        match expectation {
+            SingleNode | NameSequence | TagSequence | SingleTag =>
+                Err(ExpectationNotSupported(expectation)),
+            _ => match self.perform_request(query) {
+                Ok(body) => Graph::decode_traversal(body, expectation),
+                Err(error) => Err(error)
+            }
         }
     }
 
@@ -131,7 +141,10 @@ impl Graph {
                     Err(error) => return Err(RequestFailed(error, body)),
                     Ok(mut response) => match response.read_to_end() {
                         Err(error) => Err(RequestIoFailed(error, body)),
-                        Ok(response_body) => Ok(response_body)
+                        Ok(response_body) => {
+                            debug!("Request to {} succeeded", self.url);
+                            Ok(response_body)
+                        }
                     }
                 }
             }
@@ -140,13 +153,18 @@ impl Graph {
     }
 
     // extract JSON nodes from response
-    fn decode_nodes(source: Vec<u8>) -> GraphResult<GraphNodes> {
+    #[allow(unused_variables)]
+    fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<Nodes> {
         match str::from_utf8(source.as_slice()) {
             None => Err(ResponseParseFailed),
-            Some(nodes_json) => {
-                match json_decode(nodes_json) {
-                    Err(error) => Err(DecodingFailed(error, nodes_json.to_string())),
-                    Ok(nodes) => Ok(nodes)
+            Some(traversal_json) => {
+                debug!("start decoding \n===\n{:.200}\n...\n===\n", traversal_json);
+                match json_decode(traversal_json) {
+                    Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
+                    Ok(nodes) => {
+                        debug!("Returned: {}", match nodes { Nodes(ref val) => val.len() });
+                        Ok(nodes)
+                    }
                 }
             }
         }
@@ -154,44 +172,56 @@ impl Graph {
 
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for GraphNode {
-    fn decode(decoder: &mut S) -> Result<GraphNode, E> {
-        decoder.read_map(|decoder, len| {
-            let mut data_map: HashMap<String, String> = HashMap::new();
-            for i in range(0u, len) {
-                data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
-                                    Ok(key) => key, Err(err) => return Err(err)
-                                },
-                                match decoder.read_map_elt_val(i, |decoder| { decoder.read_str() }) {
-                                    Ok(val) => val, Err(err) => return Err(err)
-                                });
-            }
-            Ok(GraphNode(data_map))
-        })
+impl<S: Decoder<E>, E> Decodable<S, E> for Nodes {
+
+    fn decode(decoder: &mut S) -> Result<Nodes, E> {
+        decode_nodes(decoder)
     }
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for GraphNodes {
-    fn decode(decoder: &mut S) -> Result<GraphNodes, E> {
-        decoder.read_struct("__unused__", 0, |decoder| {
-            decoder.read_struct_field("result", 0, |decoder| {
-                decoder.read_option(|decoder, has_value| {
-                    match has_value {
-                        false => Ok(GraphNodes(Vec::new())), /* FIXME: return GraphNodes(None) */
-                        true => decoder.read_seq(|decoder, len| {
-                            let mut nodes: Vec<GraphNode> = Vec::with_capacity(len);
-                            for i in range(0u, len) {
-                                nodes.push(match decoder.read_seq_elt(i,
-                                                |decoder| { Decodable::decode(decoder) }) {
-                                    Ok(node) => node,
-                                    Err(err) => return Err(err)
-                                });
-                            };
-                            Ok(GraphNodes(nodes))
+fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<Nodes, E> {
+    decoder.read_struct("__unused__", 0, |decoder| {
+        match decoder.read_struct_field("error", 0u, |d| -> Result<Option<String>, E> { Decodable::decode(d) }) {
+            Ok(val) => {
+                match val {
+                    Some(ref explanation) =>
+                        Err(decoder.error(format!("Error returned from request: {}", explanation).as_slice())),
+                    None => decoder.read_struct_field("result", 1u, |decoder| {
+                        decoder.read_option(|decoder, has_value| {
+                            match has_value {
+                                false => Ok(Nodes(Vec::new())),
+                                true => decoder.read_seq(|decoder, len| {
+                                    let mut nodes: Vec<HashMap<String, String>> = Vec::with_capacity(len);
+                                    for i in range(0u, len) {
+                                        nodes.push(match decoder.read_seq_elt(i,
+                                            |decoder| { decode_node(decoder) }) {
+                                                Ok(node) => node,
+                                                Err(err) => return Err(err)
+                                            });
+                                        };
+                                    Ok(Nodes(nodes))
+                                })
+                            }
                         })
-                    }
-                })
-            })
-        })
-    }
+                    })
+                }
+            },
+            Err(err) => { println!("err branch"); Err(err) }
+        }
+    })
+}
+
+fn decode_node<S: Decoder<E>, E>(decoder: &mut S) -> Result<HashMap<String, String>, E> {
+    decoder.read_map(|decoder, len| {
+        let mut data_map: HashMap<String, String> = HashMap::new();
+        for i in range(0u, len) {
+            data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
+                Ok(key) => key, Err(err) => return Err(err)
+                },
+                match decoder.read_map_elt_val(i, |decoder| { decoder.read_str() }) {
+                    Ok(val) => val, Err(err) => return Err(err)
+                });
+        }
+        Ok(data_map)
+    })
 }

@@ -152,19 +152,8 @@ g.find(V::start(Node("C"))
 
 # Possible drawbacks
 
-1. `RequestWriter` instance from [rust-http][] is created for every new query performed.
-I planned to re-use same `RequestWriter` instance for every request since URL
-is actually does not change, but Rust compiler appeared not to be happy enough with
-this idea, since anyway `RequestWriter` should be mutable, by
-spec, for `POST` requests, and so it just can't be passed here and there easily.
-
-    Compiler is right, though, so we will wait for [teepee][] to be released,
-to replace [rust-http][], may be there we will find some friendlier ways to do `POST`ing.
-
-2. Currently `GraphNodes` returned from a query are stored as `HashMap<String, String>`,
-which is a possible high memory over-use, since in most cases keys and values are immutable.
-Though `json::Decoder` makes it really hard to use immutable types of strings there.
-Anyway, I'll try to investigate in it and fix it among the first issues.
+I have no actual sense if it is correct to use `String`/`to_string()` in some cases, but I really tried to avoid that as much as possible, and I plan to try
+further, if it's not. Or, please, you PRs are welcome.
 
 # TODO
 
@@ -172,10 +161,10 @@ Anyway, I'll try to investigate in it and fix it among the first issues.
 
 Things from [Gremlin API][] still not implemented:
 
-* `query.ToArray()`
-* `query.ToValue()`
-* `query.TagArray()`
-* `query.TagValue()`
+* `query.ToArray()` — not supported with HTTP requests
+* `query.ToValue()` — not supported with HTTP requests
+* `query.TagArray()` — not supported with HTTP requests
+* `query.TagValue()` — not supported with HTTP requests
 * `query.ForEach(callback), query.ForEach(limit, callback)` a.k.a `query.Map`
 * `graph.Emit(data)`
 
@@ -183,29 +172,9 @@ Things from [Gremlin API][] still not implemented:
 
 * API change: Store `GraphNodes` as a map with immutable strings (see above, p.2 in
 [Possible Drawbacks](#Possible-Drawbacks) section);
-* API change: Implementing methods listed above will require to change a result of query
-execution to some enum-wrapper, like `NodesMap(...)`, `NodeArray(...)`, `...`;
-* Check if `Morphism` instance is already saved in this graph and fire an error, if it does;
-* Some queries may produce additional errors while they just skip them, we need to store
-an error inside a query and fire it when query is completed:
-    * `.And`, `.Or`, `.Union`, `.Intersect` queries when the passed query is finalized;
-    * `.And`, `.Or`, `.Union`, `.Intersect` queries when the passed queries failed to compile;
-    * `Morphism` instance passed to `.Follow`/`FollowR` may not be saved when used;
-    * Finalizers like `.All`, `.GetLimit`, ... may be called several times which should not happen;
-* Maybe `Morphism` needs improvements, it's looks not so obvious in usage;
 * Preparing `Vertex` for re-use requires to start a query using `.From()` selector,
 and this case should be checked by API for sure;
 * May be, better [Error API](http://www.hydrocodedesign.com/2014/05/28/practicality-with-rust-error-handling/);
-* Some Path traits are public while they have no practical usage for user, like `Reuse`;
-* [Log](http://doc.rust-lang.org/log/) executed queries;
-
-* API change: Rather a thought to think on: This `mutable self` passed everywhere
-may be solved with being a bit more functional and stopping using method chains — and using tuples
-or vectors of enum-values instead, then iterating and mapping over them;
-So, i.e. `Path` may appear as enum and be passed as a tuple of values:
-`( Has(Predicate("foo")), Tag("bar")), And((..., ..., ...)), Out(...) ), ( All, )`;
-On the other hand, this way looks not so easy to read the whole thing as an actual chain of operations,
-in comparison to method chains; Linked lists, then? Or operator overloading? Or macros?
 
 # Thanks
 

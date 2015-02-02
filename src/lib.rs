@@ -10,7 +10,8 @@
 //!
 //! Jump to: [Graph](./graph/struct.Graph.html) |
 //!          [Vertex](./path/struct.Vertex.html) |
-//!          [Morphism](./path/struct.Morphism.html).
+//!          [Morphism](./path/struct.Morphism.html) |
+//!          [Traversal](./graph/enum.Traversal.html)
 //!
 //! ## Connection
 //!
@@ -20,7 +21,7 @@
 //!
 //! Then, bind driver to your host this way:
 //!
-//! ```
+//! ```ignore
 //! use cayley::{Graph, DefaultVersion};
 //! let graph = match Graph::new("localhost", 64210, DefaultVersion) {
 //!    Err(error) => panic!(error),
@@ -38,7 +39,7 @@
 //!
 //! Query pattern looks like this:
 //!
-//! ```
+//! ```ignore
 //! use cayley::{Graph, DefaultVersion};
 //! use cayley::GraphNodes;
 //! use cayley::path::{Vertex, Query}; // Query trait import is required
@@ -58,7 +59,7 @@
 //!
 //! Morphism used this way:
 //!
-//! ```
+//! ```ignore
 //! #![allow(unused_result)]
 //! use cayley::{Graph, DefaultVersion};
 //! use cayley::path::Vertex as V;
@@ -90,6 +91,8 @@
 //! Follow the links above for a complete lists of methods and to get more information
 //! about every mentioned structure.
 
+#![feature(macro_rules,phase,globs)]
+
 #[doc(no_inline)]
 extern crate hyper;
 
@@ -99,13 +102,28 @@ extern crate url;
 #[doc(no_inline)]
 extern crate serialize;
 
-pub use graph::{Graph, GraphNodes, GraphNode};
-pub use graph::{V1, DefaultVersion};
+#[phase(plugin, link)] extern crate log;
+
+pub use graph::{Graph, Nodes};
+pub use graph::APIVersion::{V1, DefaultVersion};
+
+pub use errors::GraphResult as Result;
+pub use errors::RequestError as Error;
+
+mod selector;
+mod path;
 
 pub mod errors;
-pub mod selector;
 pub mod path;
-pub mod graph;
 
-// echo "graph.Vertex('Humphrey Bogart').All()" |
-// http --verbose POST localhost:64210/api/v1/query/gremlin Content-Type:text/plain
+pub mod selectors {
+    pub use selector::NodeSelector::*;
+    pub use selector::PredicateSelector::*;
+    pub use selector::TagSelector::*;
+}
+
+pub mod paths {
+    pub use path::{Trail, Vertex, Morphism};
+    pub use path::Traversal::*;
+    pub use path::Final::*;
+}

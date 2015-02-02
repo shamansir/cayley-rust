@@ -1,11 +1,19 @@
+#![feature(globs)]
+#![feature(phase, macro_rules)]
+
+#[phase(plugin, link)]
 extern crate cayley;
 
-use cayley::graph::{Graph, V1};
-use cayley::graph::{GraphNodes, GraphNode};
-use cayley::path::{Morphism, Vertex, Path, Query};
-use cayley::selector::{AnyNode, Node};
-use cayley::selector::AnyTag;
-use cayley::selector::Predicate;
+use cayley::{Graph, V1};
+use cayley::Nodes as GraphNodes;
+
+use cayley::selectors::*;
+//use cayley::selector::PredicateSelector::*;
+//use cayley::selector::TagSelector::*;
+
+use cayley::path::{Vertex, Morphism};
+use cayley::path::Traversal::*;
+use cayley::path::Final::*;
 
 #[test]
 fn main() {
@@ -21,7 +29,7 @@ fn main() {
 
             /* TODO: test saving Morphism */
 
-            match graph.find(Vertex::start(AnyNode).All()) {
+            match graph.find(vertex!(AnyNode => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -30,7 +38,7 @@ fn main() {
 
             };
 
-            match graph.find(Vertex::start(AnyNode).GetLimit(5)) {
+            match graph.find(vertex!(AnyNode => GetLimit(5))) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -39,13 +47,13 @@ fn main() {
 
             };
 
-            match graph.find(Vertex::start(Node("Humphrey Bogart")).All()) {
+            match graph.find(vertex!(Node("Humphrey Bogart") => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
-                        Some(&GraphNode(ref humphrey)) => {
+                        Some(humphrey) => {
                             assert_eq!(humphrey["id".to_string()].as_slice(), "Humphrey Bogart");
                         },
                         None => panic!("first node was not found")
@@ -54,15 +62,15 @@ fn main() {
 
             }
 
-            match graph.find(Vertex::start(Node("Humphrey Bogart"))
-                                    .In(Predicate("name"), AnyTag)
-                                    .All()) {
+            match graph.find(vertex!(Node("Humphrey Bogart")
+                                     -> In(Predicate("name"), AnyTag)
+                                     => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
-                        Some(&GraphNode(ref humphrey)) => {
+                        Some(humphrey) => {
                             assert_eq!(humphrey["id".to_string()].as_slice(), "/en/humphrey_bogart");
                             // was: ":/en/humphrey_bogart"
                         },
@@ -72,15 +80,15 @@ fn main() {
 
             }
 
-            match graph.find(Vertex::start(Node("Casablanca"))
-                                    .InP(Predicate("name"))
-                                    .All()) {
+            match graph.find(vertex!(Node("Casablanca")
+                                     -> InP(Predicate("name"))
+                                     => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
                     assert_eq!(nodes.len(), 1);
                     match nodes.iter().next() {
-                        Some(&GraphNode(ref casablanca)) => {
+                        Some(casablanca) => {
                             assert_eq!(casablanca["id".to_string()].as_slice(), "/en/casablanca_1942");
                             // was: ":/en/casablanca_1942"
                         },
@@ -90,12 +98,12 @@ fn main() {
 
             }
 
-            match graph.find(Vertex::start(AnyNode)
-                                    .Has(Predicate("name"), Node("Casablanca"))
-                                    .OutP(Predicate("/film/film/starring"))
-                                    .OutP(Predicate("/film/performance/actor"))
-                                    .OutP(Predicate("name"))
-                                    .All()) {
+            match graph.find(vertex!(AnyNode
+                                     -> Has(Predicate("name"), Node("Casablanca"))
+                                     -> OutP(Predicate("/film/film/starring"))
+                                     -> OutP(Predicate("/film/performance/actor"))
+                                     -> OutP(Predicate("name"))
+                                     => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -103,14 +111,14 @@ fn main() {
                 }
             }
 
-            let mut film_to_actor = Morphism::start("fta");
-                    film_to_actor.OutP(Predicate("/film/film/starring"))
-                                 .OutP(Predicate("/film/performance/actor"));
-            match graph.find(Vertex::start(AnyNode)
-                                    .Has(Predicate("name"), Node("Casablanca"))
-                                    .Follow(&mut film_to_actor)
-                                    .OutP(Predicate("name"))
-                                    .All()) {
+            let film_to_actor = morphism!("fta" ->
+                                          OutP(Predicate("/film/film/starring")) ->
+                                          OutP(Predicate("/film/performance/actor")));
+            match graph.find(vertex!(AnyNode
+                                     -> Has(Predicate("name"), Node("Casablanca"))
+                                     -> Follow(&film_to_actor)
+                                     -> OutP(Predicate("name"))
+                                     => All)) {
 
                 Err(error) => panic!(error.to_string()),
                 Ok(GraphNodes(nodes)) => {
@@ -120,6 +128,8 @@ fn main() {
             }
 
         }
+
+        // TODO: ensure ToValue(), ToArray(), TagValue(), TagArray() do fail
 
     }
 
