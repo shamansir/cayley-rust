@@ -1,4 +1,4 @@
-#![macro_escape]
+#![macro_use]
 
 /// This module is the main entry point to ask for [Nodes](../graph/struct.Nodes.html) from
 /// database using [Graph](../graph/struct.Graph.html) as an interceptor. It defines everything
@@ -192,6 +192,8 @@
 /// to `TagWith`, to provide a way to call it in a namespace shared with `TagSelector::Tag`.
 /// See [Traversal](../path/enum/Traversal.html) for a full list of supported traversals.
 
+use std::ops::Add;
+
 use selector::{NodeSelector, TagSelector, PredicateSelector};
 
 use selector::NodeSelector::{AnyNode, Node, Nodes};
@@ -201,12 +203,12 @@ use selector::PredicateSelector::Route as FromRoute;
 
 #[macro_export]
 macro_rules! vertex(
-    [ $e1:expr $(-> $e2:expr)* => $e3:expr ] => (
+    [ $e1:expr ( $(-> $e2:expr)* => ) $e3:expr ] => (
         match Vertex::compile_query($e1, box [$($e2,)*], $e3) {
               Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     );
-    [ $e1:expr $(-> $e2:expr)+ ] => (
+    [ $e1:expr ( $(-> $e2:expr)+ ) ] => (
         match Vertex::compile_route($e1, box [$($e2,)*]) {
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
@@ -216,25 +218,25 @@ macro_rules! vertex(
             Some(v) => v, None => panic!("Vertex query failed to compile!")
         }
     )
-)
+);
 
 #[macro_export]
 macro_rules! morphism(
-    [ $e1:expr $(-> $e2:expr)+ ] => (
+    [ $e1:expr ( $(-> $e2:expr)+ ) ] => (
         match Morphism::compile_reuse($e1, box [$($e2,)*]) {
             Some(m) => m, None => panic!("Morphism path failed to compile!")
         }
     )
-)
+);
 
 #[macro_export]
 macro_rules! path(
-    [ $e1:expr $(-> $e2:expr)* ] => (
+    [ $e1:expr ( $(-> $e2:expr)* ) ] => (
         match Trail::compile_path(box [$e1, $($e2,)*]) {
             Some(m) => m, None => panic!("Trail path failed to compile!")
         }
     )
-)
+);
 
 /// Represents a traversal part of a path. Used to contruct both Paths and Queries.
 pub enum Traversal<'t> {
@@ -269,7 +271,7 @@ pub enum Traversal<'t> {
 pub enum Final {
     Undefined,
     All,
-    GetLimit(int),
+    GetLimit(i32),
     ToArray,
     ToValue,
     TagArray,
@@ -280,6 +282,7 @@ pub enum Final {
 
 /// This enum defines which type of a data this Query expects from Graph. Currently,
 /// Only `NodeSequence` is supported by Cayley for HTTP requests
+#[derive(Debug)]
 pub enum Expectation {
     Unknown,
     SingleNode,
@@ -351,18 +354,20 @@ pub struct CompiledReuse {
     pub value: String
 }
 
-impl Add<CompiledPath, CompiledPath> for CompiledPath {
+impl Add for CompiledPath {
+    type Output = CompiledPath;
 
-    fn add(&self, _rhs: &CompiledPath) -> CompiledPath {
-        CompiledPath { prefix: _rhs.prefix + self.prefix, value: self.value + _rhs.value }
+    fn add(self, _rhs: CompiledPath) -> CompiledPath {
+        CompiledPath { prefix: _rhs.prefix + &self.prefix, value: self.value + &_rhs.value }
     }
 
 }
 
-impl Add<CompiledPath, CompiledRoute> for CompiledRoute {
+impl Add<CompiledPath> for CompiledRoute {
+    type Output = CompiledRoute;
 
-    fn add(&self, _rhs: &CompiledPath) -> CompiledRoute {
-        CompiledRoute { prefix: _rhs.prefix + self.prefix, value: self.value + _rhs.value }
+    fn add(self, _rhs: CompiledPath) -> CompiledRoute {
+        CompiledRoute { prefix: _rhs.prefix + &self.prefix, value: self.value + &_rhs.value }
     }
 
 }
@@ -425,7 +430,7 @@ impl<'ts> ToString for Morphism<'ts> {
     fn to_string(&self) -> String {
         match self.compile_reuse() {
             Some(reuse) => {
-                reuse.name.to_string() + ":" + reuse.value
+                reuse.name.to_string() + ":" + &reuse.value
             },
             None => "<Morphism: Incorrect>".to_string()
         }
@@ -454,7 +459,7 @@ impl<'r> Route for Morphism<'r> {
             Morphism(_, ref traversals) =>
                 Some(CompiledRoute {
                     prefix: parse_prefix(traversals),
-                    value: "g.M()".to_string() + parse_traversals(traversals)
+                    value: "g.M()".to_string() + &parse_traversals(traversals)
                 })
         }
     }
@@ -475,7 +480,7 @@ impl<'r> Reuse for Morphism<'r> {
                 Some(CompiledReuse {
                     name: name.to_string(),
                     prefix: parse_prefix(traversals),
-                    value: "g.M()".to_string() + parse_traversals(traversals)
+                    value: "g.M()".to_string() + &parse_traversals(traversals)
                 })
         }
     }
@@ -533,7 +538,7 @@ impl<'r> Route for Vertex<'r> {
             Vertex(ref start, ref traversals, _) =>
                 Some(CompiledRoute {
                     prefix: parse_prefix(traversals),
-                    value: parse_start(start) + parse_traversals(traversals)
+                    value: parse_start(start) + &parse_traversals(traversals)
                 })
         }
     }
@@ -544,26 +549,26 @@ impl<'q> Query for Vertex<'q> {
 
     fn compile_query(&self) -> Option<CompiledQuery> {
         match *self {
-            Vertex(ref start, ref traversals, _final) => {
+            Vertex(ref start, ref traversals, ref _final) => {
                 let prefix = parse_prefix(traversals);
                 let mut value = String::new();
-                value.push_str(parse_start(start).as_slice());
-                value.push_str(parse_traversals(traversals).as_slice());
+                value.push_str(&parse_start(start));
+                value.push_str(&parse_traversals(traversals));
                 match _final {
-                    Final::Undefined => {},
-                    _ => value.push_str(parse_final(_final).as_slice())
+                    &Final::Undefined => {},
+                    _ => value.push_str(&parse_final(_final))
                 }
                 Some(CompiledQuery {
                     prefix: prefix,
                     value: value,
                     expectation: match _final {
-                        Final::Undefined    => Expectation::Unknown,
-                        Final::All          => Expectation::NodeSequence,
-                        Final::GetLimit(..) => Expectation::NodeSequence,
-                        Final::ToArray      => Expectation::NameSequence,
-                        Final::ToValue      => Expectation::SingleNode,
-                        Final::TagArray     => Expectation::TagSequence,
-                        Final::TagValue     => Expectation::SingleTag
+                        &Final::Undefined    => Expectation::Unknown,
+                        &Final::All          => Expectation::NodeSequence,
+                        &Final::GetLimit(..) => Expectation::NodeSequence,
+                        &Final::ToArray      => Expectation::NameSequence,
+                        &Final::ToValue      => Expectation::SingleNode,
+                        &Final::TagArray     => Expectation::TagSequence,
+                        &Final::TagValue     => Expectation::SingleTag
                     }
                 })
             }
@@ -579,13 +584,13 @@ fn parse_prefix(traversals: &Box<[Traversal]>) -> String {
     for traversal in traversals.iter() {
         match *traversal {
             Traversal::Follow(reusable) | Traversal::FollowR(reusable) => {
-                result.push_str(reusable.prefix.as_slice());
+                result.push_str(&reusable.prefix);
                 result.push_str(format!("var {name} = {path};",
                                         name = reusable.name,
-                                        path = reusable.value).as_slice());
+                                        path = reusable.value).as_str());
             },
             Traversal::Intersect(query) | Traversal::And(query) | Traversal::Union(query) | Traversal::Or(query) => {
-                result.push_str(query.prefix.as_slice());
+                result.push_str(&query.prefix);
             },
             _ => {}
         }
@@ -643,21 +648,21 @@ fn parse_traversals(traversals: &Box<[Traversal]>) -> String {
             // Morphisms =======================================================================================================
             Traversal::Follow(reusable)                => format!(".Follow({})", reusable.name),
             Traversal::FollowR(reusable)               => format!(".FollowR({})", reusable.name)
-        }.as_slice());
+        }.as_str());
     }
     result
 }
 
-fn parse_final(_final: Final) -> String {
+fn parse_final(_final: &Final) -> String {
     match _final {
         /* FIXME: Final:: shouldn't be required */
-        Final::Undefined => "".to_string(),
-        Final::All => ".All()".to_string(),
-        Final::GetLimit(n) => format!(".GetLimit({})", n),
-        Final::ToArray => ".ToArray()".to_string(),
-        Final::ToValue => ".ToValue()".to_string(),
-        Final::TagArray => ".TagArray()".to_string(),
-        Final::TagValue => ".TagValue()".to_string()
+        &Final::Undefined => "".to_string(),
+        &Final::All => ".All()".to_string(),
+        &Final::GetLimit(n) => format!(".GetLimit({})", n),
+        &Final::ToArray => ".ToArray()".to_string(),
+        &Final::ToValue => ".ToValue()".to_string(),
+        &Final::TagArray => ".TagArray()".to_string(),
+        &Final::TagValue => ".TagValue()".to_string()
     }
 }
 

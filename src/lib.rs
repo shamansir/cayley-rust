@@ -91,8 +91,6 @@
 //! Follow the links above for a complete lists of methods and to get more information
 //! about every mentioned structure.
 
-#![feature(macro_rules,phase,globs)]
-
 #[doc(no_inline)]
 extern crate hyper;
 
@@ -100,21 +98,23 @@ extern crate hyper;
 extern crate url;
 
 #[doc(no_inline)]
-extern crate serialize;
+extern crate rustc_serialize;
 
-#[phase(plugin, link)] extern crate log;
+#[macro_use]
+extern crate log;
+
+pub mod graph;
 
 pub use graph::{Graph, Nodes};
 pub use graph::APIVersion::{V1, DefaultVersion};
 
-pub use errors::GraphResult as Result;
-pub use errors::RequestError as Error;
-
 mod selector;
-mod path;
 
-pub mod errors;
+pub mod error;
 pub mod path;
+
+pub use error::Result;
+pub use error::Error;
 
 pub mod selectors {
     pub use selector::NodeSelector::*;

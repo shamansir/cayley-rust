@@ -1,15 +1,17 @@
-extern crate log;
+extern crate rustc_serialize;
 
 use std::str;
+use std::io::{Write, Read};
 
-use serialize::{Decoder, Decodable};
-use serialize::json::decode as json_decode;
+use self::rustc_serialize::{Decoder, Decodable};
+use self::rustc_serialize::json::decode as json_decode;
 
 use std::collections::HashMap;
 
 use hyper::Url;
 use hyper::client::Request;
-use hyper::header::common::ContentLength;
+use hyper::method::Method;
+use hyper::header::ContentLength;
 
 use path::CompiledQuery;
 
@@ -17,9 +19,11 @@ use path::Expectation;
 use path::Expectation::{ SingleNode, SingleTag,
                          NameSequence, TagSequence };
 
-use errors::GraphResult;
-use errors::RequestError::{ InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
-                            DecodingFailed, ResponseParseFailed, ExpectationNotSupported };
+use url::ParseError;
+
+use error::Result as GraphResult;
+use error::Error::{ InvalidUrl, MalformedRequest, RequestIoFailed, RequestFailed,
+                    DecodingFailed, ResponseParseFailed, ExpectationNotSupported };
 
 /// Provides access to currently running Cayley database, among with
 /// an ability to run queries there, and to write there your data
@@ -68,7 +72,7 @@ impl Graph {
     // ---------------------------------- new ----------------------------------
 
     /// Create a Graph which connects to the host you specified manually
-    pub fn new(host: &str, port: int, version: APIVersion) -> GraphResult<Graph> {
+    pub fn new(host: &str, port: i32, version: APIVersion) -> GraphResult<Graph> {
         let version_str = match version {
             APIVersion::V1 | APIVersion::DefaultVersion => "v1" /* FIXME: APIVersion:: shouldn't be required */
         };
@@ -93,7 +97,7 @@ impl Graph {
     /// graph.find(Vertex::start(Node("foo")).InP(Predicate("bar")).All()).unwrap();
     /// ```
     pub fn find(&self, query: CompiledQuery) -> GraphResult<Nodes> {
-        self.exec(query.prefix + query.value, query.expectation)
+        self.exec(query.prefix + &query.value, query.expectation)
     }
 
     // ---------------------------------- exec ---------------------------------
@@ -114,36 +118,39 @@ impl Graph {
         match expectation {
             SingleNode | NameSequence | TagSequence | SingleTag =>
                 Err(ExpectationNotSupported(expectation)),
-            _ => match self.perform_request(query) {
+            _ => match self.perform_request(query.into_bytes()) {
                 Ok(body) => Graph::decode_traversal(body, expectation),
                 Err(error) => Err(error)
             }
         }
     }
 
-    fn perform_request(&self, body: String) -> GraphResult<Vec<u8>> {
+    fn perform_request(&self, body: Vec<u8>) -> GraphResult<Vec<u8>> {
         let mut request = {
-            let url_str = self.url.as_slice();
+            let url_str = self.url.as_str();
             match Url::parse(url_str) {
                 Err(error) => return Err(InvalidUrl(error, url_str.to_string())),
-                Ok(parsed_url) => match Request::post(parsed_url) {
+                Ok(parsed_url) => match Request::new(Method::Post, parsed_url) {
                     Err(error) => return Err(MalformedRequest(error, url_str.to_string())),
                     Ok(request) => request
                 }
             }
         };
-        request.headers_mut().set(ContentLength(body.len()));
+        request.headers_mut().set(ContentLength(body.len() as u64));
         match request.start() {
             Err(error) => return Err(RequestFailed(error, body)),
-            Ok(mut request) => match request.write_str(body.as_slice()) {
+            Ok(mut request) => match request.write(body.as_slice()) {
                 Err(error) => return Err(RequestIoFailed(error, body)),
                 Ok(_) => match request.send() {
                     Err(error) => return Err(RequestFailed(error, body)),
-                    Ok(mut response) => match response.read_to_end() {
-                        Err(error) => Err(RequestIoFailed(error, body)),
-                        Ok(response_body) => {
-                            debug!("Request to {} succeeded", self.url);
-                            Ok(response_body)
+                    Ok(mut response) => {
+                        let mut response_body = Vec::new();
+                        match response.read_to_end(&mut response_body) {
+                            Err(error) => Err(RequestIoFailed(error, body)),
+                            Ok(_) => {
+                                debug!("Request to {} succeeded", self.url);
+                                Ok(response_body)
+                            }
                         }
                     }
                 }
@@ -156,8 +163,8 @@ impl Graph {
     #[allow(unused_variables)]
     fn decode_traversal(source: Vec<u8>, expectation: Expectation) -> GraphResult<Nodes> {
         match str::from_utf8(source.as_slice()) {
-            None => Err(ResponseParseFailed),
-            Some(traversal_json) => {
+            Err(_) => Err(ResponseParseFailed),
+            Ok(traversal_json) => {
                 debug!("start decoding \n===\n{:.200}\n...\n===\n", traversal_json);
                 match json_decode(traversal_json) {
                     Err(error) => Err(DecodingFailed(error, traversal_json.to_string())),
@@ -172,27 +179,27 @@ impl Graph {
 
 }
 
-impl<S: Decoder<E>, E> Decodable<S, E> for Nodes {
+impl Decodable for Nodes {
 
-    fn decode(decoder: &mut S) -> Result<Nodes, E> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, D::Error> {
         decode_nodes(decoder)
     }
 }
 
-fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<Nodes, E> {
+fn decode_nodes<D: Decoder>(decoder: &mut D) -> Result<Nodes, D::Error> {
     decoder.read_struct("__unused__", 0, |decoder| {
-        match decoder.read_struct_field("error", 0u, |d| -> Result<Option<String>, E> { Decodable::decode(d) }) {
+        match decoder.read_struct_field("error", 0, |d| -> Result<Option<String>, D::Error> { Decodable::decode(d) }) {
             Ok(val) => {
                 match val {
                     Some(ref explanation) =>
-                        Err(decoder.error(format!("Error returned from request: {}", explanation).as_slice())),
-                    None => decoder.read_struct_field("result", 1u, |decoder| {
+                        Err(decoder.error(format!("Error returned from request: {}", explanation).as_str())),
+                    None => decoder.read_struct_field("result", 1, |decoder| {
                         decoder.read_option(|decoder, has_value| {
                             match has_value {
                                 false => Ok(Nodes(Vec::new())),
                                 true => decoder.read_seq(|decoder, len| {
                                     let mut nodes: Vec<HashMap<String, String>> = Vec::with_capacity(len);
-                                    for i in range(0u, len) {
+                                    for i in 0..len {
                                         nodes.push(match decoder.read_seq_elt(i,
                                             |decoder| { decode_node(decoder) }) {
                                                 Ok(node) => node,
@@ -211,10 +218,10 @@ fn decode_nodes<S: Decoder<E>, E>(decoder: &mut S) -> Result<Nodes, E> {
     })
 }
 
-fn decode_node<S: Decoder<E>, E>(decoder: &mut S) -> Result<HashMap<String, String>, E> {
+fn decode_node<D: Decoder>(decoder: &mut D) -> Result<HashMap<String, String>, D::Error> {
     decoder.read_map(|decoder, len| {
         let mut data_map: HashMap<String, String> = HashMap::new();
-        for i in range(0u, len) {
+        for i in 0..len {
             data_map.insert(match decoder.read_map_elt_key(i, |decoder| { decoder.read_str() }) {
                 Ok(key) => key, Err(err) => return Err(err)
                 },

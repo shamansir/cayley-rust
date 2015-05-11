@@ -5,7 +5,7 @@ description = "A driver for Google Cayley Graph Database."
 readme = "README.md"
 documentation = "http://shamansir.github.io/cayley-rust/cayley/index.html"
 repository = "https://github.com/shamansir/cayley-rust"
-authors = ["Ulric Wilfred <shaman.sir@gmail.com>"]
+authors = [ "Ulric Wilfred <shaman.sir@gmail.com>" ]
 
 [lib]
 name = "cayley"
@@ -13,3 +13,6 @@ doc = true
 
 [dependencies]
 hyper = "*"
+rustc-serialize = "*"
+url = "*"
+log = "*"

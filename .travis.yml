@@ -18,7 +18,7 @@ before_script:
   - ./cayley http --dbpath=./30kmoviedata.nq.gz &
   - cd ..
   - pwd
-  - rustc -v
+  - rustc -V
   - cargo -V
   - rm -rf ./doc
 
